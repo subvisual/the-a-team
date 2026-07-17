@@ -102,7 +102,7 @@ rules in order (they resolve every resume case unambiguously):
   are idempotent).
 - `status == "pending"` → run the phase.
 
-| state | action | gate | on success → |
+| state | action | gate (HITL) | on success → |
 |-------|--------|------|--------------|
 | `prd` | `ateam-prd` | ✅ | `design` |
 | `design` | `ateam-design` | ✅ | `spec` |
