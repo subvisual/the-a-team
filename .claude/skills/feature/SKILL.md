@@ -1,13 +1,13 @@
 ---
 name: feature
-description: Use when driving a feature prompt to a production-ready PR through PRD, design, spec, issues, and dev phases, or when the user runs /feature or /feature resume — orchestrates the A-Team agentic pipeline over a target repo.
+description: Use when driving a feature prompt to a production-ready PR through discovery, definition, design, spec, issues, and dev phases, or when the user runs /feature or /feature resume — orchestrates the A-Team agentic pipeline over a target repo.
 ---
 
 # feature — A-Team orchestrator
 
 Drives one feature from a prompt to a production-ready PR. You are a **state
 machine on the main thread**. You do not spawn persistent role-agents; you invoke
-role-specific phase skills in sequence, gating at PRD and design.
+role-specific phase skills in sequence, gating at definition and design.
 
 `PLAN.md` and `CONTRACT.md` in the **harness repo** root hold the full design
 rationale. This skill is the executable procedure.
@@ -15,11 +15,13 @@ rationale. This skill is the executable procedure.
 ## Preconditions
 
 - You run as the **interactive main thread**. Gates require a human to answer in
-  the conversation. If there is no human to prompt (e.g. you are a subagent), do
-  not fabricate approval — halt at the gate and report.
-- You have the `ateam-prd`, `ateam-design`, `ateam-spec`, `prd-to-issues`, and
-  `issue-swarm` skills available. If a required phase skill is not available, halt
-  and tell the user to install it — do not hand-simulate it.
+  the conversation, and the `discovery` phase is a grill that cannot complete
+  without one. If there is no human to prompt (e.g. you are a subagent), do not
+  fabricate approval — halt and report.
+- You have the `ateam-discovery`, `ateam-definition`, `ateam-design`,
+  `ateam-spec`, `prd-to-issues`, and `issue-swarm` skills available. If a required
+  phase skill is not available, halt and tell the user to install it — do not
+  hand-simulate it.
 
 ## Invocation
 
@@ -31,6 +33,10 @@ rationale. This skill is the executable procedure.
 `--repo` defaults to the current directory if omitted. `<target>` is the git root
 you operate on.
 
+`ateam-discovery` is also **usable standalone**, without you — a human can invoke
+it directly to seed `docs/product/` before any feature exists. When you later run
+`/feature`, it reviews and extends those jobs rather than re-deriving them.
+
 ## The one rule
 
 **The manifest is the source of truth.** Every step reads `feature.json`, acts,
@@ -38,10 +44,27 @@ then writes `feature.json` back. Never hold state only in your head — if the
 session dies, the next run must reconstruct everything from the manifest.
 
 **Every manifest write is immediately committed** (`git -C <target> add
-docs/features/<slug> && git -C <target> commit -m "<msg>"`), so a hard reset or
-crash can never lose committed state. Commit messages: manifest-only changes use
-`chore(<slug>): <what>` (e.g. `advance to design`); artifact changes use
-`docs(<slug>): <phase>`.
+docs/features/<slug> docs/product && git -C <target> commit -m "<msg>"`), so a
+hard reset or crash can never lose committed state. Commit messages: manifest-only
+changes use `chore(<slug>): <what>` (e.g. `advance to design`); artifact changes
+use `docs(<slug>): <phase>`.
+
+**Stage both artifact layers.** `discovery` writes to `docs/product/`, every other
+phase writes to `docs/features/<slug>/`. Staging only the feature dir silently
+drops the durable artifacts — always `git add` both paths.
+
+## The two artifact layers
+
+```
+<target>/docs/product/           # DURABLE — written by discovery only
+  context.md  jtbd/NN-*.md  PLAN.md  input/<YYYY-MM-DD-label>/
+<target>/docs/features/<slug>/   # PER-FEATURE — everything else
+  feature.json  prd.md  briefs/  design.md  spec.md  issues.md  lofi/
+```
+
+Durable artifacts are cited by feature artifacts and outlive them. You never edit
+them yourself — `ateam-discovery` owns them, and updates in place per the
+superseding rules in `CONTRACT.md`.
 
 ## Git and filesystem mechanics
 
@@ -75,10 +98,11 @@ the user (resume it, or pick a different slug) — never silently overwrite.
      different slug) — never silently overwrite.
    - `git -C <target> checkout -b feature/<slug> <base_branch>` (create the branch
      **before** writing artifacts, so they land on the feature branch).
-   - Create `<target>/docs/features/<slug>/`. Write `feature.json` from the
-     template with `state: "prd"`, all phases `pending`, `attempts: 0`, filling
-     `slug`, `prompt`, `repo`, `base_branch`, `branch`.
-   - `git -C <target> add docs/features/<slug> && git -C <target> commit -m "chore(<slug>): init feature manifest"`.
+   - Create `<target>/docs/features/<slug>/` and `<target>/docs/product/`. Write
+     `feature.json` from the template with `state: "discovery"`, all phases
+     `pending`, `attempts: 0`, filling `slug`, `prompt`, `repo`, `base_branch`,
+     `branch`.
+   - `git -C <target> add docs/features/<slug> docs/product && git -C <target> commit -m "chore(<slug>): init feature manifest"`.
    **Resume:**
    - Read `<target>/docs/features/<slug>/feature.json`. Do not reset anything.
    - Ensure HEAD is on the feature branch: `git -C <target> checkout feature/<slug>`.
@@ -95,7 +119,7 @@ rules in order (they resolve every resume case unambiguously):
   `status`/`attempts`).
 - `status == "approved"` → the gate already passed; advance `state` to the next
   phase and continue. (Handles a crash between "approve" and the state bump.)
-- `status == "complete"` **and phase is gated** (`prd`/`design`) → do **not**
+- `status == "complete"` **and phase is gated** (`definition`/`design`) → do **not**
   re-run; go straight to that phase's gate.
 - `status == "complete"` **and phase is ungated** → advance `state`.
 - `status == "in_progress"` → an interrupted run; re-invoke the phase skill (skills
@@ -104,32 +128,50 @@ rules in order (they resolve every resume case unambiguously):
 
 | state | action | gate (HITL) | on success → |
 |-------|--------|------|--------------|
-| `prd` | `ateam-prd` | ✅ | `design` |
+| `discovery` | `ateam-discovery` | — (grill + in-skill read-back) | `definition` |
+| `definition` | `ateam-definition` | ✅ | `design` |
 | `design` | `ateam-design` | ✅ | `spec` |
 | `spec` | `ateam-spec` | — | `issues` |
 | `issues` | `prd-to-issues` | — | `dev` |
 | `dev` | `issue-swarm` | — | `pr` |
 | `pr` | integrate + open PR | ✅ final review | `done` |
 
-### Running a phase skill (`prd`, `design`, `spec`)
+`discovery` has **no orchestrator gate**. It is a 🔥 grill: the human is present
+throughout and the skill ends with its own read-back of the JTBD set. Adding a
+gate would cost a manifest state and a second approval ritual to guard a document
+the human has just read. Do not add one.
+
+### Running a phase skill (`discovery`, `definition`, `design`, `spec`)
 
 1. (You only reach here for `status` `pending` or `in_progress` — the dispatch
    rules above handle `complete`/`approved`.)
 2. Set `phases.<phase>.status = "in_progress"`, save + commit manifest. (Do **not**
    touch `attempts` here — `attempts` counts failure-retries only, see Failure.)
-3. **Invoke the reserved skill via the Skill tool by name** (`ateam-prd` /
-   `ateam-design` / `ateam-spec`). Pass, in the invocation args, the absolute
-   feature directory path. The skill reads prior artifacts + the manifest and
-   writes its output per `CONTRACT.md`.
+3. **Invoke the reserved skill via the Skill tool by name** (`ateam-discovery` /
+   `ateam-definition` / `ateam-design` / `ateam-spec`). Pass, in the invocation
+   args, **both** absolute paths — the feature directory and the product
+   directory. The skill reads prior artifacts + the manifest and writes its output
+   per `CONTRACT.md`.
 4. On return, re-read the manifest. The skill should have set its own
    `status = "complete"` and written its artifact.
    - Artifact missing OR status not `complete` → treat as **failure** (see below).
+   - **Exception — `discovery` escalation.** If the skill halted for want of a
+     human, it leaves `status = "in_progress"` and writes an `## Awaiting answers`
+     block into `docs/product/context.md`. This is a **defined output, not a
+     failure**: do not bump `attempts`, do not retry. Commit, surface the pending
+     questions to the user, and stop. A later `resume` picks up from there.
 5. Commit the artifact:
-   `git -C <target> add docs/features/<slug> && git -C <target> commit -m "docs(<slug>): <phase>"`.
+   `git -C <target> add docs/features/<slug> docs/product && git -C <target> commit -m "docs(<slug>): <phase>"`.
+   For `discovery`, prefer the skill's own commit message naming what changed and
+   why (e.g. `docs(jtbd): 03 reshaped — contract recovery is the job, not search`);
+   only fall back to `docs(<slug>): discovery` if it left the work uncommitted.
 
-### Gates (`prd`, `design`, `pr`)
+### Gates (`definition`, `design`, `pr`)
 
 Present the artifact inline to the human and wait for one of:
+
+At the `definition` gate, present `prd.md` **together with the JTBD set it scopes
+against** — the PRD's claims are only checkable against the jobs they trace to.
 
 - **approve** → set `phases.<phase>.status = "approved"`, advance `state`, save +
   commit, continue.

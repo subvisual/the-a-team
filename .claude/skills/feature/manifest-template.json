@@ -4,14 +4,15 @@
   "repo": "<target repo path>",
   "base_branch": "main",
   "branch": "feature/<slug>",
-  "state": "prd",
+  "state": "discovery",
   "phases": {
-    "prd":    { "status": "pending", "artifact": "prd.md",    "attempts": 0 },
-    "design": { "status": "pending", "artifact": "design.md", "attempts": 0 },
-    "spec":   { "status": "pending", "artifact": "spec.md",   "attempts": 0 },
-    "issues": { "status": "pending", "artifact": "issues.md", "attempts": 0 },
-    "dev":    { "status": "pending", "attempts": 0, "issues": {} },
-    "pr":     { "status": "pending", "attempts": 0 }
+    "discovery":  { "status": "pending", "artifact": "../../product/jtbd/", "attempts": 0 },
+    "definition": { "status": "pending", "artifact": "prd.md",    "attempts": 0 },
+    "design":     { "status": "pending", "artifact": "design.md", "attempts": 0 },
+    "spec":       { "status": "pending", "artifact": "spec.md",   "attempts": 0 },
+    "issues":     { "status": "pending", "artifact": "issues.md", "attempts": 0 },
+    "dev":        { "status": "pending", "attempts": 0, "issues": {} },
+    "pr":         { "status": "pending", "attempts": 0 }
   },
   "last_error": null
 }

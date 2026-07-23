@@ -8,9 +8,12 @@ description: Use when the A-Team orchestrator invokes the design phase for a fea
 **No-op placeholder.** The real design skill is authored later by a Designer
 against `CONTRACT.md`. This stub only exercises the orchestration wiring.
 
-Given the feature directory `docs/features/<slug>/` and its `feature.json`:
+Given the feature directory `docs/features/<slug>/`, the product directory
+`docs/product/`, and `feature.json`:
 
-1. Read `prd.md`.
+1. Read the **required floor** — `docs/product/context.md` and every file in
+   `docs/product/jtbd/`. Then read `prd.md` and `briefs/` **if present** (optional
+   enrichment; the design phase must still run without them).
 2. Write `design.md` in the feature directory:
    ```markdown
    # Design (stub) — <slug>
