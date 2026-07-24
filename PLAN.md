@@ -53,7 +53,9 @@ artifacts split by lifetime, not by producer:
   docs/product/                 # DURABLE — outlives any one feature
     context.md                  #   digest, glossary, Know/Don't-Know ledger
     jtbd/NN-<slug>.md           #   one file per job — the North Star
-    PLAN.md                     #   deliverables to reach v0 (API research, costs)
+    PLAN.md                     #   the research plan shipped with v0: open questions,
+                                #   assumptions + confidence, technical research
+
     research/<YYYY-MM-DD>-<slug>.md #   append-only synthesis runs (evidence audit)
     input/<YYYY-MM-DD-label>/   #   raw evidence: images, transcripts, Slack, docs
   docs/features/<slug>/         # PER-FEATURE — scoped to one run

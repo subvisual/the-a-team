@@ -37,7 +37,8 @@ Artifacts split by **lifetime**, not by producer.
 docs/product/
   context.md                  # digest, glossary, Know/Don't-Know ledger
   jtbd/NN-<slug>.md           # one file per job
-  PLAN.md                     # deliverables to reach v0
+  PLAN.md                     # the research plan, shipped with v0: open questions,
+                              #   assumptions + confidence, technical research
   research/<YYYY-MM-DD>-<slug>.md  # append-only synthesis runs — the evidence audit trail
   input/<YYYY-MM-DD-label>/   # raw evidence — human-dropped or skill-staged verbatim pulls; never edited
 
@@ -102,8 +103,10 @@ Everything else — especially durable writes and their review step — behaves
     `Know / Don't Know` ledger. Frontmatter tracks which `input/` batches have been
     ingested.
   - `docs/product/jtbd/NN-<slug>.md` — one file per job (template below).
-  - `docs/product/PLAN.md` — deliverables to reach v0 (API research, integration
-    costs), seeded from surviving non-blocking unknowns.
+  - `docs/product/PLAN.md` — the **research plan that ships with the v0**:
+    open questions, assumptions made by agents/humans with confidence levels,
+    and technical research (services, stack, integration costs) — seeded from
+    surviving non-blocking unknowns and kept live through later phases.
 - **Process shape**: `challenge → research → straw-man → grill → read-back → write`.
 - **Termination**: the blocking set of the `Know / Don't Know` ledger is empty, or
   the human stops it. A question is only asked if its answer changes an artifact.
