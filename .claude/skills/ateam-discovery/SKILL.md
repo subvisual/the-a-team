@@ -58,7 +58,12 @@ recorded. Hold the answers; they're written at the handoff.
   **`research-synthesis`** craft — themes, contradictions, verdicts against
   any existing jobs, new-job signals — as a drafted `research/` run.
 - **Seed the ledger from the `intake/` banks** (`design-intake.md`,
-  `dev-intake.md`), each entry tagged `[design]` / `[dev]` / `[pm]`.
+  `dev-intake.md`), each entry tagged `[design]` / `[dev]` / `[pm]`. The
+  design bank includes the **design briefing** (migrated from
+  teach-impeccable): on a project's first run, its answers synthesize into
+  `context.md`'s `## Design context` section (users & emotional goals, brand
+  personality, aesthetic direction with references and anti-references,
+  accessibility, 3–5 design principles); later runs ask only deltas.
 - Read the target repo enough to ground technical unknowns (stack, existing
   screens) — grounding, not a code audit.
 
