@@ -114,6 +114,7 @@ Everything else — especially durable writes and their review step — behaves
 id: 03
 slug: recover-a-mis-filed-contract
 status: active            # active | superseded | parked
+confidence: directional   # strong | moderate | directional | hypothesis
 sources: [granola-2026-07-17, sketch-03.png]
 ---
 
@@ -124,6 +125,9 @@ Who, when, how often. What triggers it.
 
 ## Today
 How it's solved now, and what that costs.
+
+## Forces
+Push / pull / anxiety / inertia — the demand evidence the statement rests on.
 
 ## Success
 Observable signal the job is done well.
@@ -144,6 +148,12 @@ Load-bearing:
   the agent was told versus what it inferred.
 - **`status` + `supersedes` are the breadcrumb.** Reshaped jobs flip status and
   point forward; they are not deleted.
+- **`confidence` is stamped honestly.** A job built from assertions alone is a
+  `hypothesis`; downstream consumers must see how much weight a job can bear
+  before building on it.
+- **Parked candidates are real files.** Triage writes each unpursued struggle as
+  `status: parked` holding only a draft headline and open questions — nothing
+  invented — so no candidate evaporates with a conversation.
 
 ### `ateam-definition` — 📝 draft + review
 
