@@ -38,7 +38,7 @@ docs/product/
   context.md                  # digest, glossary, Know/Don't-Know ledger
   jtbd/NN-<slug>.md           # one file per job
   PLAN.md                     # deliverables to reach v0
-  input/<YYYY-MM-DD-label>/   # raw evidence — human-provided, never written by a skill
+  input/<YYYY-MM-DD-label>/   # raw evidence — human-dropped or skill-staged verbatim pulls; never edited
 
 docs/features/<slug>/
   feature.json                # orchestrator state
@@ -58,7 +58,11 @@ docs/features/<slug>/
   JTBDs by id, so ids must resolve stably forever.
 - **Never write one without human review in the same session.** A durable artifact
   written unreviewed pollutes every future feature.
-- **`input/` is read-only to skills.** Humans put evidence there; skills ingest it.
+- **`input/` is append-only evidence.** Humans drop evidence there. A skill may
+  **stage** a verbatim connector pull (Notion, Granola, Slack, ops API) as a new
+  clearly-labeled batch — `input/<YYYY-MM-DD>-<source>-pulled/` — so the audit
+  trail survives the source changing or vanishing. A skill never edits, deletes,
+  or summarizes-in-place an existing batch; digests belong in `context.md`.
 
 ## Environment given to every phase skill
 
@@ -106,6 +110,32 @@ Everything else — especially durable writes and their review step — behaves
   writing durable files. This is in-conversation, not an orchestrator gate.
 - **Done-signal**: set `phases.discovery.status = "complete"`. No gate — the
   orchestrator advances to `definition`.
+
+#### context.md template — the canonical shape
+
+```markdown
+---
+project: <name>
+updated: <YYYY-MM-DD>
+ingested: [2026-07-17-client-call, 2026-07-24-granola-pulled]  # digested input/ batches
+---
+
+# Context: <project name>
+
+## Overview            # what/why, audience, stage, goals, constraints, key links;
+                       # jobs cited by id, headline quoted exactly — never paraphrased
+## Digest              # per ingested batch: what the evidence says, pointers into input/
+## Glossary            # term | working definition | status (settled/forming/TBD) | source
+## Know / Don't know   # Don't-Knows tagged blocking (naming what they block) or non-blocking
+## Awaiting answers    # present only while an escalation is open
+```
+
+Full annotated template: the `project-context` skill's
+`references/context-template.md`. Load-bearing: refresh-never-rebuild (a refresh
+that drops content is a forbidden overwrite); TBD stays visible, never smoothed
+into prose; renamed glossary terms are never deleted; the ledger's **blocking**
+set is the grill's termination condition — non-blocking unknowns flow to
+`PLAN.md`.
 
 #### JTBD template — this is the contract design couples to
 
