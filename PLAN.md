@@ -21,7 +21,7 @@ wins.
   project from the context layer, which is what keeps them project-agnostic.
 - **Breadcrumbed / versioned.** Every agent documents its process as internal
   deliverables — rewind to any step, see the options and why.
-- **Approval gates.** Nothing passes a stage until a human validates.
+- **Approval gates.** The approval gates should be at each Agent handoff stage to the other, theres a optional HITL moment on that handoff.
 - **Agents behave like juniors.** They do real work; an adult validates and refines.
 - **Humans fix the agents and the process — not the final outputs.**
 - **Scoped for ambitious 0→1 work.** Prototype a new product or feature, not small
@@ -117,7 +117,7 @@ these two are different modes:
 - **`ateam-discovery` — 🔥 grill.** Cannot proceed without the human. Produces
   `context.md`, the JTBD set, and `PLAN.md`.
 - **`ateam-definition` — 📝 draft + review.** Derives from approved JTBDs.
-  Produces `prd.md`, wireflow + page briefs, and the ticket backlog.
+  Produces `prd.md`, wireflow + page briefs, and the Epics.
 
 The split line is where the *conversation* splits, not where the files split:
 `context.md`, JTBDs, and `PLAN.md` all fall out of one grill, so they ship
