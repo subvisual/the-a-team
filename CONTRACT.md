@@ -18,7 +18,9 @@ care about a skill's internals. Reserved names:
 | Design spec | `ateam-spec` | 🚀 autonomous | no |
 
 The `issues`, `dev`, and `pr` phases are owned by the harness (reuse of
-`prd-to-issues` / `issue-swarm` + PR glue) and are not authored via this contract.
+`prd-to-issues` / `issue-swarm` + PR glue, with `ticket-writer` enriching
+`issues.md` acceptance criteria after decomposition) and are not authored via
+this contract.
 
 Every skill **declares exactly one interaction mode** in its SKILL.md. Mixed modes
 are a contract violation: the human cannot tell whether the agent is waiting or
