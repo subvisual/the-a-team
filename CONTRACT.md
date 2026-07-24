@@ -1,5 +1,9 @@
 # Phase Skill Contract
 
+This document is **canonical**: trees and templates are mirrored in `PLAN.md`
+and in skill references for convenience — where any copy disagrees, this file
+wins, and the disagreement is a bug to fix in the copy.
+
 This document is the interface between the orchestrator and the pluggable phase
 skills. A PM or Designer authoring an `ateam-*` skill implements against this
 contract. If your skill honors it, it is drop-in — the orchestrator does not need
@@ -40,6 +44,8 @@ docs/product/
   context.md                  # digest, glossary, Know/Don't-Know ledger
   jtbd/NN-<slug>.md           # one file per job
   epics/NN-<slug>.md          # one file per epic — durable delivery structures, same lifecycle rules
+                              # Citation syntax: bare [[NN]] / [[NN-slug]] ALWAYS cites a job;
+                              # epics cite as [[epic:NN]] (any future durable class gets a prefix)
   PLAN.md                     # the product team's plan: goals + deliverables to reach v0
   research-plan.md            # ships with v0: open questions, assumptions + confidence,
                               #   technical research (services, stack, integration costs)
@@ -185,7 +191,7 @@ confidence: directional   # strong | moderate | directional | hypothesis
 sources: [granola-2026-07-17, sketch-03.png]
 ---
 
-# When <situation>, I want <motivation>, so I can <outcome>.
+# When <situation>, I want <progress>, so I can <outcome>.
 
 ## Context
 Who, when, how often. What triggers it.
@@ -273,6 +279,19 @@ Load-bearing:
 ## Rules for all phase skills
 
 - **Write only to your declared output path(s).** Do not touch other phases' artifacts.
+  **One standing exception — the assumption ledger**: any phase skill may
+  **append** new entries to `docs/product/research-plan.md`'s `## Assumptions`
+  and `## Open questions` sections (never edit or delete existing ones), each
+  entry tagged with the writing phase — e.g. `· [design phase]` — and carrying
+  a confidence level. This is the mechanism behind the independence promise:
+  assumptions made while no human is present must land there, not in a report
+  that scrolls away.
+- **Report blocking flags loudly.** Your return report must surface, as a
+  distinct list, every blocking flag your run produced: "serves an unlisted
+  job?" signals, `TBD`s inside committed (Must) scope, failed self-checks,
+  qualitative criteria that need a human run. The orchestrator's provisional
+  gates depend on this list being honest — an empty flags list is a claim,
+  not a default.
 - **Only set your own phase's `status` field** in the manifest. The orchestrator owns
   everything else (state transitions, approvals, attempts, errors). One
   exception: `ateam-discovery` also writes `gate_policy` and `run_brief` —

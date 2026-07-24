@@ -91,7 +91,8 @@ not silently fixed).
 5. **Batch mode specifics**: one primary outcome and one primary job per
    ticket; sibling dependencies explicit ("blocks" / "depends on"); batch
    ordered so the dependency chain is obvious. Note the epic each ticket
-   belongs to (`[[epic NN]]`) when epics exist. Continue to step 7.
+   belongs to (`[[epic:NN]]` — bare `[[NN]]` always cites a job) when epics
+   exist. Continue to step 7.
 6. **AC-only mode** (`references/acceptance_criteria_template.md`): parse the
    source into the primary job (preserved, or `TBD`), discrete user outcomes,
    and failure paths. State preconditions; tie edge cases to the constraints

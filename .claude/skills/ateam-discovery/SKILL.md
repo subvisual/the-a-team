@@ -18,6 +18,14 @@ prompt, the human, `docs/product/`, and the target repo.
 Interaction mode: 🔥 **grill** — one question at a time, each with your
 recommended answer, never asked unless its answer changes an artifact.
 
+**Load discipline — conduct lazily.** Do not preload all five craft skills.
+Load each skill at the movement that needs it, and its references only when
+that movement actually uses them (e.g. jobs-to-be-done's interview guide at
+the straw-man/grill, not at the challenge). On re-invocation, prefer each
+skill's summary sections over full reference re-reads. The grill is the
+conversation that must not lose nuance to context pressure — spend context on
+the human's answers, not on eager loading.
+
 ## Contract (CONTRACT.md is authoritative)
 
 - **Reads**: the feature `prompt` (manifest or invocation args);
@@ -40,6 +48,13 @@ request even make sense?* Go / no-go / reshape — you are explicitly allowed to
 say "this doesn't make sense" or "this should change," with reasons. Skip when
 the prompt already carries a clear problem statement. Cap it: a few exchanges,
 not a session.
+
+**Scope guardrail (board):** the A-Team is for **ambitious 0→1 work** — not
+small tickets or vague chores. If the prompt is ticket-sized (one concrete
+change, no new user-facing capability, definable in a single work item), say
+so plainly and route out — `ticket-writer` or the building skills — instead of
+running the pipeline. Minting durable jobs for a chore pollutes the North
+Star.
 
 ### 2. Run brief (in the same beat)
 
