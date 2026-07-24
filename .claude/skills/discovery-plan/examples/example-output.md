@@ -1,4 +1,6 @@
-# Example Output: docs/product/PLAN.md
+# Example Output: the two plans, written together
+
+## docs/product/PLAN.md
 
 ```markdown
 ---
@@ -8,23 +10,56 @@ evidence: [research/2026-07-20-triage-trust]
 
 # Plan: AI-assisted ticket triage
 
-## Objective
+## Goals
 
-Decide whether to proceed with AI-assisted triage to a Q3 pilot. The v0 must
-prove that auditable priority guidance fits the support team's real queue flow.
+- Prove that auditable priority guidance fits the support team's real queue
+  flow — serves [[01-focus-on-urgent-cases]] ("When support teams triage a new
+  queue of incoming tickets, I want reliable priority guidance, so I can focus
+  attention on the most urgent cases without re-sorting everything manually.")
+- Reach a defensible Q3 pilot go/no-go decision.
+
+## Deliverables to reach v0
+
+- Clickable triage v0 with rationale UI · demonstrates the auditability bet ·
+  unblocks agent usability interviews.
+- Offline model evaluation on anonymized historical tickets · resolves the
+  precision question (research-plan) · unblocks the pilot gate.
+- Compliance answer on model-bound ticket data · resolves the PII question
+  (research-plan) · unblocks vendor choice.
+- Pilot recommendation with evidence summary.
+
+## Initiatives
+
+1. Baseline model evaluation — owner: dev agent, week 1.
+2. Compliance review — owner: Ops, week 1.
+3. Prototype + agent interviews — owner: PM + UX, week 2.
+
+## Decision criteria
+
+- Pilot go/no-go: precision + auditability thresholds met without violating
+  compliance constraints.
+
+## Status
+
+Discovery complete; evaluation and compliance review not started.
+```
+
+## docs/product/research-plan.md
+
+```markdown
+---
+updated: 2026-07-24
+evidence: [research/2026-07-20-triage-trust]
+---
+
+# Research plan: AI-assisted ticket triage
 
 ## Evidence spine
 
 - `research/2026-07-20-triage-trust` — job 01 **supports**: the triage struggle
   is confirmed; auditability shapes the solution, not the job. Open
-  contradiction: newer agents want automation, experienced agents want override
-  control first.
-
-## Jobs
-
-- [[01-focus-on-urgent-cases]] — "When support teams triage a new queue of
-  incoming tickets, I want reliable priority guidance, so I can focus attention
-  on the most urgent cases without re-sorting everything manually."
+  contradiction: newer agents want automation, experienced agents want
+  override control first.
 
 ## Open questions
 
@@ -54,22 +89,11 @@ prove that auditable priority guidance fits the support team's real queue flow.
 
 ## Research activities
 
-- Offline evaluation on anonymized historical tickets → precision question
-  (owner: dev agent, week 1).
-- Compliance review with legal/security → PII question (owner: Ops, week 1).
-- Agent usability interviews with the clickable v0 → trust + handling-time
-  questions (owner: PM + UX, week 2).
-
-## Initiatives & decision criteria
-
-- Baseline model evaluation complete → gate: ≥85% precision.
-- Compliance constraints approved → gate: legal sign-off on data flow.
-- Pilot go/no-go → criteria: precision + auditability thresholds met without
-  violating compliance constraints.
-
-## Deliverables
-
-- Pilot recommendation with evidence summary and open compliance blockers.
+- Precision question → offline evaluation on anonymized historical tickets →
+  dev agent → week 1.
+- PII question → compliance review with legal/security → Ops → week 1.
+- Trust + handling-time questions → agent interviews with the clickable v0 →
+  PM + UX → week 2.
 ```
 
 ## Next likely skill(s)
@@ -79,10 +103,10 @@ prove that auditable priority guidance fits the support team's real queue flow.
 
 ## What to pass forward
 
-- Objective, job 01, the two assumptions with confidence, open compliance
+- Goals, job 01, the two assumptions with confidence, open compliance
   questions, target pilot timing.
 
 ## Suggested next prompts
 
 - "Map the assisted-triage journey as a wireflow."
-- "Create a feature-level PRD from this plan."
+- "Create a feature-level PRD from these plans."

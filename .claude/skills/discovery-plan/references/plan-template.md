@@ -1,10 +1,14 @@
-# PLAN.md template — the research plan
+# PLAN.md template — the product team's plan
 
-`docs/product/PLAN.md` is the research document that **ships with the v0**: what
-we still don't know, what the agents assumed and how confident they were, and
-the technical research behind the build (services, stack, integration costs).
-It is a durable artifact — update-only, read-back before every write, never
-silently rebuilt.
+`docs/product/PLAN.md` is for the **product team to understand the goals and
+deliverables**: what we are trying to achieve and what must exist to reach v0.
+It is not the research plan — open questions, assumptions, and technical
+research live in `research-plan.md` (see
+`references/research-plan-template.md`). The two are written together by the
+discovery-plan skill so they cannot drift.
+
+Durable artifact: update-only, read-back before every write, never silently
+rebuilt.
 
 ```markdown
 ---
@@ -14,52 +18,30 @@ evidence: [research/2026-07-24-onboarding]   # synthesis runs this plan stands o
 
 # Plan: <project / feature area>
 
-## Objective
+## Goals
 
-What decision(s) this plan needs to enable, and what the v0 must prove.
+What we are trying to achieve, and for whom. Each goal traces to the job(s) it
+serves — `[[NN-<slug>]]` with verbatim headlines. A goal that traces to no job
+is a solution looking for a problem: flag it, don't bury it.
 
-## Evidence spine
+## Deliverables to reach v0
 
-Cited, not duplicated: the research/ runs this plan stands on, each with a
-one-line verdict summary (which jobs stand on solid ground, which need work).
-Full themes/contradictions live in the research files.
+What must exist for the v0 to be real, one line each: the deliverable · why it
+matters · what it unblocks. Includes artifact deliverables (prototype, PRD,
+briefs) and resolution deliverables ("compliance answer on ticket data" — the
+work of closing an unknown, tracked as a question in research-plan.md).
 
-## Jobs
+## Initiatives
 
-JTBD ids + verbatim headlines only. A job that is unclear, contested, or newly
-suggested is `TBD` with a routing note — resolving it via jobs-to-be-done is
-itself a discovery activity. Never derive a job here.
+The deliverables grouped into workstreams, ordered by what most directly
+unlocks the jobs first — if the ordering differs from job logic, say why.
+Owner (human or agent) and target date per initiative.
 
-## Open questions
+## Decision criteria
 
-What ships unresolved with the v0 — the ledger's surviving unknowns, including
-questions raised by challenges/refinement verdicts. Each tagged with what it
-would change if answered.
+The go/no-go gates the product team steers by: initiative → gate → criterion.
 
-## Assumptions
+## Status
 
-Every assumption the agents (or humans) are building on, one line each:
-the assumption · confidence (strong / moderate / directional / hypothesis) ·
-what would disprove it · the cheapest probe. Later phases append here — the
-plan stays live as design and dev surface new assumptions.
-
-## Technical research
-
-Services, tech stack, and integrations: the options considered, what each
-costs (money, effort, risk), and what was chosen or still open. This is the
-"cost breakdown of every integration the client mentioned" — the genuinely
-useful, non-obvious output.
-
-## Research activities
-
-Question → activity → owner (human or agent) → date.
-
-## Initiatives & decision criteria
-
-The go/no-go structure: initiatives with their gates, and the criteria that
-decide them.
-
-## Deliverables
-
-What must exist to reach v0.
+One honest paragraph: where we are against this plan, updated each run.
 ```
