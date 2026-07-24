@@ -18,6 +18,7 @@ pending).
 | `product-brainstorming` | Sharp product thinking partner, 4 modes: problem exploration, solution ideation, assumption testing, strategy exploration. No artifact of its own — assumptions + open questions (with confidence) route to the context.md ledger, candidate jobs to `jobs-to-be-done`. | Discovery — the challenge/context-exploration beat ("does this request even make sense?"). | ported |
 | `discovery-plan` | Compiles the ledger, syntheses, and jobs into TWO durable artifacts in one pass: `PLAN.md` (the product team's plan — job-traced goals, deliverables to reach v0, initiatives, decision criteria) and `research-plan.md` (ships with the v0 — open questions, assumptions + confidence + cheapest probes, technical research: services, stack, integration costs). Re-runnable at any phase to keep both live. | Discovery exit — why stopping discovery loses nothing. | ported |
 | `prd-writer` | Feature-level PRD at `docs/features/<slug>/prd.md`: problem, evidence (cited), jobs in scope, user stories grouped by JTBD id, MoSCoW (all four, every item job-traced, Must ≤~60%), requirement-level acceptance criteria, decision log. Presented at the definition gate with the jobs it scopes against. | Definition — the product feature doc every ticket rolls up to. | ported |
+| `wireflow` | Maps journeys into JTBD-anchored swimlane flows (screens, decisions, system/agent nodes — no deep UI) with a verified generate→rasterize→Read build engine; horizontal or matrix layouts; FigJam rebuild optional. Output: `briefs/wireflow/` (board.json spec + HTML/SVG). Pipeline mode derives method decisions and headlines journey set + spine at the gate; standalone runs the full grill. | Definition — journeys → pages; owns where each job enters a screen. | ported |
 | `ateam-definition` | Placeholder: writes a stub `prd.md` + `briefs/`, sets its manifest status. | Definition phase slot — to be replaced by a wrapper over the ported definition skills. | stub |
 | `ateam-design` | Placeholder: writes a stub `design.md` + lo-fi dir, sets its manifest status. | Design phase slot — Design-authored later. | stub |
 | `ateam-spec` | Placeholder: writes a stub `spec.md`, sets its manifest status. | Design-spec phase slot — Design-authored later. | stub |
@@ -27,7 +28,6 @@ pending).
 
 | Skill | What it will do | Pipeline position |
 |---|---|---|
-| `wireflow` | Wireflow of the feature's screens and flows, into `briefs/`. | Definition |
 | `page-brief` | Per-screen requirement briefs, into `briefs/`. | Definition |
 | `epics` | Slim epic-definition skill (cherry-picked from roadmap-writer — the rest of it stays out). | Definition |
 | `ticket-writer` | Agent-consumable, implementation-ready tickets with testable acceptance criteria. | Dev boundary |
