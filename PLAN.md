@@ -257,6 +257,13 @@ needed yet.
   "base_branch": "main",
   "branch": "feature/saved-searches",
   "state": "definition",
+  "gate_policy": "block",
+  "run_brief": {
+    "purpose": "validate the flow with real users",
+    "fidelity": "lofi",
+    "timebox": "one afternoon",
+    "done_looks_like": "a clickable v0 behind a shared link"
+  },
   "phases": {
     "discovery":  { "status": "complete",    "artifact": "../../product/jtbd/", "attempts": 1 },
     "definition": { "status": "in_progress", "artifact": "prd.md",     "attempts": 1 },
