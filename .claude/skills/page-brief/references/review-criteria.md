@@ -8,7 +8,8 @@ failures as concrete, prioritized findings with fixes. Be specific, not a rubber
       "one place to work my leads"). See Q13.
 - [ ] Each job follows `When [situation], I want [motivation], so I can [outcome]` — and motivation is
       not just the outcome restated.
-- [ ] Each job is **attached to a persona**. One flat list owned by "the product" is a smell.
+- [ ] Each job is **attached to an actor-in-situation** (the `persona` field: who is struggling,
+  in what moment — not a demographic profile). One flat list owned by "the product" is a smell.
 - [ ] The board came through the pipeline (jobs → journeys → wireflow), not straight into page specs.
 
 **If this section fails, say so before critiquing the cards.** Thin cards on weak jobs are a symptom;
