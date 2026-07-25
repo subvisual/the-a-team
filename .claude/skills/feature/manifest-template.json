@@ -5,6 +5,13 @@
   "base_branch": "main",
   "branch": "feature/<slug>",
   "state": "discovery",
+  "gate_policy": "block",
+  "run_brief": {
+    "purpose": null,
+    "fidelity": null,
+    "timebox": null,
+    "done_looks_like": null
+  },
   "phases": {
     "discovery":  { "status": "pending", "artifact": "../../product/jtbd/", "attempts": 0 },
     "definition": { "status": "pending", "artifact": "prd.md",    "attempts": 0 },

@@ -7,7 +7,8 @@ description: Use when driving a feature prompt to a production-ready PR through 
 
 Drives one feature from a prompt to a production-ready PR. You are a **state
 machine on the main thread**. You do not spawn persistent role-agents; you invoke
-role-specific phase skills in sequence, gating at definition and design.
+role-specific phase skills in sequence, gating at definition, design, and pr
+(dispatched per `gate_policy`; the final pr review always blocks).
 
 `PLAN.md` and `CONTRACT.md` in the **harness repo** root hold the full design
 rationale. This skill is the executable procedure.
@@ -149,9 +150,10 @@ the human has just read. Do not add one.
    touch `attempts` here — `attempts` counts failure-retries only, see Failure.)
 3. **Invoke the reserved skill via the Skill tool by name** (`ateam-discovery` /
    `ateam-definition` / `ateam-design` / `ateam-spec`). Pass, in the invocation
-   args, **both** absolute paths — the feature directory and the product
-   directory. The skill reads prior artifacts + the manifest and writes its output
-   per `CONTRACT.md`.
+   args, **three** absolute paths — the feature directory, the product
+   directory, and the harness `intake/` directory (this skill lives in the
+   harness repo; `intake/` sits at its root). The skill reads prior artifacts +
+   the manifest and writes its output per `CONTRACT.md`.
 4. On return, re-read the manifest. The skill should have set its own
    `status = "complete"` and written its artifact.
    - Artifact missing OR status not `complete` → treat as **failure** (see below).
@@ -168,15 +170,36 @@ the human has just read. Do not add one.
 
 ### Gates (`definition`, `design`, `pr`)
 
-Present the artifact inline to the human and wait for one of:
+Gate behavior is governed by `manifest.gate_policy` — chosen by the **human**
+during discovery's independence handoff (never by an agent), default `"block"`:
 
-At the `definition` gate, present `prd.md` **together with the JTBD set it scopes
-against** — the PRD's claims are only checkable against the jobs they trace to.
+- **`block`** (default) — the safety valve. Present the artifact inline and
+  wait for approve / revise / abort (below).
+- **`notify-and-continue`** — do not wait: set
+  `phases.<phase>.status = "approved"` with `"provisional": true`, emit a
+  checkpoint summary (what was produced, the riskiest calls, where assumptions
+  landed in `research-plan.md`), commit, continue. The returning human reviews
+  provisional phases at the next blocking moment (or on `resume`): accepting
+  clears the flag; requesting changes triggers the revise flow below, and
+  downstream phases re-run from there.
+- **`run-to-pr`** — lunch mode: same provisional mechanics at every gate; the
+  **final `pr` review always blocks** regardless of policy.
+
+On `resume`, if any phase carries `"provisional": true`, present those
+artifacts for review **before** continuing past the next gate.
+
+At the `definition` gate (blocking or checkpoint), present `prd.md` **together
+with the JTBD set it scopes against** — the PRD's claims are only checkable
+against the jobs they trace to.
+
+Blocking-gate responses:
 
 - **approve** → set `phases.<phase>.status = "approved"`, advance `state`, save +
   commit, continue.
 - **revise** → re-invoke the phase skill with the human's notes appended to its
   args. Loop the gate. Revisions **do not** touch `attempts` (they are not failures).
+  Revising an already-passed (provisional) phase additionally resets every
+  downstream phase to `pending` — they re-derive from the revised artifact.
 - **abort** → set `state = "aborted"`, save + commit, stop. Leave all artifacts. No cleanup.
 
 Gates block within the session. Because the manifest persists (and status is
@@ -273,6 +296,12 @@ See `manifest-template.json` in this skill directory. Status vocabulary:
 `pending → in_progress → complete → approved | failed | aborted`.
 Phase skills only ever set `complete`. You (the orchestrator) own `approved`,
 `failed` escalation, `aborted`, all `state` transitions, and `attempts`.
+
+`gate_policy` and `run_brief` are written **once by `ateam-discovery`** from
+the human's answers at the independence handoff (default `gate_policy:
+"block"` when unset). You read them — gates dispatch on `gate_policy`; phases
+may read `run_brief` (design reads fidelity, dev reads purpose). Never change
+either without an explicit human instruction in the conversation.
 
 ## Concurrency
 

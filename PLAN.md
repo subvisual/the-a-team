@@ -33,7 +33,7 @@ wins.
 |------|----------|
 | Execution substrate | Claude Code subagents. *Future: explore Claude Agent SDK for durable autonomous runs.* |
 | Orchestrator shape | State machine on the main thread. No persistent role-agents (avoids subagent-nesting limits). |
-| Human gates | Gate definition and design only. Discovery self-terminates via in-skill read-back; spec, issues, dev run automatically. |
+| Human gates | Gate definition, design, and pr — dispatched per human-chosen `gate_policy` (block default / notify-and-continue / run-to-pr). Discovery self-terminates via in-skill read-back + independence handoff; spec, issues, dev run automatically. |
 | Skill strategy | Reuse existing dev skills. PM/Design skills authored against a fixed contract. |
 | Handoff contract | `feature.json` manifest for state + markdown files for deliverables. |
 | Target codebase | Harness-only; operates on a target repo passed as a parameter. |
@@ -155,12 +155,21 @@ as reading the synthesis those answers produced, and the synthesis is where jobs
 get subtly mis-stated.
 
 Formal gates are state transitions with resume semantics, and fire at
-`definition`, `design`, and `pr`. The orchestrator presents the artifact inline
-and waits for one of:
+`definition`, `design`, and `pr`. How they fire is governed by a
+**`gate_policy`** the human chooses at discovery's independence handoff
+(default `block` — the safety valve stays shut unless the human opens it):
 
-- **approve** — flip manifest status, continue to next phase in the same session.
-- **revise** — re-invoke the phase skill with the human's notes appended; loop until approved.
-- **abort** — mark manifest `aborted`, leave artifacts in place (no auto-cleanup), stop.
+- **`block`** — the orchestrator presents the artifact inline and waits for one of:
+  - **approve** — flip manifest status, continue to next phase in the same session.
+  - **revise** — re-invoke the phase skill with the human's notes appended; loop until approved.
+  - **abort** — mark manifest `aborted`, leave artifacts in place (no auto-cleanup), stop.
+- **`notify-and-continue`** — gates become logged provisional checkpoints; the
+  run continues; the returning human reviews provisional phases (revising one
+  re-runs everything downstream of it). Assumptions made without the human land
+  in `research-plan.md` with confidence levels — independence is deferred,
+  auditable oversight, not no oversight.
+- **`run-to-pr`** — lunch mode: provisional checkpoints all the way; the final
+  PR review always blocks.
 
 Gates block within a session; the manifest makes them resumable across sessions.
 
@@ -248,6 +257,13 @@ needed yet.
   "base_branch": "main",
   "branch": "feature/saved-searches",
   "state": "definition",
+  "gate_policy": "block",
+  "run_brief": {
+    "purpose": "validate the flow with real users",
+    "fidelity": "lofi",
+    "timebox": "one afternoon",
+    "done_looks_like": "a clickable v0 behind a shared link"
+  },
   "phases": {
     "discovery":  { "status": "complete",    "artifact": "../../product/jtbd/", "attempts": 1 },
     "definition": { "status": "in_progress", "artifact": "prd.md",     "attempts": 1 },

@@ -13,8 +13,8 @@ care about a skill's internals. Reserved names:
 | Phase | Reserved skill name | Interaction mode | Gated |
 |-------|---------------------|------------------|-------|
 | Discovery | `ateam-discovery` | 🔥 grill | no — in-skill read-back |
-| Definition | `ateam-definition` | 📝 draft + review | yes (human approves before design) |
-| Design | `ateam-design` | 📝 draft + review | yes (human approves before spec) |
+| Definition | `ateam-definition` | 📝 draft + review | yes — per `gate_policy` (approval before design; provisional under notify-and-continue) |
+| Design | `ateam-design` | 📝 draft + review | yes — per `gate_policy` (approval before spec; provisional under notify-and-continue) |
 | Design spec | `ateam-spec` | 🚀 autonomous | no |
 
 The `issues`, `dev`, and `pr` phases are owned by the harness (reuse of
@@ -78,8 +78,11 @@ The orchestrator sets working context before invoking a phase skill:
 - **Feature directory**: `docs/features/<slug>/`.
 - **Product directory**: `docs/product/`.
 - **Manifest**: `feature.json` in the feature directory. Read it for `slug`,
-  `prompt`, `repo`, `base_branch`. Do not hand-edit fields other than your own
-  phase entry (see "done-signal").
+  `prompt`, `repo`, `base_branch` — and, when set, `gate_policy` and
+  `run_brief` (design reads `fidelity`, dev reads `purpose`). Do not hand-edit
+  fields other than your own phase entry (see "done-signal").
+- **Role intake banks**: the harness repo's `intake/` directory — absolute path
+  passed at invocation. Rubric pre-work each role skill reads at run start.
 - **Target config**: the target repo's `CLAUDE.md`, including the `## A-Team Config`
   block (test command, base branch, design-system path, package manager).
 - **Revision notes** (on a `revise` gate loop): the human's feedback is appended to
@@ -101,7 +104,9 @@ Everything else — especially durable writes and their review step — behaves
 ### `ateam-discovery` — 🔥 grill
 
 - **May read**: the feature `prompt` (manifest or args); `docs/product/` in full;
-  `docs/product/input/**`; the target repo.
+  `docs/product/input/**`; the target repo; the harness repo's `intake/` banks
+  (`design-intake.md`, `dev-intake.md` — authored by the role owners as rubric
+  pre-work).
 - **Must write**:
   - `docs/product/context.md` — digest of raw input, glossary, and the
     `Know / Don't Know` ledger. Frontmatter tracks which `input/` batches have been
@@ -115,11 +120,31 @@ Everything else — especially durable writes and their review step — behaves
     levels, and technical research (services, stack, integration costs) —
     seeded from surviving non-blocking unknowns. Both plans are written
     together (one compile step) and kept live through later phases.
-- **Process shape**: `challenge → research → straw-man → grill → read-back → write`.
+- **Process shape**: `challenge (+ run brief) → research → straw-man → grill →
+  read-back → independence handoff → write`.
+- **Run brief**: during the challenge beat, capture how the human wants the
+  A-Team to run — purpose (throwaway concept / client-facing v0 / seed of
+  production), fidelity expectation, timebox, what "done" looks like — as 3–5
+  questions, stored in the manifest's `run_brief`. Durable per-project defaults
+  may live in `context.md` so repeat runs don't re-ask.
+- **Intake routing**: seed the ledger from the `intake/` banks, each entry
+  tagged with its consumer role (`[design]` / `[dev]` / `[pm]`), then route by
+  **answerability**: blocking + answerable by this human → asked in the grill;
+  blocking but not answerable by this human → a research activity in
+  `research-plan.md` (never a wasted question); non-blocking → stays in the
+  ledger. The grill never asks a bank question raw.
 - **Termination**: the blocking set of the `Know / Don't Know` ledger is empty, or
   the human stops it. A question is only asked if its answer changes an artifact.
 - **Read-back is mandatory**: present the drafted JTBD set for correction before
   writing durable files. This is in-conversation, not an orchestrator gate.
+- **Independence handoff**: after the read-back, present how the run will
+  proceed and have the **human** choose the `gate_policy` — `block` (default;
+  wait at every gate) / `notify-and-continue` (gates become logged provisional
+  checkpoints, reviewed on return) / `run-to-pr` (only the final PR review
+  blocks). Write `gate_policy` + `run_brief` to the manifest. The agent never
+  chooses the policy; absent an answer, `block` stands. State explicitly:
+  "assumptions made after you leave land in `research-plan.md` with confidence
+  levels."
 - **Done-signal**: set `phases.discovery.status = "complete"`. No gate — the
   orchestrator advances to `definition`.
 
@@ -138,7 +163,8 @@ ingested: [2026-07-17-client-call, 2026-07-24-granola-pulled]  # digested input/
                        # jobs cited by id, headline quoted exactly — never paraphrased
 ## Digest              # per ingested batch: what the evidence says, pointers into input/
 ## Glossary            # term | working definition | status (settled/forming/TBD) | source
-## Know / Don't know   # Don't-Knows tagged blocking (naming what they block) or non-blocking
+## Know / Don't know   # Don't-Knows tagged blocking (naming what they block) or non-blocking,
+                       #   plus a consumer tag ([pm] | [design] | [dev]) when a role's intake seeded it
 ## Awaiting answers    # present only while an escalation is open
 ```
 
@@ -215,7 +241,8 @@ Load-bearing:
 
 - **May read**: `docs/product/context.md` + `docs/product/jtbd/**` (**required
   floor**); `prd.md` and `briefs/` (**optional** — consume when present); the
-  target repo's design system (path from A-Team Config).
+  target repo's design system (path from A-Team Config); the manifest's
+  `run_brief` (`fidelity` calibrates how deep the lo-fi goes).
 - **Must write**:
   - `design.md` in the feature directory — IA, user flows, screen/layout
     direction, visual approach, and the options considered with reasoning.
@@ -246,7 +273,9 @@ Load-bearing:
 
 - **Write only to your declared output path(s).** Do not touch other phases' artifacts.
 - **Only set your own phase's `status` field** in the manifest. The orchestrator owns
-  everything else (state transitions, approvals, attempts, errors).
+  everything else (state transitions, approvals, attempts, errors). One
+  exception: `ateam-discovery` also writes `gate_policy` and `run_brief` —
+  once, from the human's answers at the independence handoff.
 - **Be idempotent.** A skill may be re-invoked (revise loop, resume after crash).
   Overwrite per-feature artifacts cleanly rather than appending duplicates; update
   durable artifacts in place per the superseding rules above.
