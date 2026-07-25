@@ -291,7 +291,9 @@ same contract.
 1. Manifest schema + artifact layout. ✅
 2. Orchestrator state machine skill (`/feature`, `resume`). ✅
 3. `CONTRACT.md` (skill interface spec). ✅
-4. `ateam-discovery` — the real grill skill. ✅
+4. `ateam-discovery` — the real grill skill. ← **not yet built** (a previous
+   revision marked this ✅ in error; it will be wired as a thin wrapper over the
+   ported PM skills — see `SKILLS.md`)
 5. Orchestrator rewire: single `prd` phase → `discovery` + `definition`. ✅
 6. No-op stubs for `ateam-definition` / `ateam-design` / `ateam-spec`. ✅
 7. End-to-end dry run of `/feature` against a scratch target repo. ← current
