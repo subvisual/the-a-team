@@ -56,7 +56,6 @@ artifacts split by lifetime, not by producer:
     PLAN.md                     #   the product team's plan: goals + deliverables to v0
     research-plan.md            #   ships with v0: open questions, assumptions +
                                 #   confidence, technical research
-
     research/<YYYY-MM-DD>-<slug>.md #   append-only synthesis runs (evidence audit)
     input/<YYYY-MM-DD-label>/   #   raw evidence: images, transcripts, Slack, docs
   docs/features/<slug>/         # PER-FEATURE — scoped to one run
@@ -104,7 +103,7 @@ the orchestrator reads the manifest and continues from the current phase.
 
 | Phase | Artifact | Gate | Skill |
 |-------|----------|------|-------|
-| `discovery` | `context.md` + `jtbd/` + `PLAN.md` (durable) | in-skill read-back | `ateam-discovery` |
+| `discovery` | `context.md` + `jtbd/` + `PLAN.md` + `research-plan.md` (durable) | in-skill read-back | `ateam-discovery` |
 | `definition` | `prd.md` + `briefs/` | human | `ateam-definition` (stub now) |
 | `design` | `design.md` + lo-fi prototype | human | `ateam-design` (stub now) |
 | `spec` | `spec.md` (incl. design-system mapping) | auto | `ateam-spec` (stub now) |
@@ -119,7 +118,7 @@ SKILL.md backbone requires each skill to declare exactly one interaction mode an
 these two are different modes:
 
 - **`ateam-discovery` — 🔥 grill.** Cannot proceed without the human. Produces
-  `context.md`, the JTBD set, and `PLAN.md`.
+  `context.md`, the JTBD set, and `PLAN.md` + `research-plan.md`.
 - **`ateam-definition` — 📝 draft + review.** Derives from approved JTBDs.
   Produces `prd.md`, wireflow + page briefs, and the Epics.
 

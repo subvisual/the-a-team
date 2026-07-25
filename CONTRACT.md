@@ -144,7 +144,7 @@ Full annotated template: the `project-context` skill's
 that drops content is a forbidden overwrite); TBD stays visible, never smoothed
 into prose; renamed glossary terms are never deleted; the ledger's **blocking**
 set is the grill's termination condition — non-blocking unknowns flow to
-`PLAN.md`.
+`research-plan.md` as open questions.
 
 #### JTBD template — this is the contract design couples to
 
