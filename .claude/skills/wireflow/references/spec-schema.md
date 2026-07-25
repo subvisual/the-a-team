@@ -80,6 +80,10 @@ Edges are directional (arrowhead at `to`). The router picks geometry automatical
 ## Tips that keep renders clean
 - **Advance `col` along the human progression.** Don't reuse a column for unrelated steps; the
   router assumes left→right is forward.
+- **Prefer self-disambiguating branch labels.** Two branches leaving one decision often share a
+  gutter, so their labels sit near each other — the engine nudges colliding chips apart, but
+  `"saved ok"` / `"write failed"` stays readable at any position where a bare `"yes"` / `"no"`
+  pair invites misreading.
 - **Use `row` to stack** parallel/sub steps in one lane rather than inventing extra lanes.
 - **Keep node `text` to ~3–5 words.** Long text wraps and can crowd; put nuance in edge labels.
 - **Give locked cuts a `stop` node**, with the reason in the incoming edge label ("no — RGPD").
