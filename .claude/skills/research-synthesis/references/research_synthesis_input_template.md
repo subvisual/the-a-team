@@ -1,5 +1,8 @@
 # Research Synthesis Input
 
+This template shapes the synthesis output file (`docs/product/research/<date>-<slug>.md`)
+— same section order.
+
 ## Research Question
 
 - What question or opportunity is this synthesis trying to clarify?
@@ -7,7 +10,9 @@
 ## Input JTBD(s)
 
 - JTBD (verbatim, from upstream): <job statement>
-- If no finished job exists yet, stop and route to the `jobs-to-be-done` skill before synthesizing.
+- If no finished job exists yet, this is a **greenfield synthesis** — do not stop.
+  Record "none yet (greenfield)" here, skip Job Verdicts, and lean on Converging
+  Themes + Suggested New Job Signals (formalizing them stays `jobs-to-be-done`'s work).
 
 ## Sources
 

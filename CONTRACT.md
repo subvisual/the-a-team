@@ -17,8 +17,8 @@ care about a skill's internals. Reserved names:
 | Phase | Reserved skill name | Interaction mode | Gated |
 |-------|---------------------|------------------|-------|
 | Discovery | `ateam-discovery` | 🔥 grill | no — in-skill read-back |
-| Definition | `ateam-definition` | 📝 draft + review | yes (human approves before design) |
-| Design | `ateam-design` | 📝 draft + review | yes (human approves before spec) |
+| Definition | `ateam-definition` | 📝 draft + review | yes — per `gate_policy` (approval before design; provisional under notify-and-continue) |
+| Design | `ateam-design` | 📝 draft + review | yes — per `gate_policy` (approval before spec; provisional under notify-and-continue) |
 | Design spec | `ateam-spec` | 🚀 autonomous | no |
 
 The `issues`, `dev`, and `pr` phases are owned by the harness (reuse of
@@ -88,8 +88,11 @@ The orchestrator sets working context before invoking a phase skill:
 - **Feature directory**: `docs/features/<slug>/`.
 - **Product directory**: `docs/product/`.
 - **Manifest**: `feature.json` in the feature directory. Read it for `slug`,
-  `prompt`, `repo`, `base_branch`. Do not hand-edit fields other than your own
-  phase entry (see "done-signal").
+  `prompt`, `repo`, `base_branch` — and, when set, `gate_policy` and
+  `run_brief` (design reads `fidelity`, dev reads `purpose`). Do not hand-edit
+  fields other than your own phase entry (see "done-signal").
+- **Role intake banks**: the harness repo's `intake/` directory — absolute path
+  passed at invocation. Rubric pre-work each role skill reads at run start.
 - **Target config**: the target repo's `CLAUDE.md`, including the `## A-Team Config`
   block (test command, base branch, design-system path, package manager).
 - **Revision notes** (on a `revise` gate loop): the human's feedback is appended to
@@ -192,7 +195,7 @@ into prose; renamed glossary terms are never deleted; every `## Sources` row
 resolves — a live URL or a path on disk — and `## Overview` keeps only the 2–3
 load-bearing product links (Sources is the complete index); the ledger's
 **blocking** set is the grill's termination condition — non-blocking unknowns
-flow to `ateam-plan.md`.
+flow to `research-plan.md` as open questions.
 
 #### JTBD template — this is the contract design couples to
 
@@ -246,7 +249,7 @@ Load-bearing:
 
 ### `ateam-definition` — 📝 draft + review
 
-- **May read**: `docs/product/**` (context, JTBDs, PLAN); the manifest; the target repo.
+- **May read**: `docs/product/**` (context, JTBDs, `ateam-plan.md`); the manifest; the target repo.
 - **Must write**:
   - `prd.md` in the feature directory — problem, goals/non-goals, scope, user
     stories, acceptance criteria. Every scoped item traces to a JTBD id.
@@ -265,7 +268,8 @@ Load-bearing:
   briefing: users & emotional goals, brand personality, aesthetic direction,
   accessibility, design principles); `prd.md` and `briefs/` (**optional** —
   consume when present); the target repo's design system (path from A-Team
-  Config).
+  Config); the manifest's `run_brief` (`fidelity` calibrates how deep the
+  lo-fi goes).
 - **Must write**:
   - `design.md` in the feature directory — IA, user flows, screen/layout
     direction, visual approach, and the options considered with reasoning.

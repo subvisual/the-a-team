@@ -28,7 +28,8 @@ to `jtbd/`:
 
 - **Ids are forever.** Next free `NN`; never renumber or reuse.
 - **Never delete or silently replace.** A reshaped epic is a **new file**
-  whose `## Related` says `supersedes [[NN-...]]`; the old one flips
+  whose `## Related` says `supersedes [[epic:NN-...]]` (bare `[[NN]]` always
+  cites a job); the old one flips
   `status: superseded` with a pointer. `parked` marks a real-but-not-now epic;
   `done` marks a delivered one.
 - **Never write without human review in the same session** — read-back before
