@@ -168,8 +168,10 @@ Two more rules that fell out of the review:
 - **Template:** `When [situation], I want [motivation], so I can [desired outcome]`. Note that
   motivation and outcome are different things — *"I want to get home immediately"* is an outcome; the
   motivation underneath it is the taxi line, the haggling, the hassle you want gone.
-- **Jobs belong to a persona, not to the platform.** The same software serves Catarina and Álvaro at
-  the same company with **different jobs**. A single job list attached to "the product" is a smell.
+- **Jobs belong to an actor-in-situation, not to the platform** (the `persona` field names who is
+  struggling, in what moment — not a demographic profile). The same software serves Catarina and
+  Álvaro at the same company with **different jobs**. A single job list attached to "the product" is
+  a smell.
 
 *Why gate rather than document:* the dependency was already documented and it still got skipped. A
 warning at the moment of drafting is the only version that fires when it matters.

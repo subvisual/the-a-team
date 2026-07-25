@@ -13,10 +13,10 @@ content — everything below comes from your spec. A complete worked example shi
   "jtbds": {                                   // the job set — defined ONCE for the whole board
     "JTBD-1": {
       "statement": "When <situation>, I want <motivation>, so I can <desired outcome>.",
-      "persona":   "Consultor",                // jobs belong to people, not to the platform (Q13)
+      "persona":   "Consultor",                // the actor-in-situation the job belongs to (Q13)
       "color":     "#8E44AD"                   // optional — otherwise auto-assigned
     },
-    "JTBD-2": "a bare string still works — but you lose the persona, and personas matter"
+    "JTBD-2": "a bare string still works — but you lose the actor, and knowing who's struggling matters"
   },
   "pages": [ /* one object per unique page — see below */ ]
 }

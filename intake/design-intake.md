@@ -1,7 +1,7 @@
 # Design intake bank
 
 *Authored by the Design role owner — replace and extend these questions. This
-file is rubric pre-work (locked decision #3): the questions the Design agent
+file is rubric pre-work (a locked decision): the questions the Design agent
 wishes had been asked before it starts. The design-briefing clusters below are
 migrated from the `teach-impeccable` skill (Impeccable design suite), adapted
 to the A-Team: answers land in `context.md`'s `## Design context` section —
