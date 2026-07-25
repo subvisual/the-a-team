@@ -1,7 +1,7 @@
 # Design intake bank
 
 *Authored by the Design role owner — replace and extend these seed questions.
-This file is rubric pre-work (locked decision #3): the questions the Design
+This file is rubric pre-work (a locked decision): the questions the Design
 agent wishes had been asked before it starts.*
 
 The discovery grill **never asks these raw**. Each entry seeds the

@@ -7,7 +7,7 @@ only the user would see the mistakes. Generate as code, verify by Reading a rast
 
 ## The loop
 0. **Gate on the jobs** (`SKILL.md`, Movement 0). Read the JTBDs before anything else: progress-shaped?
-   template followed? persona attached? If not, say so and offer `jobs-to-be-done` first. Never
+   template followed? actor-in-situation (`persona` field) attached? If not, say so and offer `jobs-to-be-done` first. Never
    silently draft on feature-shaped jobs — that is the known cause of thin cards.
 1. **Gather inputs** — the JTBD set, the journeys, the wireflow (page set + journey linkage), and the
    *live prototype's real screens/routes*. Read them so drafts are real and Design-refs link live
