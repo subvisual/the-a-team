@@ -74,7 +74,7 @@ cleanly, then deliver.
 
 ### Movement 0 — Ground yourself first
 Skim whatever sources exist so your decisions (or grill questions) are sharp: the context layer
-(`context.md`, jobs, `PLAN.md`/`research-plan.md`), `prd.md` + stories, a **live prototype** and
+(`context.md`, jobs, `ateam-plan.md`/`research-plan.md`), `prd.md` + stories, a **live prototype** and
 its real routes, existing user journeys. Reading real screens/routes is what lets own-screen
 nodes link to live routes instead of screenshots (which go stale).
 
