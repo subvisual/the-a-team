@@ -469,7 +469,9 @@ def index_page(x, y, W, jobs, pages):
         for c in pg.get("connects", []) or []:
             if c.get("job"):
                 referenced.append(c["job"])
-    codes = [c for c in jobs.order if c in set(referenced)]
+    # every declared job appears — an unreferenced one must FAIL the index
+    # (amber "unserved" line), not vanish from it
+    codes = list(jobs.order)
     codes += [c for c in dict.fromkeys(referenced) if c not in jobs.order]
 
     for code in codes:
