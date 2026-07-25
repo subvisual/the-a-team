@@ -319,7 +319,7 @@ discarded) for the human to integrate after resolving the failure.
    name, run the real suite — and refresh the config in step 3). On conflict or
    red tests, halt and escalate naming the offending issue — never commit a
    broken or conflicted merge.
-2. **Plan refresh** (the PM's keep-artifacts-live duty, locked decision #11):
+2. **Plan refresh** (the PM's keep-artifacts-live duty — a locked decision):
    invoke `discovery-plan` once to fold every phase-appended assumption and
    open question into current `ateam-plan.md` + `research-plan.md` — the v0
    ships with plans that reflect what was actually built, not what discovery
@@ -340,7 +340,7 @@ discarded) for the human to integrate after resolving the failure.
    `feature/<slug> → <base_branch>` (via `gh`). Body assembled from `prd.md` +
    `design.md` + the issue list — and link `research-plan.md` as the run's
    honest disclosure.
-5. Present the PR link for final human review. Set `state = "done"`, save + commit.
+6. Present the PR link for final human review. Set `state = "done"`, save + commit.
 
 ## Failure handling
 
