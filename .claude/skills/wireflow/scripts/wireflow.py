@@ -578,20 +578,101 @@ def render_board(board: dict, outdir: str, rasterize: bool = False, layout: str 
 
     pngs = []
     if rasterize:
-        try:
-            import cairosvg
-            if layout == "matrix":
-                pp = os.path.join(outdir, "wf_matrix.png")
-                cairosvg.svg2png(bytestring=svgs["__matrix__"].encode(), write_to=pp, output_width=1800)
+        targets = ([("__matrix__", os.path.join(outdir, "wf_matrix.png"), 1800)]
+                   if layout == "matrix" else
+                   [(j.id, os.path.join(outdir, f"wf_{j.id}.png"), 1400) for j in journeys])
+        for key, pp, w in targets:
+            if _rasterize(svgs[key], pp, w):
                 pngs.append(pp)
-            else:
-                for j in journeys:
-                    pp = os.path.join(outdir, f"wf_{j.id}.png")
-                    cairosvg.svg2png(bytestring=svgs[j.id].encode(), write_to=pp, output_width=1400)
-                    pngs.append(pp)
-        except Exception as e:
-            print(f"[rasterize] skipped: {e}", file=sys.stderr)
+        if not pngs:
+            print("[rasterize] skipped: no cairosvg/rsvg-convert/resvg/Chrome found. "
+                  "SVG + HTML still written; install a rasterizer to self-verify.",
+                  file=sys.stderr)
     return written, pngs
+
+
+def _svg_size(svg: str) -> tuple:
+    import re
+    mw = re.search(r'<svg[^>]*\bwidth="(\d+)', svg)
+    mh = re.search(r'<svg[^>]*\bheight="(\d+)', svg)
+    return (int(mw.group(1)) if mw else 0, int(mh.group(1)) if mh else 0)
+
+
+def _rasterize(svg: str, png_path: str, width: int) -> bool:
+    """Best-effort SVG→PNG so the self-verify (Read the PNG) loop always has an
+    image. Tries, in order: cairosvg → rsvg-convert → resvg → headless Chrome/
+    Chromium/Edge — same chain as page-brief.py, so neither engine is hostage
+    to a single dependency (cairosvg's native lib is frequently missing on macOS)."""
+    try:
+        import cairosvg
+        cairosvg.svg2png(bytestring=svg.encode(), write_to=png_path, output_width=width)
+        return True
+    except Exception:
+        pass
+    import shutil
+    import subprocess
+    import tempfile
+    with tempfile.NamedTemporaryFile("w", suffix=".svg", delete=False, encoding="utf-8") as tf:
+        tf.write(svg)
+        svg_tmp = tf.name
+    try:
+        if shutil.which("rsvg-convert"):
+            subprocess.run(["rsvg-convert", "-w", str(width), "-o", png_path, svg_tmp], check=True)
+            return True
+        if shutil.which("resvg"):
+            subprocess.run(["resvg", "-w", str(width), svg_tmp, png_path], check=True)
+            return True
+    except Exception:
+        pass
+    finally:
+        try:
+            os.unlink(svg_tmp)
+        except OSError:
+            pass
+    chrome = _find_chrome()
+    if chrome:
+        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as hf:
+            hf.write('<!doctype html><meta charset="utf-8"><body style="margin:0">' + svg + '</body>')
+            html_tmp = hf.name
+        try:
+            nat_w, nat_h = _svg_size(svg)
+            # Chrome screenshots at window size and the HTML embeds the SVG at
+            # its natural size — size the window to the SVG or the right edge clips.
+            win_w = max(int(width), nat_w) if nat_w else int(width)
+            tall = (nat_h + 40) if nat_h else 4000
+            subprocess.run([
+                chrome, "--headless", "--disable-gpu", "--hide-scrollbars",
+                "--default-background-color=FFFFFFFF",
+                f"--window-size={win_w},{tall}",
+                f"--screenshot={png_path}", "file://" + html_tmp,
+            ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return os.path.exists(png_path)
+        except Exception:
+            pass
+        finally:
+            try:
+                os.unlink(html_tmp)
+            except OSError:
+                pass
+    return False
+
+
+def _find_chrome():
+    """Locate a headless-capable Chromium browser across macOS/Linux/Windows."""
+    import shutil
+    for name in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser",
+                 "microsoft-edge", "chrome"):
+        p = shutil.which(name)
+        if p:
+            return p
+    for p in (
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/Applications/Chromium.app/Contents/MacOS/Chromium",
+        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+    ):
+        if os.path.exists(p):
+            return p
+    return None
 
 
 EXAMPLE = {

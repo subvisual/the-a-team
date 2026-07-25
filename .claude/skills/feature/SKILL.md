@@ -185,6 +185,24 @@ during discovery's independence handoff (never by an agent), default `"block"`:
 - **`run-to-pr`** — lunch mode: same provisional mechanics at every gate; the
   **final `pr` review always blocks** regardless of policy.
 
+**Tripwire — bad signal closes the valve.** A gate may pass provisionally
+**only when the phase's report lists no blocking flags** (per CONTRACT.md:
+unlisted-job signals, `TBD`s inside Must scope, failed self-checks,
+qualitative criteria that need a human run). When you process a phase's
+return, copy its blocking-flags list into `phases.<phase>.blocking_flags`
+(empty list when none) before dispatching the gate — the gate evaluates the
+manifest, not the ephemeral report, so a crash-resumed run at
+`status == "complete"` still trips correctly. A tripped
+gate **blocks and waits regardless of policy**, stating exactly what tripped
+it. The human's chosen policy governs the happy path; it never overrides bad
+signal.
+
+**Assumption relay.** When a phase's report names assumptions it made, verify
+they were appended to `research-plan.md` (phase-tagged, with confidence — the
+CONTRACT append exception). If the skill failed to append them, append them
+yourself from the report before committing the phase. An assumption that lives
+only in a report is a broken promise to the absent human.
+
 On `resume`, if any phase carries `"provisional": true`, present those
 artifacts for review **before** continuing past the next gate.
 
@@ -201,6 +219,10 @@ Blocking-gate responses:
   Revising an already-passed (provisional) phase additionally resets every
   downstream phase to `pending` — they re-derive from the revised artifact.
 - **abort** → set `state = "aborted"`, save + commit, stop. Leave all artifacts. No cleanup.
+  **Never delete an aborted feature branch**: the durable `docs/product/`
+  updates (jobs, context, plans) live on it until merged — deleting the branch
+  deletes North Star history (accepted trade-off of branching before writes;
+  decision 2026-07-24).
 
 Gates block within the session. Because the manifest persists (and status is
 checked on resume), a killed session resumes at the same gate.
@@ -257,10 +279,16 @@ discarded) for the human to integrate after resolving the failure.
    dependency order** (dependencies before dependents). After each merge run the
    target's test command. On conflict or red tests, halt and escalate naming the
    offending issue — never commit a broken or conflicted merge.
-2. When all issues are integrated and the full suite is green, open one PR
+2. **Plan refresh** (the PM's keep-artifacts-live duty, locked decision #11):
+   invoke `discovery-plan` once to fold every phase-appended assumption and
+   open question into current `PLAN.md` + `research-plan.md` — the v0 ships
+   with plans that reflect what was actually built, not what discovery
+   predicted. Commit.
+3. When all issues are integrated and the full suite is green, open one PR
    `feature/<slug> → <base_branch>` (via `gh`). Body assembled from `prd.md` +
-   `design.md` + the issue list.
-3. Present the PR link for final human review. Set `state = "done"`, save + commit.
+   `design.md` + the issue list — and link `research-plan.md` as the run's
+   honest disclosure.
+4. Present the PR link for final human review. Set `state = "done"`, save + commit.
 
 ## Failure handling
 
@@ -295,7 +323,9 @@ If the target `CLAUDE.md` lacks `## A-Team Config`:
 See `manifest-template.json` in this skill directory. Status vocabulary:
 `pending → in_progress → complete → approved | failed | aborted`.
 Phase skills only ever set `complete`. You (the orchestrator) own `approved`,
-`failed` escalation, `aborted`, all `state` transitions, and `attempts`.
+`failed` escalation, `aborted`, all `state` transitions, `attempts`, and each
+gated phase's `blocking_flags` (copied from its report at return-processing;
+like `"provisional"`, it is written when relevant, not templated).
 
 `gate_policy` and `run_brief` are written **once by `ateam-discovery`** from
 the human's answers at the independence handoff (default `gate_policy:

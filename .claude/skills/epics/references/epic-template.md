@@ -64,5 +64,8 @@ Kept visible; genuinely open ones mirror into the context.md ledger.
 
 ## Related
 
-supersedes [[NN-<slug>]] · related [[NN-<slug>]]
+supersedes [[epic:NN-<slug>]] · related [[epic:NN-<slug>]]
+
+(Citation syntax, per CONTRACT.md: bare `[[NN]]`/`[[NN-slug]]` always cites a
+job; epics carry the `epic:` prefix everywhere — including here.)
 ```
