@@ -44,28 +44,38 @@ it directly to seed `docs/product/` before any feature exists. When you later ru
 then writes `feature.json` back. Never hold state only in your head — if the
 session dies, the next run must reconstruct everything from the manifest.
 
-**Every manifest write is immediately committed** (`git -C <target> add
-docs/features/<slug> docs/product && git -C <target> commit -m "<msg>"`), so a
-hard reset or crash can never lose committed state. Commit messages: manifest-only
-changes use `chore(<slug>): <what>` (e.g. `advance to design`); artifact changes
-use `docs(<slug>): <phase>`.
+**Every manifest write is immediately committed**, so a hard reset or crash can
+never lose committed state. Commit messages: manifest-only changes use
+`chore(<slug>): <what>` (e.g. `advance to design`); artifact changes use
+`docs(<slug>): <phase>`.
 
-**Stage both artifact layers.** `discovery` writes to `docs/product/`, every other
-phase writes to `docs/features/<slug>/`. Staging only the feature dir silently
-drops the durable artifacts — always `git add` both paths.
+**Manifest-only commits stage only the manifest.** A `chore(...)` commit is
+`git -C <target> add docs/features/<slug>/feature.json && git -C <target>
+commit -m "<msg>"` — never the whole feature or product tree. Mid-phase those
+trees hold in-progress artifacts, and a broad add silently sweeps them into a
+bookkeeping commit, breaking the chore-vs-docs breadcrumb split (proven in the
+2026-07 dry run: a gate-policy chore commit swallowed the PRD).
+
+**Artifact commits stage both artifact layers.** `discovery` writes only to
+`docs/product/`; later phases write mainly to `docs/features/<slug>/` but also
+touch the durable layer (definition's epics, the pr phase's plan refresh and
+product report). When committing a phase's artifact (`docs(...)`), staging only
+the feature dir silently drops the durable artifacts — `git add` both paths there.
 
 ## The two artifact layers
 
 ```
-<target>/docs/product/           # DURABLE — written by discovery-side skills only
-  context.md  jtbd/NN-*.md  epics/NN-*.md  PLAN.md  research-plan.md  research/  input/<YYYY-MM-DD-label>/
+<target>/docs/product/           # DURABLE — outlives any feature
+  context.md  jtbd/NN-*.md  epics/NN-*.md  ateam-plan.md  research-plan.md
+  ateam-product-report.md  research/  input/<YYYY-MM-DD-label>/
 <target>/docs/features/<slug>/   # PER-FEATURE — everything else
   feature.json  prd.md  briefs/  design.md  spec.md  issues.md  lofi/
 ```
 
 Durable artifacts are cited by feature artifacts and outlive them. You never edit
-them yourself — `ateam-discovery` owns them, and updates in place per the
-superseding rules in `CONTRACT.md`.
+them yourself — phase skills own them per `CONTRACT.md` (discovery most of the
+layer; definition the epics; the pr phase the plan refresh and the product
+report), updating in place per the superseding rules there.
 
 ## Git and filesystem mechanics
 
@@ -80,7 +90,10 @@ superseding rules in `CONTRACT.md`.
 
 Derive `<slug>` from the prompt deterministically: lowercase, keep `[a-z0-9]`,
 replace runs of other characters with a single `-`, trim leading/trailing `-`,
-cap at 50 chars. Example: `"Add saved searches!"` → `add-saved-searches`.
+cap at 50 chars, then trim back to the last `-` so no word is cut mid-way (and
+strip the trailing `-` that leaves). Example: `"Add saved searches!"` →
+`add-saved-searches`; a 50-char cut ending `…-guardians-of-atla` becomes
+`…-guardians-of`.
 
 If `<target>/docs/features/<slug>/` already exists on a **new** run, stop and ask
 the user (resume it, or pick a different slug) — never silently overwrite.
@@ -103,7 +116,10 @@ the user (resume it, or pick a different slug) — never silently overwrite.
      `feature.json` from the template with `state: "discovery"`, all phases
      `pending`, `attempts: 0`, filling `slug`, `prompt`, `repo`, `base_branch`,
      `branch`.
-   - `git -C <target> add docs/features/<slug> docs/product && git -C <target> commit -m "chore(<slug>): init feature manifest"`.
+   - `git -C <target> add docs/features/<slug> && git -C <target> commit -m "chore(<slug>): init feature manifest"`.
+     (`docs/product/` is empty at this point and git cannot stage an empty
+     directory — expected; never add placeholder files to the durable layer to
+     force it in.)
    **Resume:**
    - Read `<target>/docs/features/<slug>/feature.json`. Do not reset anything.
    - Ensure HEAD is on the feature branch: `git -C <target> checkout feature/<slug>`.
@@ -240,6 +256,15 @@ Two steps, one phase:
    reordering issues; decomposition gaps it reports are surfaced to the human
    at the next gate, not silently fixed.
 
+**Path mapping:** `prd-to-issues`' own PRD-location/output defaults (`prds/`,
+`docs/agents/prds.md`) do **not** apply in-pipeline — the input is
+`docs/features/<slug>/prd.md` (+ `spec.md`) and the output is
+`docs/features/<slug>/issues.md`. Pass both explicitly in the invocation args.
+
+**Files-touched notes:** each issue's technical notes must name the files it
+expects to touch, so the dev phase can sequence file-colliding issues up front
+instead of discovering conflicts at integration.
+
 Then set status `complete`, commit, advance to `dev`.
 
 ### `dev` phase
@@ -247,9 +272,18 @@ Then set status `complete`, commit, advance to `dev`.
 Invoke `issue-swarm` on `issues.md`, each issue in its own worktree, gated by the
 swarm's reviewer.
 
-**Branch naming:** each issue branch is `feature/<slug>-issue-<id>` (flat).
-**Never** `feature/<slug>/issue-<id>` — git refuses a nested ref when
-`feature/<slug>` already exists as a branch (ref-as-file vs ref-as-dir conflict).
+**Scope the swarm explicitly (in its invocation args).** The swarm implements
+and reviews only — it must **skip its own reconcile/cleanup phase**: branches
+stay unmerged for the `pr` phase; it never edits or deletes `issues.md` or
+`prd.md` (both are persistent contract artifacts — the PR body is assembled
+from `prd.md`); no push, no PRs. Followed verbatim, the building skill's own
+cleanup step merges into the base branch itself and then deletes both files.
+
+**Branch naming:** the orchestrator supplies **full branch names** in the swarm
+args (overriding the swarm's `branch_prefix` default): each issue branch is
+`feature/<slug>-issue-<id>` (flat). **Never** `feature/<slug>/issue-<id>` —
+git refuses a nested ref when `feature/<slug>` already exists as a branch
+(ref-as-file vs ref-as-dir conflict).
 
 **Dependencies:** an issue that `depends-on` another must be based on its
 dependency's branch, not the bare `feature/<slug>` branch. Two issues branched
@@ -276,19 +310,37 @@ discarded) for the human to integrate after resolving the failure.
 ### `pr` phase — serialized integration
 
 1. Merge completed+reviewed issues into `feature/<slug>` **one at a time, in
-   dependency order** (dependencies before dependents). After each merge run the
-   target's test command. On conflict or red tests, halt and escalate naming the
-   offending issue — never commit a broken or conflicted merge.
-2. **Plan refresh** (the PM's keep-artifacts-live duty, locked decision #11):
+   dependency order** (dependencies before dependents), with plain
+   `git merge --no-edit`. **Do not attempt fast-forward merges — they are
+   structurally impossible here**: the manifest-commit discipline puts chore
+   commits on the feature branch at every issue-status change, so by pr time it
+   has always diverged from every issue branch. After each merge run the
+   target's test command (if dev introduced a suite the config doesn't yet
+   name, run the real suite — and refresh the config in step 3). On conflict or
+   red tests, halt and escalate naming the offending issue — never commit a
+   broken or conflicted merge.
+2. **Plan refresh** (the PM's keep-artifacts-live duty — a locked decision):
    invoke `discovery-plan` once to fold every phase-appended assumption and
-   open question into current `PLAN.md` + `research-plan.md` — the v0 ships
-   with plans that reflect what was actually built, not what discovery
+   open question into current `ateam-plan.md` + `research-plan.md` — the v0
+   ships with plans that reflect what was actually built, not what discovery
    predicted. Commit.
-3. When all issues are integrated and the full suite is green, open one PR
+3. **Config refresh** (keep-artifacts-live, extended to config): update any
+   `## A-Team Config` fact the run invalidated — e.g. dev introduced a test
+   suite, so `test command: none` becomes the real command. Commit as `chore`.
+4. **Product report** (durable): invoke `product-report`. It reads the run's
+   artifacts — `context.md`, jobs, epics, `ateam-plan.md`, `research-plan.md`
+   (post-refresh), `prd.md`, `design.md`, `spec.md`, `issues.md` — **and the
+   final v0 code** on `feature/<slug>`, and writes
+   `docs/product/ateam-product-report.md`: the PRD for the product — product
+   framing, the epics on the MoSCoW scope, and what actually shipped. Durable
+   rules apply (update in place, supersede — never silently replace). Commit as
+   `docs(<slug>): product report`. This runs **before** the PR opens so the
+   report ships inside it and the final human review covers it.
+5. When all issues are integrated and the full suite is green, open one PR
    `feature/<slug> → <base_branch>` (via `gh`). Body assembled from `prd.md` +
    `design.md` + the issue list — and link `research-plan.md` as the run's
    honest disclosure.
-4. Present the PR link for final human review. Set `state = "done"`, save + commit.
+6. Present the PR link for final human review. Set `state = "done"`, save + commit.
 
 ## Failure handling
 
@@ -301,12 +353,19 @@ incorrect status. `attempts` counts **failure-retries only** (starts at 0).
 - Escalate: set the failed unit's `status = "failed"`,
   `manifest.last_error = "<what/why>"`, save + commit, **stop and surface to the
   human**. Do not proceed. Do not silent-skip.
+- **An environment-killed subagent is not a phase failure.** If a subagent dies
+  on an infrastructure error (session limit, API outage) rather than failing
+  the work itself: verify its workspace is clean, resume or re-dispatch it, and
+  do **not** bump `attempts` (proven recovery path, 2026-07 dry run).
 
 ## Bootstrap (missing target config)
 
 If the target `CLAUDE.md` lacks `## A-Team Config`:
 
-1. If no `CLAUDE.md` at all, run `/init` in the target to generate one.
+1. If no `CLAUDE.md` at all, generate one **for the target repo**: apply the
+   `/init` skill's analysis to `<target>` (read the target's files, write
+   `<target>/CLAUDE.md`). The bare `/init` command analyzes the session's CWD —
+   never rely on it when `--repo` points elsewhere.
 2. Append (never overwrite) an `## A-Team Config` block with detected values;
    ask the user for any you cannot detect:
    ```
@@ -316,7 +375,11 @@ If the target `CLAUDE.md` lacks `## A-Team Config`:
    - design system path: <path>
    - package manager: <from lockfile>
    ```
-3. Continue startup.
+3. Commit the new/updated `CLAUDE.md` to the **base branch, before the feature
+   branch is created** (`git -C <target> add CLAUDE.md && git -C <target>
+   commit -m "chore: bootstrap A-Team Config"`). Config is repo infrastructure
+   every future run needs — not feature work riding a deletable branch.
+4. Continue startup.
 
 ## Manifest
 

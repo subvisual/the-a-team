@@ -316,10 +316,14 @@ same contract.
    previous revision had marked this ✅ before it existed)
 5. Orchestrator rewire: single `prd` phase → `discovery` + `definition`. ✅
 6. No-op stubs for `ateam-definition` / `ateam-design` / `ateam-spec`. ✅
-7. End-to-end dry run of `/feature` against a scratch target repo. ← current
-8. Wire `prd-to-issues` + `issue-swarm`.
-9. `pr` phase glue (serialized integration + PR body assembly).
-10. Bootstrap step (CLAUDE.md target config).
+7. End-to-end dry run of `/feature` against a scratch target repo. ✅
+   (2026-07-25; its findings drove the fixes-orchestrator / discovery-contract /
+   engines round)
+8. Wire `prd-to-issues` + `issue-swarm`. ✅
+9. `pr` phase glue (serialized integration + PR body assembly). ✅
+10. Bootstrap step (CLAUDE.md target config). ✅
+11. Block-mode mini-run: exercise the gates under `notify-and-continue` /
+    `run-to-pr`, the REVISE loop, and a tripped tripwire. ← next
 
 ## Deferred (not blocking v1)
 
