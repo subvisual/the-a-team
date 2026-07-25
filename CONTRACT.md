@@ -163,6 +163,8 @@ ingested: [2026-07-17-client-call, 2026-07-24-granola-pulled]  # digested input/
                        # jobs cited by id, headline quoted exactly — never paraphrased
 ## Digest              # per ingested batch: what the evidence says, pointers into input/
 ## Glossary            # term | working definition | status (settled/forming/TBD) | source
+## Design context      # from the design briefing: users & emotional goals, brand personality,
+                       #   aesthetic direction (refs + anti-refs), accessibility, 3–5 design principles
 ## Know / Don't know   # Don't-Knows tagged blocking (naming what they block) or non-blocking,
                        #   plus a consumer tag ([pm] | [design] | [dev]) when a role's intake seeded it
 ## Awaiting answers    # present only while an escalation is open
@@ -240,9 +242,12 @@ Load-bearing:
 ### `ateam-design` — 📝 draft + review
 
 - **May read**: `docs/product/context.md` + `docs/product/jtbd/**` (**required
-  floor**); `prd.md` and `briefs/` (**optional** — consume when present); the
-  target repo's design system (path from A-Team Config); the manifest's
-  `run_brief` (`fidelity` calibrates how deep the lo-fi goes).
+  floor** — context.md's `## Design context` section carries the design
+  briefing: users & emotional goals, brand personality, aesthetic direction,
+  accessibility, design principles); `prd.md` and `briefs/` (**optional** —
+  consume when present); the target repo's design system (path from A-Team
+  Config); the manifest's `run_brief` (`fidelity` calibrates how deep the
+  lo-fi goes).
 - **Must write**:
   - `design.md` in the feature directory — IA, user flows, screen/layout
     direction, visual approach, and the options considered with reasoning.

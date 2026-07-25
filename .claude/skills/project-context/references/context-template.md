@@ -51,6 +51,19 @@ undefined.
 Never delete a renamed term — note the rename in Source / notes so old
 documents stay readable.
 
+## Design context
+
+<Captured once via the design briefing (intake/design-intake.md), then kept
+current with deltas. The design phase reads this as its floor.>
+
+- **Users & emotional goals:** <who + what the interface should evoke>
+- **Brand personality:** <3 words, voice/tone>
+- **Aesthetic direction:** <visual tone · references (and what about them) ·
+  anti-references · light/dark · color constraints>
+- **Accessibility:** <WCAG level, accommodations — or TBD>
+- **Design principles:** <3–5 principles derived from the answers; every
+  downstream design decision should be defensible against these>
+
 ## Know / Don't know
 
 ### Know
