@@ -54,6 +54,7 @@ artifacts split by lifetime, not by producer:
     context.md                  #   digest, glossary, Know/Don't-Know ledger
     jtbd/NN-<slug>.md           #   one file per job — the North Star
     PLAN.md                     #   deliverables to reach v0 (API research, costs)
+    research/<YYYY-MM-DD>-<slug>.md #   append-only synthesis runs (evidence audit)
     input/<YYYY-MM-DD-label>/   #   raw evidence: images, transcripts, Slack, docs
   docs/features/<slug>/         # PER-FEATURE — scoped to one run
     feature.json                #   orchestrator state (source of truth)

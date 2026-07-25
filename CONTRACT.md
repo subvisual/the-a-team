@@ -38,6 +38,7 @@ docs/product/
   context.md                  # digest, glossary, Know/Don't-Know ledger
   jtbd/NN-<slug>.md           # one file per job
   PLAN.md                     # deliverables to reach v0
+  research/<YYYY-MM-DD>-<slug>.md  # append-only synthesis runs — the evidence audit trail
   input/<YYYY-MM-DD-label>/   # raw evidence — human-dropped or skill-staged verbatim pulls; never edited
 
 docs/features/<slug>/
