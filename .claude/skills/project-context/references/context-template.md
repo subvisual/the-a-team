@@ -86,7 +86,7 @@ current with deltas. The design phase reads this as its floor.>
 
 ### Don't know
 - **[blocking → <the JTBD id or scope call it blocks>]** <question>
-- **[non-blocking]** <question — survives into ateam-plan.md as a deliverable>
+- **[non-blocking]** <question — survives into research-plan.md as an open question>
 
 ## Awaiting answers
 
@@ -106,5 +106,5 @@ Rules that bind every writer of this file:
   fact but never reaches the index is an audit hole; a row pointing at nothing
   (dead path, vanished URL with no staged pull) is a bug.
 - **The ledger drives the grill.** Only blocking Don't-Knows justify questions;
-  non-blocking ones flow into `ateam-plan.md` as deliverables, so stopping loses
-  nothing.
+  non-blocking ones flow into `research-plan.md` as open questions, so stopping
+  loses nothing.
