@@ -1,6 +1,6 @@
 # Example Output: the two plans, written together
 
-## docs/product/PLAN.md
+## docs/product/ateam-plan.md
 
 ```markdown
 ---

@@ -1,6 +1,6 @@
 ---
 name: project-context
-description: Use when a project's durable context needs to be seeded or refreshed — creating or updating docs/product/context.md (overview + digest + glossary + Know/Don't-Know ledger) in the target repo; when a project has no context layer yet (Stage-0 setup); when domain terminology is still forming or has drifted; after a meeting, new evidence batch, or scope change that outdates the current context. Also use to ingest new docs/product/input/ batches into the digest. Do not use for repo scaffolding or CI setup, for writing the discovery plan, PRD, or epics (use discovery-plan, prd-writer, epics), or for creating or revising Jobs to be Done — this skill records finished JTBDs by id and marks missing ones TBD; jobs-to-be-done owns minting them.
+description: Use when a project's durable context needs to be seeded or refreshed — creating or updating docs/product/context.md (overview + digest + source index + glossary + Know/Don't-Know ledger) in the target repo; when a project has no context layer yet (Stage-0 setup); when domain terminology is still forming or has drifted; after a meeting, new evidence batch, or scope change that outdates the current context. Also use to ingest new docs/product/input/ batches into the digest. Do not use for repo scaffolding or CI setup, for writing the discovery plan, PRD, or epics (use discovery-plan, prd-writer, epics), or for creating or revising Jobs to be Done — this skill records finished JTBDs by id and marks missing ones TBD; jobs-to-be-done owns minting them.
 metadata:
   version: 0.2.0
   owner: Alvaro Bezerra
@@ -88,17 +88,21 @@ where a repo exists — one commit per run, message naming what changed and why
 4. **Digest.** Per new batch: compress what the evidence actually says, with
    pointers back to the raw files. The digest is written knowing how Design and
    Dev will later consume it — organised, not just summarized.
-5. **Overview.** What/why in one paragraph, audience, stage, goals,
+5. **Sources.** Index everything this refresh consumed — links visited,
+   human-provided files, connector pulls, the grill digest batch: type ·
+   pointer (URL or `input/` path) · date · what it informed. Every row
+   resolves; Overview's Key links stay the 2–3 load-bearing ones.
+6. **Overview.** What/why in one paragraph, audience, stage, goals,
    constraints, key links. Jobs cited by id, headline quoted exactly.
-6. **Ledger.** Update Know / Don't-Know. Tag each Don't-Know **blocking**
+7. **Ledger.** Update Know / Don't-Know. Tag each Don't-Know **blocking**
    (naming the JTBD or scope call it blocks) or **non-blocking** (destined for
-   `PLAN.md` as a deliverable). Uncertainty stays visible as TBD — a
+   `ateam-plan.md` as a deliverable). Uncertainty stays visible as TBD — a
    confident-sounding guess is a landmine for every skill that reads this file.
-7. **Read-back — mandatory before writing.** `context.md` is a durable
+8. **Read-back — mandatory before writing.** `context.md` is a durable
    artifact: present the drafted file (or the diff, on a refresh) for the human
    to correct in this session. Only then write, update `ingested:` and
    `updated:` in the frontmatter, and commit (repo targets).
-8. **Close with routing** by project maturity:
+9. **Close with routing** by project maturity:
    - `jobs-to-be-done` — core job undefined or contested, or new-job signals
      surfaced in the digest.
    - `research-synthesis` — a pile of evidence needs synthesis against the

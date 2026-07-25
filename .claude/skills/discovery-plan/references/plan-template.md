@@ -1,8 +1,9 @@
-# PLAN.md template — the product team's plan
+# ateam-plan.md template — the plan built for the A-Team agents
 
-`docs/product/PLAN.md` is for the **product team to understand the goals and
-deliverables**: what we are trying to achieve and what must exist to reach v0.
-It is not the research plan — open questions, assumptions, and technical
+`docs/product/ateam-plan.md` is the **plan the A-Team works from**: what we are
+trying to achieve and what must exist to reach v0 — goals and deliverables the
+agents run against, readable by anyone in the repo. It is not a project plan,
+and not the research plan — open questions, assumptions, and technical
 research live in `research-plan.md` (see
 `references/research-plan-template.md`). The two are written together by the
 discovery-plan skill so they cannot drift.
@@ -39,7 +40,7 @@ Owner (human or agent) and target date per initiative.
 
 ## Decision criteria
 
-The go/no-go gates the product team steers by: initiative → gate → criterion.
+The go/no-go gates the humans steering the A-Team decide by: initiative → gate → criterion.
 
 ## Status
 

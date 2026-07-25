@@ -1,6 +1,6 @@
 ---
 name: ateam-discovery
-description: Use when the A-Team orchestrator invokes the discovery phase for a feature, or when a human runs discovery standalone to seed docs/product/ from raw input (a client transcript, a fuzzy prompt) before any feature exists. The 🔥 grill phase skill — conducts the ported PM skills (product-brainstorming, project-context, research-synthesis, jobs-to-be-done, discovery-plan) through challenge → run brief → research → straw-man → grill → read-back → independence handoff → write, producing context.md, the JTBD set, PLAN.md, and research-plan.md, and writing gate_policy + run_brief to the manifest. Cannot run without a human: escalates via ## Awaiting answers, never guesses. Implemented against CONTRACT.md.
+description: Use when the A-Team orchestrator invokes the discovery phase for a feature, or when a human runs discovery standalone to seed docs/product/ from raw input (a client transcript, a fuzzy prompt) before any feature exists. The 🔥 grill phase skill — conducts the ported PM skills (product-brainstorming, project-context, research-synthesis, jobs-to-be-done, discovery-plan) through challenge → run brief → research → straw-man → grill → read-back → independence handoff → write, producing context.md, the JTBD set, ateam-plan.md, and research-plan.md, and writing gate_policy + run_brief to the manifest. Cannot run without a human: escalates via ## Awaiting answers, never guesses. Implemented against CONTRACT.md.
 metadata:
   version: 0.1.0
   owner: Alvaro Bezerra
@@ -32,7 +32,7 @@ the human's answers, not on eager loading.
   `docs/product/**` including `input/`; the target repo; the harness `intake/`
   banks.
 - **Writes** (durable, all rules apply): `context.md`, `jtbd/NN-*.md`,
-  `PLAN.md`, `research-plan.md`. Plus, manifest present: `gate_policy` +
+  `ateam-plan.md`, `research-plan.md`. Plus, manifest present: `gate_policy` +
   `run_brief` (the one write beyond your own phase status).
 - **Done-signal**: `phases.discovery.status = "complete"`. No orchestrator
   gate — your read-back is the gate.
@@ -84,6 +84,11 @@ answers; they're written at the handoff.
   accessibility, 3–5 design principles); later runs ask only deltas.
 - Read the target repo enough to ground technical unknowns (stack, existing
   screens) — grounding, not a code audit.
+- **Track every source you consume as you go** — each link visited (search
+  hits, docs, review pages), each human-provided file, each connector pull,
+  and what it informed. These become `context.md`'s `## Sources` index at the
+  write step; a source that shaped a fact but never reaches the index is an
+  audit hole.
 - **Connector-gated sources need pre-run authorization.** If ingestion depends
   on a connector (Notion, Granola, Slack), the human authorizes it before the
   run; an unauthorized or unreachable source routes to a research activity in
@@ -135,16 +140,20 @@ no run to govern.
 
 ### 8. Write & commit
 
-Apply **`discovery-plan`** craft to compile the ledger into `PLAN.md` (goals +
+Apply **`discovery-plan`** craft to compile the ledger into `ateam-plan.md` (goals +
 deliverables) and `research-plan.md` (open questions, assumptions +
 confidence, technical research) — written together. **Stage the grill digest
 first**: `input/<YYYY-MM-DD>-grill-digest/` holding each grill exchange
 verbatim — the question · your recommended answer · the human's answer. Grill
 answers are raw input like any other batch; the digest is what `sources:`
 cites for grill-derived facts, and later runs read it instead of re-asking
-(ask-once-then-deltas). Then write everything: `context.md`, `jtbd/` files
-(active + parked), the plans, any `research/` run. Durable rules bind every
-write: ids forever, supersede never delete, `input/` verbatim staging only. Manifest present: write `gate_policy` + `run_brief`,
+(ask-once-then-deltas). In `context.md`, compile `## Sources` — the audit
+index of everything this run consumed: one line per source (link visited,
+provided file, connector pull, the grill digest batch) with type · pointer
+(URL or `input/` path) · date · what it informed. Then write everything:
+`context.md`, `jtbd/` files (active + parked), the plans, any `research/` run.
+Durable rules bind every write: ids forever, supersede never delete, `input/`
+verbatim staging only. Manifest present: write `gate_policy` + `run_brief`,
 set `phases.discovery.status = "complete"`. Commit with messages naming what
 changed and why (`docs(jtbd): 01–02 minted, 03 parked — reporting is a
 different job`).
@@ -176,7 +185,7 @@ Assumption-flags do not mitigate this.
   grill-derived facts cite the staged grill digest.
 - The ledger's blocking set is empty — or serialized under
   `## Awaiting answers`.
-- PLAN.md and research-plan.md cross-reference cleanly (every resolution
+- ateam-plan.md and research-plan.md cross-reference cleanly (every resolution
   deliverable points at its question).
 - Intake entries are tagged and routed; no bank question was asked raw.
 - Manifest (if present): `gate_policy` + `run_brief` written, own status
