@@ -173,11 +173,14 @@ the human has just read. Do not add one.
 4. On return, re-read the manifest. The skill should have set its own
    `status = "complete"` and written its artifact.
    - Artifact missing OR status not `complete` → treat as **failure** (see below).
-   - **Exception — `discovery` escalation.** If the skill halted for want of a
-     human, it leaves `status = "in_progress"` and writes an `## Awaiting answers`
-     block into `docs/product/context.md`. This is a **defined output, not a
-     failure**: do not bump `attempts`, do not retry. Commit, surface the pending
-     questions to the user, and stop. A later `resume` picks up from there.
+   - **Exception — escalation (any phase).** If the skill halted for want of a
+     human, it leaves `status = "in_progress"` and says what it is waiting on
+     (`discovery` writes an `## Awaiting answers` block into
+     `docs/product/context.md`; `definition` halts when its North Star is
+     missing and reports that discovery must run first). This is a **defined
+     output, not a failure**: do not bump `attempts`, do not retry. Commit,
+     surface what is needed to the user, and stop. A later `resume` picks up
+     from there.
 5. Commit the artifact:
    `git -C <target> add docs/features/<slug> docs/product && git -C <target> commit -m "docs(<slug>): <phase>"`.
    For `discovery`, prefer the skill's own commit message naming what changed and
@@ -247,7 +250,8 @@ checked on resume), a killed session resumes at the same gate.
 
 Two steps, one phase:
 
-1. Invoke `prd-to-issues` against `prd.md` + `spec.md` → `issues.md`
+1. Invoke `prd-to-issues` against `prd.md` + `spec.md`, with `briefs/` as
+   supporting context (the page briefs carry per-page ACs), → `issues.md`
    (decomposition: tracer-bullet slices, dependency order).
 2. Invoke `ticket-writer` (AC-only mode, batch across `issues.md`) to enrich
    every issue's acceptance criteria to Gherkin — sourced from the PRD's
