@@ -58,7 +58,6 @@ artifacts split by lifetime, not by producer:
     research-plan.md            #   ships with v0: open questions, assumptions +
                                 #   confidence, technical research
     ateam-product-report.md     #   the PRD for the product — end-of-run report (pr phase)
-
     research/<YYYY-MM-DD>-<slug>.md #   append-only synthesis runs (evidence audit)
     input/<YYYY-MM-DD-label>/   #   raw evidence: images, transcripts, Slack, docs
   docs/features/<slug>/         # PER-FEATURE — scoped to one run
@@ -107,8 +106,8 @@ the orchestrator reads the manifest and continues from the current phase.
 
 | Phase | Artifact | Gate | Skill |
 |-------|----------|------|-------|
-| `discovery` | `context.md` + `jtbd/` + `ateam-plan.md` (durable) | in-skill read-back | `ateam-discovery` |
-| `definition` | `prd.md` + `briefs/` | human | `ateam-definition` (stub now) |
+| `discovery` | `context.md` + `jtbd/` + `ateam-plan.md` + `research-plan.md` (durable) | in-skill read-back | `ateam-discovery` |
+| `definition` | `prd.md` + `briefs/` | human | `ateam-definition` (authored) |
 | `design` | `design.md` + lo-fi prototype | human | `ateam-design` (stub now) |
 | `spec` | `spec.md` (incl. design-system mapping) | auto | `ateam-spec` (stub now) |
 | `issues` | `issues.md` | auto | reuse `prd-to-issues` |
@@ -122,7 +121,7 @@ SKILL.md backbone requires each skill to declare exactly one interaction mode an
 these two are different modes:
 
 - **`ateam-discovery` — 🔥 grill.** Cannot proceed without the human. Produces
-  `context.md`, the JTBD set, and `ateam-plan.md`.
+  `context.md`, the JTBD set, and `ateam-plan.md` + `research-plan.md`.
 - **`ateam-definition` — 📝 draft + review.** Derives from approved JTBDs.
   Produces `prd.md`, wireflow + page briefs, and the Epics.
 
@@ -146,8 +145,8 @@ clear problem statement.
 **Termination is defined, not felt.** The grill maintains a `Know / Don't Know`
 ledger and asks only the Don't-Knows that *block* a JTBD or a scope call. It stops
 when the blocking set is empty. Surviving non-blocking unknowns are written into
-the artifacts as open questions and into `ateam-plan.md` as deliverables — so stopping
-loses nothing. A question is only asked if its answer changes an artifact.
+`research-plan.md` as open questions — so stopping loses nothing. A question is
+only asked if its answer changes an artifact.
 
 ### Gates
 
@@ -260,6 +259,13 @@ needed yet.
   "base_branch": "main",
   "branch": "feature/saved-searches",
   "state": "definition",
+  "gate_policy": "block",
+  "run_brief": {
+    "purpose": "validate the flow with real users",
+    "fidelity": "lofi",
+    "timebox": "one afternoon",
+    "done_looks_like": "a clickable v0 behind a shared link"
+  },
   "phases": {
     "discovery":  { "status": "complete",    "artifact": "../../product/jtbd/", "attempts": 1 },
     "definition": { "status": "in_progress", "artifact": "prd.md",     "attempts": 1 },
@@ -297,10 +303,10 @@ interface each skill implements is fixed in [`CONTRACT.md`](./CONTRACT.md): inpu
 it may read, output paths it must write, manifest fields it sets, and its
 done-signal.
 
-Until PM/Design deliver, `ateam-definition`, `ateam-design`, and `ateam-spec` are
-**no-op stubs** (write a placeholder file, set the manifest status). This tests
-orchestration wiring only, not real output. Real skills are drop-in — same name,
-same contract.
+`ateam-discovery` and `ateam-definition` are authored. Until Design delivers,
+`ateam-design` and `ateam-spec` remain **no-op stubs** (write a placeholder
+file, set the manifest status) — testing orchestration wiring only, not real
+output. Real skills are drop-in — same name, same contract.
 
 ## Build order (our scope)
 
@@ -312,10 +318,14 @@ same contract.
    previous revision had marked this ✅ before it existed)
 5. Orchestrator rewire: single `prd` phase → `discovery` + `definition`. ✅
 6. No-op stubs for `ateam-definition` / `ateam-design` / `ateam-spec`. ✅
-7. End-to-end dry run of `/feature` against a scratch target repo. ← current
-8. Wire `prd-to-issues` + `issue-swarm`.
-9. `pr` phase glue (serialized integration + PR body assembly).
-10. Bootstrap step (CLAUDE.md target config).
+7. End-to-end dry run of `/feature` against a scratch target repo. ✅
+   (2026-07-25; its findings drove the fixes-orchestrator / discovery-contract /
+   engines round)
+8. Wire `prd-to-issues` + `issue-swarm`. ✅
+9. `pr` phase glue (serialized integration + PR body assembly). ✅
+10. Bootstrap step (CLAUDE.md target config). ✅
+11. Block-mode mini-run: exercise the gates under `notify-and-continue` /
+    `run-to-pr`, the REVISE loop, and a tripped tripwire. ← next
 
 ## Deferred (not blocking v1)
 

@@ -592,7 +592,7 @@ def render_board(board: dict, outdir: str, rasterize: bool = False, layout: str 
         svg = matrix_svg(board, journeys)
         svgs["__matrix__"] = svg
         p = os.path.join(outdir, "wf_matrix.svg")
-        open(p, "w").write(svg)
+        open(p, "w", encoding="utf-8").write(svg)
         written.append(p)
     else:
         # board-level owner->colour map so the same owner keeps its colour across
@@ -602,10 +602,10 @@ def render_board(board: dict, outdir: str, rasterize: bool = False, layout: str 
             svg = journey_svg(j, lcmap)
             svgs[j.id] = svg
             p = os.path.join(outdir, f"wf_{j.id}.svg")
-            open(p, "w").write(svg)
+            open(p, "w", encoding="utf-8").write(svg)
             written.append(p)
     hp = os.path.join(outdir, "wireflow.html")
-    open(hp, "w").write(build_html(board, journeys, svgs, layout))
+    open(hp, "w", encoding="utf-8").write(build_html(board, journeys, svgs, layout))
     written.append(hp)
 
     pngs = []
@@ -765,7 +765,7 @@ def main():
     if a.print_example:
         print(json.dumps(EXAMPLE, indent=2))
         return
-    board = EXAMPLE if not a.spec else json.load(open(a.spec))
+    board = EXAMPLE if not a.spec else json.load(open(a.spec, encoding="utf-8"))
     written, pngs = render_board(board, a.out, a.rasterize, a.layout)
     for p in written + pngs:
         print(p)

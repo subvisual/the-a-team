@@ -74,6 +74,7 @@ without trust loss.
 ## Decision log
 
 | Date | Decision | Rationale | Impacted req(s) |
+| --- | --- | --- | --- |
 | 2026-07-24 | Rationale ships in v0, not post-pilot | trust-unlock assumption is the bet being tested | R2 |
 ```
 

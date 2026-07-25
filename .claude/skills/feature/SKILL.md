@@ -7,7 +7,8 @@ description: Use when driving a feature prompt to a production-ready PR through 
 
 Drives one feature from a prompt to a production-ready PR. You are a **state
 machine on the main thread**. You do not spawn persistent role-agents; you invoke
-role-specific phase skills in sequence, gating at definition and design.
+role-specific phase skills in sequence, gating at definition, design, and pr
+(dispatched per `gate_policy`; the final pr review always blocks).
 
 `PLAN.md` and `CONTRACT.md` in the **harness repo** root hold the full design
 rationale. This skill is the executable procedure.
@@ -165,17 +166,21 @@ the human has just read. Do not add one.
    touch `attempts` here — `attempts` counts failure-retries only, see Failure.)
 3. **Invoke the reserved skill via the Skill tool by name** (`ateam-discovery` /
    `ateam-definition` / `ateam-design` / `ateam-spec`). Pass, in the invocation
-   args, **both** absolute paths — the feature directory and the product
-   directory. The skill reads prior artifacts + the manifest and writes its output
-   per `CONTRACT.md`.
+   args, **three** absolute paths — the feature directory, the product
+   directory, and the harness `intake/` directory (this skill lives in the
+   harness repo; `intake/` sits at its root). The skill reads prior artifacts +
+   the manifest and writes its output per `CONTRACT.md`.
 4. On return, re-read the manifest. The skill should have set its own
    `status = "complete"` and written its artifact.
    - Artifact missing OR status not `complete` → treat as **failure** (see below).
-   - **Exception — `discovery` escalation.** If the skill halted for want of a
-     human, it leaves `status = "in_progress"` and writes an `## Awaiting answers`
-     block into `docs/product/context.md`. This is a **defined output, not a
-     failure**: do not bump `attempts`, do not retry. Commit, surface the pending
-     questions to the user, and stop. A later `resume` picks up from there.
+   - **Exception — escalation (any phase).** If the skill halted for want of a
+     human, it leaves `status = "in_progress"` and says what it is waiting on
+     (`discovery` writes an `## Awaiting answers` block into
+     `docs/product/context.md`; `definition` halts when its North Star is
+     missing and reports that discovery must run first). This is a **defined
+     output, not a failure**: do not bump `attempts`, do not retry. Commit,
+     surface what is needed to the user, and stop. A later `resume` picks up
+     from there.
 5. Commit the artifact:
    `git -C <target> add docs/features/<slug> docs/product && git -C <target> commit -m "docs(<slug>): <phase>"`.
    For `discovery`, prefer the skill's own commit message naming what changed and
@@ -201,7 +206,12 @@ during discovery's independence handoff (never by an agent), default `"block"`:
 
 **Tripwire — bad signal closes the valve.** A gate may pass provisionally
 **only when the phase's report lists no blocking flags** (per CONTRACT.md:
-unlisted-job signals, `TBD`s inside Must scope, failed self-checks). A tripped
+unlisted-job signals, `TBD`s inside Must scope, failed self-checks,
+qualitative criteria that need a human run). When you process a phase's
+return, copy its blocking-flags list into `phases.<phase>.blocking_flags`
+(empty list when none) before dispatching the gate — the gate evaluates the
+manifest, not the ephemeral report, so a crash-resumed run at
+`status == "complete"` still trips correctly. A tripped
 gate **blocks and waits regardless of policy**, stating exactly what tripped
 it. The human's chosen policy governs the happy path; it never overrides bad
 signal.
@@ -240,7 +250,8 @@ checked on resume), a killed session resumes at the same gate.
 
 Two steps, one phase:
 
-1. Invoke `prd-to-issues` against `prd.md` + `spec.md` → `issues.md`
+1. Invoke `prd-to-issues` against `prd.md` + `spec.md`, with `briefs/` as
+   supporting context (the page briefs carry per-page ACs), → `issues.md`
    (decomposition: tracer-bullet slices, dependency order).
 2. Invoke `ticket-writer` (AC-only mode, batch across `issues.md`) to enrich
    every issue's acceptance criteria to Gherkin — sourced from the PRD's
@@ -312,7 +323,7 @@ discarded) for the human to integrate after resolving the failure.
    name, run the real suite — and refresh the config in step 3). On conflict or
    red tests, halt and escalate naming the offending issue — never commit a
    broken or conflicted merge.
-2. **Plan refresh** (the PM's keep-artifacts-live duty, locked decision #11):
+2. **Plan refresh** (the PM's keep-artifacts-live duty — a locked decision):
    invoke `discovery-plan` once to fold every phase-appended assumption and
    open question into current `ateam-plan.md` + `research-plan.md` — the v0
    ships with plans that reflect what was actually built, not what discovery
@@ -333,7 +344,7 @@ discarded) for the human to integrate after resolving the failure.
    `feature/<slug> → <base_branch>` (via `gh`). Body assembled from `prd.md` +
    `design.md` + the issue list — and link `research-plan.md` as the run's
    honest disclosure.
-5. Present the PR link for final human review. Set `state = "done"`, save + commit.
+6. Present the PR link for final human review. Set `state = "done"`, save + commit.
 
 ## Failure handling
 
@@ -379,7 +390,9 @@ If the target `CLAUDE.md` lacks `## A-Team Config`:
 See `manifest-template.json` in this skill directory. Status vocabulary:
 `pending → in_progress → complete → approved | failed | aborted`.
 Phase skills only ever set `complete`. You (the orchestrator) own `approved`,
-`failed` escalation, `aborted`, all `state` transitions, and `attempts`.
+`failed` escalation, `aborted`, all `state` transitions, `attempts`, and each
+gated phase's `blocking_flags` (copied from its report at return-processing;
+like `"provisional"`, it is written when relevant, not templated).
 
 `gate_policy` and `run_brief` are written **once by `ateam-discovery`** from
 the human's answers at the independence handoff (default `gate_policy:
