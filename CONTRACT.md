@@ -123,6 +123,11 @@ Everything else — especially durable writes and their review step — behaves
     levels, and technical research (services, stack, integration costs) —
     seeded from surviving non-blocking unknowns. Both plans are written
     together (one compile step) and kept live through later phases.
+  - `docs/product/input/<YYYY-MM-DD>-grill-digest/` — the verbatim record of
+    the grill, staged at the write step like any input batch (per exchange:
+    the question · the recommended answer · the human's answer). Grill answers
+    are raw input like any other; this is the batch `sources:` cites for
+    grill-derived facts, and later runs read it instead of re-asking.
 - **Process shape**: `challenge (+ run brief) → research → straw-man → grill →
   read-back → independence handoff → write`.
 - **Run brief**: during the challenge beat, capture how the human wants the
@@ -218,7 +223,9 @@ Load-bearing:
   dashboard" is not a job. This is the discipline that keeps the North Star a
   need rather than a solution.
 - **`sources` traces every job back to raw input**, so a reviewer can audit what
-  the agent was told versus what it inferred.
+  the agent was told versus what it inferred. Grill answers count as raw input:
+  discovery stages them as an `input/<date>-grill-digest/` batch and jobs cite
+  that batch — every `sources:` entry must resolve to something on disk.
 - **`status` + `supersedes` are the breadcrumb.** Reshaped jobs flip status and
   point forward; they are not deleted.
 - **`confidence` is stamped honestly.** A job built from assertions alone is a

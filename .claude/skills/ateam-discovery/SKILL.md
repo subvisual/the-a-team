@@ -60,9 +60,12 @@ Star.
 
 Capture how the human wants the A-Team to run — 3–5 questions, recommended
 answers offered: purpose (throwaway concept / client-facing v0 / seed of
-production) · fidelity expectation · timebox · what "done" looks like. Check
-`context.md` for durable per-project defaults first; don't re-ask what's
-recorded. Hold the answers; they're written at the handoff.
+production) · fidelity expectation · timebox · what "done" looks like. **The
+run brief follows the same grill discipline as everything else: one question
+at a time, each with its recommendation — never batched into a single dialog**
+(batching proved confusing in the 2026-07 dry run). Check `context.md` for
+durable per-project defaults first; don't re-ask what's recorded. Hold the
+answers; they're written at the handoff.
 
 ### 3. Research (ingest, never invent)
 
@@ -81,6 +84,10 @@ recorded. Hold the answers; they're written at the handoff.
   accessibility, 3–5 design principles); later runs ask only deltas.
 - Read the target repo enough to ground technical unknowns (stack, existing
   screens) — grounding, not a code audit.
+- **Connector-gated sources need pre-run authorization.** If ingestion depends
+  on a connector (Notion, Granola, Slack), the human authorizes it before the
+  run; an unauthorized or unreachable source routes to a research activity in
+  `research-plan.md` (as designed) — say plainly which source degraded and why.
 
 ### 4. Straw-man (committed first pass)
 
@@ -130,10 +137,14 @@ no run to govern.
 
 Apply **`discovery-plan`** craft to compile the ledger into `PLAN.md` (goals +
 deliverables) and `research-plan.md` (open questions, assumptions +
-confidence, technical research) — written together. Then write everything:
-`context.md`, `jtbd/` files (active + parked), the plans, any `research/` run.
-Durable rules bind every write: ids forever, supersede never delete, `input/`
-verbatim staging only. Manifest present: write `gate_policy` + `run_brief`,
+confidence, technical research) — written together. **Stage the grill digest
+first**: `input/<YYYY-MM-DD>-grill-digest/` holding each grill exchange
+verbatim — the question · your recommended answer · the human's answer. Grill
+answers are raw input like any other batch; the digest is what `sources:`
+cites for grill-derived facts, and later runs read it instead of re-asking
+(ask-once-then-deltas). Then write everything: `context.md`, `jtbd/` files
+(active + parked), the plans, any `research/` run. Durable rules bind every
+write: ids forever, supersede never delete, `input/` verbatim staging only. Manifest present: write `gate_policy` + `run_brief`,
 set `phases.discovery.status = "complete"`. Commit with messages naming what
 changed and why (`docs(jtbd): 01–02 minted, 03 parked — reporting is a
 different job`).
@@ -161,7 +172,8 @@ Assumption-flags do not mitigate this.
 ## Self-check before returning
 
 - Every active job passes the jobs-to-be-done rubric; every job has
-  `confidence` + `sources`.
+  `confidence` + `sources`, and every `sources:` entry resolves to a file —
+  grill-derived facts cite the staged grill digest.
 - The ledger's blocking set is empty — or serialized under
   `## Awaiting answers`.
 - PLAN.md and research-plan.md cross-reference cleanly (every resolution
