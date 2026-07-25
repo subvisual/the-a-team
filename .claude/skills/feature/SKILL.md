@@ -55,23 +55,26 @@ trees hold in-progress artifacts, and a broad add silently sweeps them into a
 bookkeeping commit, breaking the chore-vs-docs breadcrumb split (proven in the
 2026-07 dry run: a gate-policy chore commit swallowed the PRD).
 
-**Artifact commits stage both artifact layers.** `discovery` writes to
-`docs/product/`, every other phase writes to `docs/features/<slug>/`. When
-committing a phase's artifact (`docs(...)`), staging only the feature dir
-silently drops the durable artifacts — `git add` both paths there.
+**Artifact commits stage both artifact layers.** `discovery` writes only to
+`docs/product/`; later phases write mainly to `docs/features/<slug>/` but also
+touch the durable layer (definition's epics, the pr phase's plan refresh and
+product report). When committing a phase's artifact (`docs(...)`), staging only
+the feature dir silently drops the durable artifacts — `git add` both paths there.
 
 ## The two artifact layers
 
 ```
-<target>/docs/product/           # DURABLE — written by discovery-side skills only
-  context.md  jtbd/NN-*.md  epics/NN-*.md  PLAN.md  research-plan.md  research/  input/<YYYY-MM-DD-label>/
+<target>/docs/product/           # DURABLE — outlives any feature
+  context.md  jtbd/NN-*.md  epics/NN-*.md  ateam-plan.md  research-plan.md
+  ateam-product-report.md  research/  input/<YYYY-MM-DD-label>/
 <target>/docs/features/<slug>/   # PER-FEATURE — everything else
   feature.json  prd.md  briefs/  design.md  spec.md  issues.md  lofi/
 ```
 
 Durable artifacts are cited by feature artifacts and outlive them. You never edit
-them yourself — `ateam-discovery` owns them, and updates in place per the
-superseding rules in `CONTRACT.md`.
+them yourself — phase skills own them per `CONTRACT.md` (discovery most of the
+layer; definition the epics; the pr phase the plan refresh and the product
+report), updating in place per the superseding rules there.
 
 ## Git and filesystem mechanics
 
@@ -311,13 +314,22 @@ discarded) for the human to integrate after resolving the failure.
    broken or conflicted merge.
 2. **Plan refresh** (the PM's keep-artifacts-live duty, locked decision #11):
    invoke `discovery-plan` once to fold every phase-appended assumption and
-   open question into current `PLAN.md` + `research-plan.md` — the v0 ships
-   with plans that reflect what was actually built, not what discovery
+   open question into current `ateam-plan.md` + `research-plan.md` — the v0
+   ships with plans that reflect what was actually built, not what discovery
    predicted. Commit.
 3. **Config refresh** (keep-artifacts-live, extended to config): update any
    `## A-Team Config` fact the run invalidated — e.g. dev introduced a test
    suite, so `test command: none` becomes the real command. Commit as `chore`.
-4. When all issues are integrated and the full suite is green, open one PR
+4. **Product report** (durable): invoke `product-report`. It reads the run's
+   artifacts — `context.md`, jobs, epics, `ateam-plan.md`, `research-plan.md`
+   (post-refresh), `prd.md`, `design.md`, `spec.md`, `issues.md` — **and the
+   final v0 code** on `feature/<slug>`, and writes
+   `docs/product/ateam-product-report.md`: the PRD for the product — product
+   framing, the epics on the MoSCoW scope, and what actually shipped. Durable
+   rules apply (update in place, supersede — never silently replace). Commit as
+   `docs(<slug>): product report`. This runs **before** the PR opens so the
+   report ships inside it and the final human review covers it.
+5. When all issues are integrated and the full suite is green, open one PR
    `feature/<slug> → <base_branch>` (via `gh`). Body assembled from `prd.md` +
    `design.md` + the issue list — and link `research-plan.md` as the run's
    honest disclosure.
