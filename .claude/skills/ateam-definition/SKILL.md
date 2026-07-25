@@ -4,7 +4,7 @@ description: Use when the A-Team orchestrator invokes the definition phase for a
 metadata:
   version: 0.1.0
   owner: Alvaro Bezerra (PM)
-  provenance: authored 2026-07-25 against CONTRACT.md from the F5 dry run, which proved this exact conduct order by hand (docs/dry-run-findings-2026-07.md, F-DR-09).
+  provenance: authored 2026-07-25 against CONTRACT.md from the F5 dry run, which proved this exact conduct order by hand (finding F-DR-09 in the 2026-07 dry-run findings report, kept outside this repo).
 ---
 
 # ateam-definition
@@ -82,7 +82,8 @@ epic — an unbundled requirement is a gate flag, not a silent drop.**
 
 ### 3. Wireflow (conduct `wireflow`, pipeline mode)
 
-Derive the method decisions from `references/method-decisions.md` defaults —
+Derive the method decisions from the wireflow skill's
+`references/method-decisions.md` defaults —
 journey set, spine, lanes, locked cuts as Stop nodes — and keep a written
 summary as the gate breadcrumb. Build `briefs/wireflow/board.json`, generate
 with the engine (`--rasterize`), then **Read every journey's PNG and iterate

@@ -107,7 +107,7 @@ the orchestrator reads the manifest and continues from the current phase.
 | Phase | Artifact | Gate | Skill |
 |-------|----------|------|-------|
 | `discovery` | `context.md` + `jtbd/` + `ateam-plan.md` + `research-plan.md` (durable) | in-skill read-back | `ateam-discovery` |
-| `definition` | `prd.md` + `briefs/` | human | `ateam-definition` (stub now) |
+| `definition` | `prd.md` + `briefs/` | human | `ateam-definition` (authored) |
 | `design` | `design.md` + lo-fi prototype | human | `ateam-design` (stub now) |
 | `spec` | `spec.md` (incl. design-system mapping) | auto | `ateam-spec` (stub now) |
 | `issues` | `issues.md` | auto | reuse `prd-to-issues` |
@@ -303,10 +303,10 @@ interface each skill implements is fixed in [`CONTRACT.md`](./CONTRACT.md): inpu
 it may read, output paths it must write, manifest fields it sets, and its
 done-signal.
 
-Until PM/Design deliver, `ateam-definition`, `ateam-design`, and `ateam-spec` are
-**no-op stubs** (write a placeholder file, set the manifest status). This tests
-orchestration wiring only, not real output. Real skills are drop-in — same name,
-same contract.
+`ateam-discovery` and `ateam-definition` are authored. Until Design delivers,
+`ateam-design` and `ateam-spec` remain **no-op stubs** (write a placeholder
+file, set the manifest status) — testing orchestration wiring only, not real
+output. Real skills are drop-in — same name, same contract.
 
 ## Build order (our scope)
 
