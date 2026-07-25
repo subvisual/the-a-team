@@ -249,7 +249,7 @@ Load-bearing:
 
 ### `ateam-definition` — 📝 draft + review
 
-- **May read**: `docs/product/**` (context, JTBDs, PLAN); the manifest; the target repo.
+- **May read**: `docs/product/**` (context, JTBDs, `ateam-plan.md`); the manifest; the target repo.
 - **Must write**:
   - `prd.md` in the feature directory — problem, goals/non-goals, scope, user
     stories, acceptance criteria. Every scoped item traces to a JTBD id.
