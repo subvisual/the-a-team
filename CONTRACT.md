@@ -37,6 +37,7 @@ Artifacts split by **lifetime**, not by producer.
 docs/product/
   context.md                  # digest, glossary, Know/Don't-Know ledger
   jtbd/NN-<slug>.md           # one file per job
+  epics/NN-<slug>.md          # one file per epic — durable delivery structures, same lifecycle rules
   PLAN.md                     # the product team's plan: goals + deliverables to reach v0
   research-plan.md            # ships with v0: open questions, assumptions + confidence,
                               #   technical research (services, stack, integration costs)
@@ -202,6 +203,9 @@ Load-bearing:
     stories, acceptance criteria. Every scoped item traces to a JTBD id.
   - `briefs/` in the feature directory — wireflow + per-screen requirements.
   - the ticket backlog input consumed later by `prd-to-issues`.
+  - `docs/product/epics/NN-<slug>.md` — the Epics: durable delivery structures
+    bundling the PRD's requirement IDs, traced to job ids (durable rules apply —
+    ids forever, supersede never delete, human review at the gate).
 - **Done-signal**: set `phases.definition.status = "complete"`. The orchestrator
   flips it to `approved` after the human gate.
 

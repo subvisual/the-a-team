@@ -53,6 +53,7 @@ artifacts split by lifetime, not by producer:
   docs/product/                 # DURABLE — outlives any one feature
     context.md                  #   digest, glossary, Know/Don't-Know ledger
     jtbd/NN-<slug>.md           #   one file per job — the North Star
+    epics/NN-<slug>.md          #   one file per epic — durable delivery structures
     PLAN.md                     #   the product team's plan: goals + deliverables to v0
     research-plan.md            #   ships with v0: open questions, assumptions +
                                 #   confidence, technical research

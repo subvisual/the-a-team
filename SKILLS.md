@@ -20,6 +20,7 @@ pending).
 | `prd-writer` | Feature-level PRD at `docs/features/<slug>/prd.md`: problem, evidence (cited), jobs in scope, user stories grouped by JTBD id, MoSCoW (all four, every item job-traced, Must ≤~60%), requirement-level acceptance criteria, decision log. Presented at the definition gate with the jobs it scopes against. | Definition — the product feature doc every ticket rolls up to. | ported |
 | `wireflow` | Maps journeys into JTBD-anchored swimlane flows (screens, decisions, system/agent nodes — no deep UI) with a verified generate→rasterize→Read build engine; horizontal or matrix layouts; FigJam rebuild optional. Output: `briefs/wireflow/` (board.json spec + HTML/SVG). Pipeline mode derives method decisions and headlines journey set + spine at the gate; standalone runs the full grill. | Definition — journeys → pages; owns where each job enters a screen. | ported |
 | `page-brief` | The "PRD per page": one card per unique screen — responsibilities, task checklist tagged to `[[NN]]` job ids, journey/graph connections, factual + cotton-test acceptance criteria (never self-certified). Card engine renders verified SVG/HTML into `briefs/pages/`. Gates on job quality first; pipeline mode derives all cards with flags headlined at the gate. | Definition — between wireflow and PRD; below the PRD, above the screen. | ported |
+| `epics` | Defines and maintains durable epics at `docs/product/epics/NN-<slug>.md` — each shaped around one primary job-outcome, bundling PRD requirement IDs, outcome-oriented initiatives, explicit prioritization (MoSCoW default). Same lifecycle rules as jobs: ids forever, supersede never delete. Cherry-picked from roadmap-writer's epic-only mode; roadmap planning deliberately not ported. | Definition — "the Epics"; what the ticket backlog decomposes. | ported |
 | `ateam-definition` | Placeholder: writes a stub `prd.md` + `briefs/`, sets its manifest status. | Definition phase slot — to be replaced by a wrapper over the ported definition skills. | stub |
 | `ateam-design` | Placeholder: writes a stub `design.md` + lo-fi dir, sets its manifest status. | Design phase slot — Design-authored later. | stub |
 | `ateam-spec` | Placeholder: writes a stub `spec.md`, sets its manifest status. | Design-spec phase slot — Design-authored later. | stub |
@@ -29,5 +30,4 @@ pending).
 
 | Skill | What it will do | Pipeline position |
 |---|---|---|
-| `epics` | Slim epic-definition skill (cherry-picked from roadmap-writer — the rest of it stays out). | Definition |
 | `ticket-writer` | Agent-consumable, implementation-ready tickets with testable acceptance criteria. | Dev boundary |
