@@ -143,8 +143,8 @@ clear problem statement.
 **Termination is defined, not felt.** The grill maintains a `Know / Don't Know`
 ledger and asks only the Don't-Knows that *block* a JTBD or a scope call. It stops
 when the blocking set is empty. Surviving non-blocking unknowns are written into
-the artifacts as open questions and into `PLAN.md` as deliverables — so stopping
-loses nothing. A question is only asked if its answer changes an artifact.
+`research-plan.md` as open questions — so stopping loses nothing. A question is
+only asked if its answer changes an artifact.
 
 ### Gates
 
