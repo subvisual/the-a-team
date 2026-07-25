@@ -58,7 +58,7 @@ documents stay readable.
 
 ### Don't know
 - **[blocking → <the JTBD id or scope call it blocks>]** <question>
-- **[non-blocking]** <question — survives into PLAN.md as a deliverable>
+- **[non-blocking]** <question — survives into research-plan.md as an open question>
 
 ## Awaiting answers
 
@@ -75,5 +75,5 @@ Rules that bind every writer of this file:
 - **TBD stays visible.** Uncertainty lives as explicit `TBD` / ledger entries,
   never hidden inside polished prose.
 - **The ledger drives the grill.** Only blocking Don't-Knows justify questions;
-  non-blocking ones flow into `PLAN.md` as deliverables, so stopping loses
-  nothing.
+  non-blocking ones flow into `research-plan.md` as open questions, so stopping
+  loses nothing.

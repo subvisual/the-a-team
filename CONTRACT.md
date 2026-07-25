@@ -37,7 +37,9 @@ Artifacts split by **lifetime**, not by producer.
 docs/product/
   context.md                  # digest, glossary, Know/Don't-Know ledger
   jtbd/NN-<slug>.md           # one file per job
-  PLAN.md                     # deliverables to reach v0
+  PLAN.md                     # the product team's plan: goals + deliverables to reach v0
+  research-plan.md            # ships with v0: open questions, assumptions + confidence,
+                              #   technical research (services, stack, integration costs)
   research/<YYYY-MM-DD>-<slug>.md  # append-only synthesis runs — the evidence audit trail
   input/<YYYY-MM-DD-label>/   # raw evidence — human-dropped or skill-staged verbatim pulls; never edited
 
@@ -102,8 +104,14 @@ Everything else — especially durable writes and their review step — behaves
     `Know / Don't Know` ledger. Frontmatter tracks which `input/` batches have been
     ingested.
   - `docs/product/jtbd/NN-<slug>.md` — one file per job (template below).
-  - `docs/product/PLAN.md` — deliverables to reach v0 (API research, integration
-    costs), seeded from surviving non-blocking unknowns.
+  - `docs/product/PLAN.md` — the **product team's plan**: goals (job-traced)
+    and deliverables to reach v0, grouped into initiatives with decision
+    criteria.
+  - `docs/product/research-plan.md` — the **research plan that ships with the
+    v0**: open questions, assumptions made by agents/humans with confidence
+    levels, and technical research (services, stack, integration costs) —
+    seeded from surviving non-blocking unknowns. Both plans are written
+    together (one compile step) and kept live through later phases.
 - **Process shape**: `challenge → research → straw-man → grill → read-back → write`.
 - **Termination**: the blocking set of the `Know / Don't Know` ledger is empty, or
   the human stops it. A question is only asked if its answer changes an artifact.
@@ -136,7 +144,7 @@ Full annotated template: the `project-context` skill's
 that drops content is a forbidden overwrite); TBD stays visible, never smoothed
 into prose; renamed glossary terms are never deleted; the ledger's **blocking**
 set is the grill's termination condition — non-blocking unknowns flow to
-`PLAN.md`.
+`research-plan.md` as open questions.
 
 #### JTBD template — this is the contract design couples to
 

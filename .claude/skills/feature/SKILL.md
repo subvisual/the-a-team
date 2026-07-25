@@ -57,7 +57,7 @@ drops the durable artifacts — always `git add` both paths.
 
 ```
 <target>/docs/product/           # DURABLE — written by discovery-side skills only
-  context.md  jtbd/NN-*.md  PLAN.md  research/  input/<YYYY-MM-DD-label>/
+  context.md  jtbd/NN-*.md  PLAN.md  research-plan.md  research/  input/<YYYY-MM-DD-label>/
 <target>/docs/features/<slug>/   # PER-FEATURE — everything else
   feature.json  prd.md  briefs/  design.md  spec.md  issues.md  lofi/
 ```
