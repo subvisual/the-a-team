@@ -62,7 +62,8 @@ Capture how the human wants the A-Team to run — 3–5 questions, recommended
 answers offered: purpose (throwaway concept / client-facing v0 / seed of
 production) · fidelity expectation · timebox · what "done" looks like. Check
 `context.md` for durable per-project defaults first; don't re-ask what's
-recorded. Hold the answers; they're written at the handoff.
+recorded. Hold the answers; they're written at the handoff (manifest runs) or
+into `context.md` as durable defaults (standalone — see movement 7).
 
 ### 3. Research (ingest, never invent)
 
@@ -124,7 +125,8 @@ Present how the run will proceed and have the **human** choose the
 Say explicitly: *"any assumption made after you leave lands in
 `research-plan.md` with a confidence level."* You never choose the policy; no
 answer → `block` stands. Standalone (no manifest): skip the policy — there is
-no run to govern.
+no run to govern — but record the run-brief answers in `context.md` as the
+durable per-project defaults movement 2 reads, so the next run doesn't re-ask.
 
 ### 8. Write & commit
 
