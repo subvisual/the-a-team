@@ -86,13 +86,20 @@ is reported as **partial**, with the gap named — never smoothed over.
 4. **Compile the scope table** — every epic, cited `[[epic:NN]]`, with its
    MoSCoW class, the jobs it serves (`[[NN]]`), verdict, and evidence pointer.
    Epic detail stays in the epic files; the report indexes, never restates.
-5. **Draft or refresh** per the template. First write (no report on disk yet):
-   seed every section; the refresh-preservation check below is N/A. On
+5. **Draft or refresh** per the template. Each section links the final
+   artifacts it draws on (relative to `docs/product/`), and
+   `## Supporting documentation` closes the file as the gathered index —
+   durable layer first, then each run's feature artifacts by slug: one hop
+   from the report to any final artifact. First write (no report on disk
+   yet): seed every section; the refresh-preservation check below is N/A. On
    refresh: keep prior run content that still holds, fold in what changed,
-   append the run to `runs:` in the frontmatter. The decision log only ever
-   grows.
+   append the run to `runs:` in the frontmatter (its artifact group joins
+   `## Supporting documentation`). The decision log only ever grows.
 6. **Self-check before returning:**
    - every `[[epic:NN]]` and `[[NN]]` citation resolves to a file on disk;
+   - every artifact link — per-section and in `## Supporting documentation` —
+     resolves from `docs/product/`, and no final artifact is missing from the
+     gathered index;
    - every **shipped** verdict names its evidence (path or behavior);
    - no scope item exists that traces to no job;
    - open items point into `research-plan.md`, never fork it;
