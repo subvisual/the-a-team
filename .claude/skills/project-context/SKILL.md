@@ -92,7 +92,7 @@ where a repo exists — one commit per run, message naming what changed and why
    constraints, key links. Jobs cited by id, headline quoted exactly.
 6. **Ledger.** Update Know / Don't-Know. Tag each Don't-Know **blocking**
    (naming the JTBD or scope call it blocks) or **non-blocking** (destined for
-   `PLAN.md` as a deliverable). Uncertainty stays visible as TBD — a
+   `research-plan.md` as an open question). Uncertainty stays visible as TBD — a
    confident-sounding guess is a landmine for every skill that reads this file.
 7. **Read-back — mandatory before writing.** `context.md` is a durable
    artifact: present the drafted file (or the diff, on a refresh) for the human
