@@ -64,7 +64,7 @@ When I want to catch up on product updates without checking the app every day, I
 
 Handoff:
 
-- Next likely skill(s): roadmap-writer if this ticket needs sequencing against other engagement work.
+- Next likely skill(s): `epics` if this ticket needs sequencing against other engagement work.
 - What to pass forward: this ticket, its JTBD, and the one-sprint constraint.
 - Suggested next prompts: "Sequence this against the Q2 engagement backlog." / "Write the bug ticket for the current digest send failures."
 
@@ -110,9 +110,9 @@ Acceptance Criteria:
 
 Handoff:
 
-- Next likely skill(s): roadmap-writer to sequence the three tickets against the quarter.
+- Next likely skill(s): `epics` to structure and prioritize the three tickets against the quarter.
 - What to pass forward: the three tickets, the shared JTBD, and the dependency chain (1 blocks 2 and 3).
-- Suggested next prompts: "Sequence these three tickets into the analytics roadmap." / "Expand Ticket 2 into the full feature template."
+- Suggested next prompts: "Structure these three tickets under an analytics epic." / "Expand Ticket 2 into the full feature template."
 
 ## Mode 3 — AC-Only Output
 
