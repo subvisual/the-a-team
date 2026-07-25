@@ -132,7 +132,7 @@ rules in order (they resolve every resume case unambiguously):
 | `definition` | `ateam-definition` | ✅ | `design` |
 | `design` | `ateam-design` | ✅ | `spec` |
 | `spec` | `ateam-spec` | — | `issues` |
-| `issues` | `prd-to-issues` | — | `dev` |
+| `issues` | `prd-to-issues` + `ticket-writer` (AC enrich) | — | `dev` |
 | `dev` | `issue-swarm` | — | `pr` |
 | `pr` | integrate + open PR | ✅ final review | `done` |
 
@@ -184,8 +184,18 @@ checked on resume), a killed session resumes at the same gate.
 
 ### `issues` phase
 
-Invoke `prd-to-issues` against `prd.md` + `spec.md` → `issues.md`. Set status
-`complete`, commit, advance to `dev`.
+Two steps, one phase:
+
+1. Invoke `prd-to-issues` against `prd.md` + `spec.md` → `issues.md`
+   (decomposition: tracer-bullet slices, dependency order).
+2. Invoke `ticket-writer` (AC-only mode, batch across `issues.md`) to enrich
+   every issue's acceptance criteria to Gherkin — sourced from the PRD's
+   requirement ACs and the spec — and stamp each issue's `[[NN]]` job trace.
+   Enrichment edits `issues.md` in place without adding, removing, or
+   reordering issues; decomposition gaps it reports are surfaced to the human
+   at the next gate, not silently fixed.
+
+Then set status `complete`, commit, advance to `dev`.
 
 ### `dev` phase
 
