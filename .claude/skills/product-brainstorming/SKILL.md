@@ -27,9 +27,10 @@ available for humans out-of-band — every A-Team skill is standalone-usable.
 Nothing a brainstorm produces becomes a durable artifact of its own. Its
 durable outputs **route** (see Capture): assumptions and open questions — with
 confidence — go to the `context.md` Know/Don't-Know ledger, which
-`discovery-plan` later compiles into `PLAN.md`, the research document that ships
-alongside the v0 (open questions · agent assumptions + confidence · technical
-research of services and stack). Candidate jobs go to `jobs-to-be-done`.
+`discovery-plan` later compiles into `ateam-plan.md` + `research-plan.md` — the
+latter the research plan that ships alongside the v0 (open questions · agent
+assumptions + confidence · technical research of services and stack).
+Candidate jobs go to `jobs-to-be-done`.
 
 ## When to use
 
@@ -148,7 +149,8 @@ write, one commit per session):
 - Assumptions surfaced and open questions → appended to `context.md`'s
   **Know/Don't-Know ledger**, each tagged blocking/non-blocking and carrying
   its confidence. This is the raw material `discovery-plan` compiles into
-  `PLAN.md` — the research document that accompanies the v0.
+  `ateam-plan.md` + `research-plan.md` — the latter the research plan that
+  accompanies the v0.
 - Candidate jobs → named, marked **TBD**, routed to `jobs-to-be-done`. Never
   drafted into job statements here.
 - No separate brainstorm artifact is written.

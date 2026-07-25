@@ -36,6 +36,21 @@ raw mess — it never replaces the raw files and never embellishes them.>
 ### 2026-07-17-client-call
 <...>
 
+## Sources
+
+<The audit index of everything discovery consumed — one line per source: links
+visited during agent research, human-provided files, connector pulls, the
+grill digest batch. Every row resolves — a live URL or a path on disk.
+Overview's Key links stay the 2–3 load-bearing product links; this table is
+the complete index.>
+
+| Type | Source | Date | What it informed |
+| --- | --- | --- | --- |
+| link | <URL the agent consulted> | <YYYY-MM-DD> | <the fact or section it fed> |
+| file | <input/<batch>/<file> — human-provided> | <YYYY-MM-DD> | <...> |
+| pull | <input/<YYYY-MM-DD>-<source>-pulled/> | <YYYY-MM-DD> | <...> |
+| grill | <input/<YYYY-MM-DD>-grill-digest/> | <YYYY-MM-DD> | <...> |
+
 ## Glossary
 
 Status: **settled** — team-wide agreement, safe to use in artifacts ·
@@ -87,6 +102,9 @@ Rules that bind every writer of this file:
   forbidden for durable artifacts.
 - **TBD stays visible.** Uncertainty lives as explicit `TBD` / ledger entries,
   never hidden inside polished prose.
+- **Sources is append-mostly and every row resolves.** A source that shaped a
+  fact but never reaches the index is an audit hole; a row pointing at nothing
+  (dead path, vanished URL with no staged pull) is a bug.
 - **The ledger drives the grill.** Only blocking Don't-Knows justify questions;
   non-blocking ones flow into `research-plan.md` as open questions, so stopping
   loses nothing.
