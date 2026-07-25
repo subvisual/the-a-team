@@ -29,7 +29,7 @@ A statement passes FORM only if all of these hold:
 - [ ] **Push present and real.** There's an actual struggling moment, not a mild inconvenience.
 - [ ] **Push + pull both present.** Demand needs both; a pull with no push (or vice versa) is not yet a job.
 - [ ] **Evidence basis stated.** Where does this come from — observed customer behavior, or assertion?
-- [ ] **Confidence stamped.** Strong / Moderate / Directional / Unknown, with one line of basis.
+- [ ] **Confidence stamped.** Strong / Moderate / Directional / Hypothesis, with one line of basis.
 - [ ] **Hypothesis flagged if armchair.** If built on assertions, it's labelled **Hypothesis** with a
       named validation step (default: "find a customer who switched from [replaced solution]").
 
