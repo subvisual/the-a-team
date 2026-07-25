@@ -277,6 +277,30 @@ def label_chip(lx: float, ly: float, label: str) -> str:
     return "".join(out)
 
 
+class LabelPlacer:
+    """Nudges edge-label chips apart when they would overlap.
+
+    Edges routed through the same gutter put their labels at the same x and
+    near-identical y — stacked chips read ambiguously (which branch is which?).
+    One placer per canvas: ask it for a position before drawing each chip; it
+    slides a colliding chip down in chip-height steps until the slot is free.
+    """
+
+    def __init__(self):
+        self.placed: list[tuple[float, float, float, float]] = []
+
+    def place(self, lx: float, ly: float, label: str) -> tuple[float, float]:
+        lines = wrap(label, 22)
+        w = max(len(l) for l in lines) * 6.4 + 12
+        h = len(lines) * 13 + 6
+        while any(lx - w / 2 < x1 and lx + w / 2 > x0 and
+                  ly - h / 2 < y1 and ly + h / 2 > y0
+                  for (x0, y0, x1, y1) in self.placed):
+            ly += h + 4
+        self.placed.append((lx - w / 2, ly - h / 2, lx + w / 2, ly + h / 2))
+        return lx, ly
+
+
 def arrow_defs(colors: "list[str] | None" = None) -> str:
     seen, markers = [], []
     for c in [EDGE_GRAY, *(colors or [])]:
@@ -325,13 +349,16 @@ def route_h(s: Node, t: Node):
     return p, (gx, (sy + t.cy) / 2, True)
 
 
-def edge_svg_h(s: Node, t: Node, label: str, lcmap: "dict[str, str] | None" = None) -> str:
+def edge_svg_h(s: Node, t: Node, label: str, lcmap: "dict[str, str] | None" = None,
+               placer: "LabelPlacer | None" = None) -> str:
     pts, (lx, ly, _) = route_h(s, t)
     col = edge_color(s, t, lcmap or {})
     d = "M " + " L ".join(f"{px:.1f} {py:.1f}" for px, py in pts)
     out = [f'<path d="{d}" fill="none" stroke="{col}" stroke-width="1.5" '
            f'marker-end="url(#{marker_id(col)})"/>']
     if label:
+        if placer:
+            lx, ly = placer.place(lx, ly, label)
         out.append(label_chip(lx, ly, label))
     return "".join(out)
 
@@ -364,10 +391,11 @@ def journey_svg(j: Journey, lcmap: "dict[str, str] | None" = None) -> str:
     if flow:
         S.append(f'<text x="{MARGIN_X}" y="74" font-size="11.5" fill="#80868b" font-style="italic" '
                  f'font-family="{FONT}">{esc(flow)}</text>')
+    placer = LabelPlacer()
     for e in j.edges:
         s, t = nb.get(e["from"]), nb.get(e["to"])
         if s and t:
-            S.append(edge_svg_h(s, t, e.get("label", ""), lcmap))
+            S.append(edge_svg_h(s, t, e.get("label", ""), lcmap, placer))
     for n in j.nodes:
         S.append(draw_node(n, NODE_W, NODE_H))
     S.append('</svg>')
@@ -437,13 +465,16 @@ def route_m(s: Node, t: Node):
     return p, ((scx + tcx) / 2, midY - 8)
 
 
-def edge_svg_m(s: Node, t: Node, label: str, lcmap: "dict[str, str] | None" = None) -> str:
+def edge_svg_m(s: Node, t: Node, label: str, lcmap: "dict[str, str] | None" = None,
+               placer: "LabelPlacer | None" = None) -> str:
     pts, (lx, ly) = route_m(s, t)
     col = edge_color(s, t, lcmap or {})
     d = "M " + " L ".join(f"{px:.1f} {py:.1f}" for px, py in pts)
     out = [f'<path d="{d}" fill="none" stroke="{col}" stroke-width="1.4" '
            f'marker-end="url(#{marker_id(col)})"/>']
     if label:
+        if placer:
+            lx, ly = placer.place(lx, ly, label)
         out.append(label_chip(lx, ly, label))
     return "".join(out)
 
@@ -482,12 +513,13 @@ def matrix_svg(board: dict, journeys: list[Journey]) -> str:
     S.append(f'<text x="{MARGIN_X}" y="30" font-size="18" font-weight="700" fill="#202124" '
              f'font-family="{FONT}">{esc(board.get("title","Wireflow"))} — matrix view</text>')
     # edges then nodes
+    placer = LabelPlacer()
     for j in journeys:
         nb = {n.id: n for n in j.nodes}
         for e in j.edges:
             s, t = nb.get(e["from"]), nb.get(e["to"])
             if s and t:
-                S.append(edge_svg_m(s, t, e.get("label", ""), lcmap))
+                S.append(edge_svg_m(s, t, e.get("label", ""), lcmap, placer))
     for j in journeys:
         for n in j.nodes:
             S.append(draw_node(n, NODE_W_M, NODE_H_M, fs=11))

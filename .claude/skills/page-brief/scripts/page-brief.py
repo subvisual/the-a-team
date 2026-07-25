@@ -145,8 +145,13 @@ class Draw:
         self.S.append(
             f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{col}" stroke-width="1"/>')
 
+    @staticmethod
+    def chip_w(txt):
+        """Chip width without drawing — lets callers wrap BEFORE emitting."""
+        return len(str(txt)) * 6.0 + 12
+
     def chip(self, x0, y0, txt, fill, tcol="#fff", rad=7):
-        w = len(str(txt)) * 6.0 + 12
+        w = self.chip_w(txt)
         self.rect(x0, y0, w, 15, fill, rad)
         self.T(x0 + 6, y0 + 11, txt, 9.5, tcol, True)
         return w
@@ -300,11 +305,11 @@ def card(x, y, W, d, jobs):
                 label += " · " + a["step"]
             if a.get("variant"):
                 label += "  (variant: " + a["variant"] + ")"
-            cw = g.journey_chip(ux, g.y, label)
-            if ux + cw > x + W - pad:            # wrap the chip row
-                ux = x + pad
-                g.y += 20
-                cw = g.journey_chip(ux, g.y, label)
+            cw = g.chip_w(label)
+            if ux + cw > x + W - pad and ux > x + pad:  # wrap BEFORE drawing —
+                ux = x + pad                             # drawing-then-wrapping
+                g.y += 20                                # duplicated the chip
+            g.journey_chip(ux, g.y, label)
             ux += cw + 8
         g.y += 22
 

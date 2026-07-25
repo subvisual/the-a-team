@@ -34,7 +34,12 @@ skipped entirely, so a sparse card doesn't leave hollow containers.
   flags and criteria wrap rather than overflow.
 - **Checklist job pills reserve their own gutter** — the task text wraps to avoid them, so a task with
   three job tags won't collide with its pills.
-- **Journey chips wrap to a new row** when they'd exceed the card width.
+- **Journey chips wrap to a new row** when they'd exceed the card width. The
+  engine measures a chip *before* drawing it, so a wrapped chip appears exactly
+  once — if you ever see the same chip at the end of one row **and** the start
+  of the next, that's the pre-2026-07 draw-then-wrap bug regressed; the
+  regression check is a card whose chips exceed one row (e.g. three chips with
+  a long `variant` on the second, as on the dry run's P1 History card).
 - **Job pills are round + filled; journey chips are square + pale.** This is the Q12 disambiguation
   and it's enforced by the engine, not by what you type.
 
