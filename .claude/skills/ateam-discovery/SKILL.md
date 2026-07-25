@@ -1,0 +1,153 @@
+---
+name: ateam-discovery
+description: Use when the A-Team orchestrator invokes the discovery phase for a feature, or when a human runs discovery standalone to seed docs/product/ from raw input (a client transcript, a fuzzy prompt) before any feature exists. The 🔥 grill phase skill — conducts the ported PM skills (product-brainstorming, project-context, research-synthesis, jobs-to-be-done, discovery-plan) through challenge → run brief → research → straw-man → grill → read-back → independence handoff → write, producing context.md, the JTBD set, PLAN.md, and research-plan.md, and writing gate_policy + run_brief to the manifest. Cannot run without a human: escalates via ## Awaiting answers, never guesses. Implemented against CONTRACT.md.
+metadata:
+  version: 0.1.0
+  owner: Alvaro Bezerra
+  provenance: authored 2026-07-24 against CONTRACT.md as a conductor over the ported product-craft skills (migration PRs 2–11) plus the independence handoff (PR 12).
+---
+
+# ateam-discovery
+
+The discovery grill. You are a **conductor**: the craft lives in the ported
+skills — you sequence them into **one coherent conversation** with the human,
+one consolidated read-back, one independence handoff, one write. You are also
+**pure craft**: zero project facts; everything project-specific comes from the
+prompt, the human, `docs/product/`, and the target repo.
+
+Interaction mode: 🔥 **grill** — one question at a time, each with your
+recommended answer, never asked unless its answer changes an artifact.
+
+## Contract (CONTRACT.md is authoritative)
+
+- **Reads**: the feature `prompt` (manifest or invocation args);
+  `docs/product/**` including `input/`; the target repo; the harness `intake/`
+  banks.
+- **Writes** (durable, all rules apply): `context.md`, `jtbd/NN-*.md`,
+  `PLAN.md`, `research-plan.md`. Plus, manifest present: `gate_policy` +
+  `run_brief` (the one write beyond your own phase status).
+- **Done-signal**: `phases.discovery.status = "complete"`. No orchestrator
+  gate — your read-back is the gate.
+- **Manifest-optional**: absent → prompt from args, skip all manifest writes.
+  Standalone is never a weaker-review path.
+
+## The movement sequence
+
+### 1. Challenge (hard-capped, skippable)
+
+Load **`product-brainstorming`** craft for its challenge beat: *does this
+request even make sense?* Go / no-go / reshape — you are explicitly allowed to
+say "this doesn't make sense" or "this should change," with reasons. Skip when
+the prompt already carries a clear problem statement. Cap it: a few exchanges,
+not a session.
+
+### 2. Run brief (in the same beat)
+
+Capture how the human wants the A-Team to run — 3–5 questions, recommended
+answers offered: purpose (throwaway concept / client-facing v0 / seed of
+production) · fidelity expectation · timebox · what "done" looks like. Check
+`context.md` for durable per-project defaults first; don't re-ask what's
+recorded. Hold the answers; they're written at the handoff (manifest runs) or
+into `context.md` as durable defaults (standalone — see movement 7).
+
+### 3. Research (ingest, never invent)
+
+- Un-ingested `input/` batches + anything the human points at: apply
+  **`project-context`** craft to digest into a drafted `context.md` (glossary
+  first, Know/Don't-Know ledger, TBD honesty).
+- Evidence-heavy runs (transcripts, surveys, tickets): apply
+  **`research-synthesis`** craft — themes, contradictions, verdicts against
+  any existing jobs, new-job signals — as a drafted `research/` run.
+- **Seed the ledger from the `intake/` banks** (`design-intake.md`,
+  `dev-intake.md`), each entry tagged `[design]` / `[dev]` / `[pm]`.
+- Read the target repo enough to ground technical unknowns (stack, existing
+  screens) — grounding, not a code audit.
+
+### 4. Straw-man (committed first pass)
+
+Draft the JTBD set using **`jobs-to-be-done`** craft — house-format headlines,
+forces, honest confidence, parked candidates as real files — *before* asking
+the human anything about jobs. A straw-man the human corrects beats a
+questionnaire the human authors.
+
+### 5. Grill (ledger-driven)
+
+Ask **only blocking Don't-Knows**, one at a time, recommended answer first,
+routed by **answerability**:
+
+- blocking + answerable by this human → ask it;
+- blocking but this human can't answer it (technical, third-party) → a
+  research activity in `research-plan.md` — never a wasted question;
+- non-blocking → stays in the ledger.
+
+Intake-bank questions are never asked raw — they enter through the ledger and
+this routing. **Termination is defined, not felt**: stop when the blocking set
+is empty or the human stops you.
+
+### 6. Read-back (mandatory, consolidated)
+
+Present, for correction before anything durable is written: the JTBD set in
+full (headlines + confidence — this is the North Star, read it carefully),
+plus tight summaries of `context.md` (glossary + ledger), the plans, and any
+synthesis run. One consolidated read-back covers every ported skill's
+read-back duty. The human corrects; you fix; re-present what changed.
+
+### 7. Independence handoff (the human opens the valve)
+
+Present how the run will proceed and have the **human** choose the
+`gate_policy` — recommended default first:
+
+- **`block`** (default) — wait at every gate; today's behavior.
+- **`notify-and-continue`** — gates become logged provisional checkpoints;
+  review on return.
+- **`run-to-pr`** — lunch mode; only the final PR review blocks.
+
+Say explicitly: *"any assumption made after you leave lands in
+`research-plan.md` with a confidence level."* You never choose the policy; no
+answer → `block` stands. Standalone (no manifest): skip the policy — there is
+no run to govern — but record the run-brief answers in `context.md` as the
+durable per-project defaults movement 2 reads, so the next run doesn't re-ask.
+
+### 8. Write & commit
+
+Apply **`discovery-plan`** craft to compile the ledger into `PLAN.md` (goals +
+deliverables) and `research-plan.md` (open questions, assumptions +
+confidence, technical research) — written together. Then write everything:
+`context.md`, `jtbd/` files (active + parked), the plans, any `research/` run.
+Durable rules bind every write: ids forever, supersede never delete, `input/`
+verbatim staging only. Manifest present: write `gate_policy` + `run_brief`,
+set `phases.discovery.status = "complete"`. Commit with messages naming what
+changed and why (`docs(jtbd): 01–02 minted, 03 parked — reporting is a
+different job`).
+
+## Re-invocation (revise / resume / review-and-extend)
+
+Idempotent. If `docs/product/` already has jobs, you **review and extend** —
+never re-derive: existing ids stand, reshapes supersede. On resume after an
+escalation, read the answers under `## Awaiting answers`, clear what's
+answered, continue from the movement you halted in.
+
+## No human present
+
+You are a grill; you cannot run without a human. If nobody answers:
+serialise the blocking questions — one per heading — into `context.md` under
+`## Awaiting answers`, leave `phases.discovery.status = "in_progress"`, commit
+that, halt, and report what is needed. **An escalation is a defined output,
+not a failure.**
+
+**Autonomous degrade is forbidden.** Answering your own questions and writing
+invented jobs into `docs/product/jtbd/` manufactures a North Star from
+nothing, and every downstream agent treats it as ground truth.
+Assumption-flags do not mitigate this.
+
+## Self-check before returning
+
+- Every active job passes the jobs-to-be-done rubric; every job has
+  `confidence` + `sources`.
+- The ledger's blocking set is empty — or serialized under
+  `## Awaiting answers`.
+- PLAN.md and research-plan.md cross-reference cleanly (every resolution
+  deliverable points at its question).
+- Intake entries are tagged and routed; no bank question was asked raw.
+- Manifest (if present): `gate_policy` + `run_brief` written, own status
+  `complete`, nothing else touched.

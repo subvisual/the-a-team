@@ -25,4 +25,4 @@ pending).
 | `ateam-definition` | Placeholder: writes a stub `prd.md` + `briefs/`, sets its manifest status. | Definition phase slot — to be replaced by a wrapper over the ported definition skills. | stub |
 | `ateam-design` | Placeholder: writes a stub `design.md` + lo-fi dir, sets its manifest status. | Design phase slot — Design-authored later. | stub |
 | `ateam-spec` | Placeholder: writes a stub `spec.md`, sets its manifest status. | Design-spec phase slot — Design-authored later. | stub |
-| `ateam-discovery` | Reserved orchestrator name — **not yet built**. | Discovery phase slot — will be a thin wrapper over the ported discovery skills (wiring step after the PM skill migration). | reserved |
+| `ateam-discovery` | The 🔥 grill phase skill — conducts the ported discovery skills through challenge → run brief → research → straw-man → grill → consolidated read-back → independence handoff → write. Produces context.md, the JTBD set, PLAN.md + research-plan.md; writes `gate_policy` + `run_brief` to the manifest; escalates via `## Awaiting answers`, never guesses. | Discovery phase — the one human-present block that makes independence safe. | authored |
