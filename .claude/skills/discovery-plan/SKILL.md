@@ -1,10 +1,10 @@
 ---
 name: discovery-plan
-description: Use when a problem space still has unvalidated assumptions and open questions blocking confident scope or build decisions — e.g. research-synthesis produced job verdicts, contradictions, or gaps needing targeted follow-up; the context.md ledger holds surviving unknowns that must become a plan; or a team needs goals, deliverables, research activities, and go/no-go criteria before writing a PRD. Compiles the ledger + evidence into TWO durable artifacts in one pass: docs/product/PLAN.md (the product team's plan — goals and deliverables to reach v0) and docs/product/research-plan.md (the research plan that ships with the v0 — open questions, agent assumptions + confidence, technical research: services, stack, integration costs). Re-run it at any phase to keep both live. Do not use when requirements are validated and delivery is underway (prd-writer), to synthesize raw research (research-synthesis first), or to create or rewrite job statements (jobs-to-be-done).
+description: Use when a problem space still has unvalidated assumptions and open questions blocking confident scope or build decisions — e.g. research-synthesis produced job verdicts, contradictions, or gaps needing targeted follow-up; the context.md ledger holds surviving unknowns that must become a plan; or a team needs goals, deliverables, research activities, and go/no-go criteria before writing a PRD. Compiles the ledger + evidence into TWO durable artifacts in one pass: docs/product/ateam-plan.md (the plan built for the A-Team agents — goals and deliverables to reach v0) and docs/product/research-plan.md (the research plan that ships with the v0 — open questions, agent assumptions + confidence, technical research: services, stack, integration costs). Re-run it at any phase to keep both live. Do not use when requirements are validated and delivery is underway (prd-writer), to synthesize raw research (research-synthesis first), or to create or rewrite job statements (jobs-to-be-done).
 metadata:
   version: 0.3.0
   owner: Alvaro Bezerra
-  provenance: ported 2026-07-24 from product-craft discovery-plan (github.com/ABZerra/product-craft) and adapted to the A-Team contract — output split into PLAN.md (goals & deliverables) and research-plan.md (the research plan shipped with v0), written together.
+  provenance: ported 2026-07-24 from product-craft discovery-plan (github.com/ABZerra/product-craft) and adapted to the A-Team contract — output split into ateam-plan.md (goals & deliverables) and research-plan.md (the research plan shipped with v0), written together.
 ---
 
 # discovery-plan
@@ -12,10 +12,12 @@ metadata:
 Turn what discovery learned — and did not learn — into the two durable planning
 artifacts, compiled together in one pass so they cannot drift:
 
-- **`docs/product/PLAN.md` — the product team's plan.** Goals (each traced to
-  the jobs it serves) and the deliverables to reach v0, grouped into
-  initiatives with owners and dates, gated by decision criteria. This is how
-  the product team understands where the work is going.
+- **`docs/product/ateam-plan.md` — the plan built for the A-Team agents.**
+  Goals (each traced to the jobs it serves) and the deliverables to reach v0,
+  grouped into initiatives with owners and dates, gated by decision criteria.
+  This is what the A-Team runs against — and how anyone reading the repo
+  understands where the work is going. Not a project plan and not the research
+  plan; the name says whose plan it is.
 - **`docs/product/research-plan.md` — the research plan.** The document that
   ships together with the v0 final outputs: **open questions** (what the v0
   was built without knowing), **assumptions + confidence** (everything agents
@@ -23,9 +25,9 @@ artifacts, compiled together in one pass so they cannot drift:
   **technical research** (services, stack, and the cost breakdown of every
   integration in play).
 
-The split line: *what we'll do* goes in PLAN.md; *what we don't know, assumed,
+The split line: *what we'll do* goes in ateam-plan.md; *what we don't know, assumed,
 or researched* goes in research-plan.md. The same compile step writes both —
-a deliverable that closes an unknown appears in PLAN.md as work and in
+a deliverable that closes an unknown appears in ateam-plan.md as work and in
 research-plan.md as the question it closes.
 
 This is the bridge from evidence into definition (`prd-writer`, `wireflow`,
@@ -37,7 +39,7 @@ jobs (`jobs-to-be-done`) and never synthesizes raw evidence
 
 ## Where it writes
 
-`<target>/docs/product/PLAN.md` + `<target>/docs/product/research-plan.md` —
+`<target>/docs/product/ateam-plan.md` + `<target>/docs/product/research-plan.md` —
 repo-first-and-always; a Cowork folder is a valid target, never a blocker.
 Durable rules apply to both: **update-only** (refresh what changed, keep what
 holds — a rebuild that drops content is a forbidden overwrite), mandatory
@@ -67,7 +69,7 @@ it's done.
 
 ## Outputs
 
-- `PLAN.md` in the shape of `references/plan-template.md`: Goals (job-traced) ·
+- `ateam-plan.md` in the shape of `references/plan-template.md`: Goals (job-traced) ·
   Deliverables to reach v0 · Initiatives (owner, date) · Decision criteria ·
   Status.
 - `research-plan.md` in the shape of `references/research-plan-template.md`:

@@ -54,9 +54,10 @@ artifacts split by lifetime, not by producer:
     context.md                  #   digest, glossary, Know/Don't-Know ledger
     jtbd/NN-<slug>.md           #   one file per job — the North Star
     epics/NN-<slug>.md          #   one file per epic — durable delivery structures
-    PLAN.md                     #   the product team's plan: goals + deliverables to v0
+    ateam-plan.md               #   the plan built for the A-Team agents: goals + deliverables to v0
     research-plan.md            #   ships with v0: open questions, assumptions +
                                 #   confidence, technical research
+    ateam-product-report.md     #   the PRD for the product — end-of-run report (pr phase)
 
     research/<YYYY-MM-DD>-<slug>.md #   append-only synthesis runs (evidence audit)
     input/<YYYY-MM-DD-label>/   #   raw evidence: images, transcripts, Slack, docs
@@ -75,8 +76,9 @@ overwritten — a JTBD that is wrong gets `status: superseded` and a pointer, it
 does not disappear. JTBDs are cited by feature artifacts, so they must resolve
 stably after a feature dir is archived.
 
-> `docs/product/PLAN.md` lives in the **target** repo and lists deliverables to
-> reach v0. It is unrelated to this file, which lives in the harness repo.
+> `docs/product/ateam-plan.md` lives in the **target** repo — the plan built for
+> the A-Team agents: deliverables to reach v0. It is unrelated to this file,
+> which lives in the harness repo.
 
 ## Orchestrator
 
@@ -105,7 +107,7 @@ the orchestrator reads the manifest and continues from the current phase.
 
 | Phase | Artifact | Gate | Skill |
 |-------|----------|------|-------|
-| `discovery` | `context.md` + `jtbd/` + `PLAN.md` (durable) | in-skill read-back | `ateam-discovery` |
+| `discovery` | `context.md` + `jtbd/` + `ateam-plan.md` (durable) | in-skill read-back | `ateam-discovery` |
 | `definition` | `prd.md` + `briefs/` | human | `ateam-definition` (stub now) |
 | `design` | `design.md` + lo-fi prototype | human | `ateam-design` (stub now) |
 | `spec` | `spec.md` (incl. design-system mapping) | auto | `ateam-spec` (stub now) |
@@ -120,12 +122,12 @@ SKILL.md backbone requires each skill to declare exactly one interaction mode an
 these two are different modes:
 
 - **`ateam-discovery` — 🔥 grill.** Cannot proceed without the human. Produces
-  `context.md`, the JTBD set, and `PLAN.md`.
+  `context.md`, the JTBD set, and `ateam-plan.md`.
 - **`ateam-definition` — 📝 draft + review.** Derives from approved JTBDs.
   Produces `prd.md`, wireflow + page briefs, and the Epics.
 
 The split line is where the *conversation* splits, not where the files split:
-`context.md`, JTBDs, and `PLAN.md` all fall out of one grill, so they ship
+`context.md`, JTBDs, and `ateam-plan.md` all fall out of one grill, so they ship
 together.
 
 ### Discovery flow
@@ -144,7 +146,7 @@ clear problem statement.
 **Termination is defined, not felt.** The grill maintains a `Know / Don't Know`
 ledger and asks only the Don't-Knows that *block* a JTBD or a scope call. It stops
 when the blocking set is empty. Surviving non-blocking unknowns are written into
-the artifacts as open questions and into `PLAN.md` as deliverables — so stopping
+the artifacts as open questions and into `ateam-plan.md` as deliverables — so stopping
 loses nothing. A question is only asked if its answer changes an artifact.
 
 ### Gates

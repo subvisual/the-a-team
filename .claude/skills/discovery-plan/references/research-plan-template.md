@@ -4,7 +4,7 @@
 with the v0 final outputs**: what we still don't know, what the agents (and
 humans) assumed and how confident they were, and the technical research behind
 the build. It is the honest disclosure that makes a v0 trustworthy. Goals and
-deliverables are NOT here — they live in `PLAN.md` (see
+deliverables are NOT here — they live in `ateam-plan.md` (see
 `references/plan-template.md`). The two are written together by the
 discovery-plan skill so they cannot drift.
 

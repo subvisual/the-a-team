@@ -23,8 +23,10 @@ care about a skill's internals. Reserved names:
 
 The `issues`, `dev`, and `pr` phases are owned by the harness (reuse of
 `prd-to-issues` / `issue-swarm` + PR glue, with `ticket-writer` enriching
-`issues.md` acceptance criteria after decomposition) and are not authored via
-this contract.
+`issues.md` acceptance criteria after decomposition, and `product-report`
+writing the durable `docs/product/ateam-product-report.md` at the end of the
+pr phase — from the run's artifacts **and the final v0 code**, before the PR
+opens) and are not authored via this contract.
 
 Every skill **declares exactly one interaction mode** in its SKILL.md. Mixed modes
 are a contract violation: the human cannot tell whether the agent is waiting or
@@ -46,9 +48,11 @@ docs/product/
   epics/NN-<slug>.md          # one file per epic — durable delivery structures, same lifecycle rules
                               # Citation syntax: bare [[NN]] / [[NN-slug]] ALWAYS cites a job;
                               # epics cite as [[epic:NN]] (any future durable class gets a prefix)
-  PLAN.md                     # the product team's plan: goals + deliverables to reach v0
+  ateam-plan.md               # the plan built for the A-Team agents: goals + deliverables to reach v0
   research-plan.md            # ships with v0: open questions, assumptions + confidence,
                               #   technical research (services, stack, integration costs)
+  ateam-product-report.md     # the PRD for the product — end-of-run report (pr phase):
+                              #   product framing, epics on the MoSCoW scope, what actually shipped
   research/<YYYY-MM-DD>-<slug>.md  # append-only synthesis runs — the evidence audit trail
   input/<YYYY-MM-DD-label>/   # raw evidence — human-dropped or skill-staged verbatim pulls; never edited
 
@@ -111,13 +115,13 @@ Everything else — especially durable writes and their review step — behaves
   (`design-intake.md`, `dev-intake.md` — authored by the role owners as rubric
   pre-work).
 - **Must write**:
-  - `docs/product/context.md` — digest of raw input, glossary, and the
-    `Know / Don't Know` ledger. Frontmatter tracks which `input/` batches have been
-    ingested.
+  - `docs/product/context.md` — digest of raw input, the source index, glossary,
+    and the `Know / Don't Know` ledger. Frontmatter tracks which `input/` batches
+    have been ingested.
   - `docs/product/jtbd/NN-<slug>.md` — one file per job (template below).
-  - `docs/product/PLAN.md` — the **product team's plan**: goals (job-traced)
-    and deliverables to reach v0, grouped into initiatives with decision
-    criteria.
+  - `docs/product/ateam-plan.md` — the **plan built for the A-Team agents**:
+    goals (job-traced) and deliverables to reach v0, grouped into initiatives
+    with decision criteria.
   - `docs/product/research-plan.md` — the **research plan that ships with the
     v0**: open questions, assumptions made by agents/humans with confidence
     levels, and technical research (services, stack, integration costs) —
@@ -170,6 +174,9 @@ ingested: [2026-07-17-client-call, 2026-07-24-granola-pulled]  # digested input/
 ## Overview            # what/why, audience, stage, goals, constraints, key links;
                        # jobs cited by id, headline quoted exactly — never paraphrased
 ## Digest              # per ingested batch: what the evidence says, pointers into input/
+## Sources             # audit index of everything discovery consumed — one line per source
+                       #   (link visited, provided file, connector pull, the grill digest):
+                       #   type · pointer (URL or input/ path) · date · what it informed
 ## Glossary            # term | working definition | status (settled/forming/TBD) | source
 ## Design context      # from the design briefing: users & emotional goals, brand personality,
                        #   aesthetic direction (refs + anti-refs), accessibility, 3–5 design principles
@@ -181,9 +188,11 @@ ingested: [2026-07-17-client-call, 2026-07-24-granola-pulled]  # digested input/
 Full annotated template: the `project-context` skill's
 `references/context-template.md`. Load-bearing: refresh-never-rebuild (a refresh
 that drops content is a forbidden overwrite); TBD stays visible, never smoothed
-into prose; renamed glossary terms are never deleted; the ledger's **blocking**
-set is the grill's termination condition — non-blocking unknowns flow to
-`PLAN.md`.
+into prose; renamed glossary terms are never deleted; every `## Sources` row
+resolves — a live URL or a path on disk — and `## Overview` keeps only the 2–3
+load-bearing product links (Sources is the complete index); the ledger's
+**blocking** set is the grill's termination condition — non-blocking unknowns
+flow to `ateam-plan.md`.
 
 #### JTBD template — this is the contract design couples to
 
