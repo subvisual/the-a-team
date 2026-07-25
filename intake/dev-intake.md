@@ -1,7 +1,7 @@
 # Dev intake bank
 
 *Authored by the Dev role owner — replace and extend these seed questions.
-This file is rubric pre-work (locked decision #3): the questions the Dev agent
+This file is rubric pre-work (a locked decision): the questions the Dev agent
 wishes had been asked before it starts.*
 
 The discovery grill **never asks these raw**. Each entry seeds the
@@ -16,10 +16,10 @@ grill · blocking but not answerable by this human → research activity in
   fast-prototype stack fine? (A-Team Config carries the declared stack; this
   asks whether the v0 must use it.)
 - Deploy target for the v0 — local only, shared link, or the project's real
-  staging? (Locked decision #14: dev does the v0 deploy.)
+  staging? (Locked decision: dev does the v0 deploy.)
 - Integrations the prompt implies: which external services/APIs are in play,
   and does anyone have access/credentials — or is mocked data the plan?
-  (Locked decision #12: mocked data fit to product context, ideally
+  (Locked decision: mocked data fit to product context, ideally
   API-shaped.)
 - Data sensitivity: does any real data touch the v0, and are there
   PII/compliance constraints on it?
