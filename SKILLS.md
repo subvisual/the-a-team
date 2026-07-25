@@ -13,6 +13,7 @@ pending).
 |---|---|---|---|
 | `feature` | Drives a feature prompt to a production-ready PR through discovery → definition → design → spec → issues → dev → pr, gating at definition, design, and pr. Owns `feature.json` and all state transitions. | The A-Team orchestrator (state machine on the main thread). | harness |
 | `jobs-to-be-done` | Creates and reviews JTBDs (Klement, Jobs-as-Progress) via a one-question-at-a-time grill. In a target repo it writes durable `docs/product/jtbd/NN-<slug>.md` files — forces sketch, honest confidence, sources — parks unpursued candidates as real files, and supersedes rather than deletes. | Discovery — mints and maintains the North Star every downstream artifact traces to. | ported |
+| `project-context` | Seeds or refreshes the durable `docs/product/context.md` — overview, digest of `input/` evidence, glossary (settled/forming/TBD), Know/Don't-Know ledger. Repo-first-and-always; Cowork folders valid, never a blocker. Connector pulls are staged verbatim into `input/` before digesting. | Discovery / Stage-0 — the entry door every project fact walks through. | ported |
 | `ateam-definition` | Placeholder: writes a stub `prd.md` + `briefs/`, sets its manifest status. | Definition phase slot — to be replaced by a wrapper over the ported definition skills. | stub |
 | `ateam-design` | Placeholder: writes a stub `design.md` + lo-fi dir, sets its manifest status. | Design phase slot — Design-authored later. | stub |
 | `ateam-spec` | Placeholder: writes a stub `spec.md`, sets its manifest status. | Design-spec phase slot — Design-authored later. | stub |
@@ -22,7 +23,6 @@ pending).
 
 | Skill | What it will do | Pipeline position |
 |---|---|---|
-| `project-context` | Seeds/refreshes the durable `context.md` — digest, glossary, Know/Don't-Know ledger. | Discovery / Stage-0 |
 | `research-synthesis` | Digests messy evidence (interviews, transcripts, support themes) against the JTBD set — job verdicts + new-job signals. | Discovery |
 | `product-brainstorming` | The PM-grills-human-for-context moment: structured divergence before jobs are minted. | Discovery |
 | `discovery-plan` | Produces `docs/product/PLAN.md` — deliverables to reach v0, seeded from surviving unknowns. | Discovery exit |
