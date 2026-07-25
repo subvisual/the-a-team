@@ -1,0 +1,111 @@
+{
+  "_note": "EXAMPLE ONLY — not part of the skill's method. A worked 2-page board used to validate the engine reproduces the v2 layout. Your project's spec replaces this entirely. Note the jtbds below: they are deliberately written progress-shaped and persona-attached (Q13). An earlier draft of this same example had feature-shaped jobs ('One place to work all my leads — keep every one moving, stop losing follow-ups') and it is exactly what the job gate exists to reject.",
+  "title": "Page-brief — Casa Financeira (validation: 2 pages)",
+  "columns": 2,
+  "width": 1380,
+  "jtbds": {
+    "JTBD-1": {
+      "statement": "When a lead is in my hands, I want fluid control over it and over any opportunity that may come from it, so I can keep it moving without carrying it in my head.",
+      "persona": "Consultor"
+    },
+    "JTBD-2": {
+      "statement": "When I'm accountable for the operation, I want to hold the whole thing from one screen, so I can feel it slipping before anyone tells me.",
+      "persona": "Manager"
+    },
+    "JTBD-3": {
+      "statement": "When someone becomes a contact, I want to know I can work them legally right now, so I can act without second-guessing whether I'm allowed to.",
+      "persona": "Consultor"
+    },
+    "JTBD-4": {
+      "statement": "When work arrives unowned, I want it to land with someone who can actually serve it, so I can trust nothing is quietly sitting still.",
+      "persona": "Manager"
+    },
+    "JTBD-5": {
+      "statement": "When we hold regulated client data, I want to know exactly who can see and touch it, so I can put the firm's name behind this platform.",
+      "persona": "Admin / compliance"
+    }
+  },
+  "pages": [
+    {
+      "id": "P1",
+      "name": "Lead detail",
+      "route": "app#/leads/:id",
+      "ref": "/app#/leads/:id",
+      "responsibilities": "Give the consultant one place to see and advance every opportunity on a lead across verticals — with its consent and origin context — without leaving for the product platforms. (Variant: managers see a permission-filtered, read-mostly view.)",
+      "checklist": [
+        {"text": "Show every opportunity on the lead, across verticals, with its state", "jobs": ["JTBD-1"]},
+        {"text": "Let the consultant open each opportunity's working screen", "jobs": ["JTBD-1"]},
+        {"text": "Reach the lead's conversation thread without leaving the CRM", "jobs": ["JTBD-1"]},
+        {"text": "Offer agent assistance (read/interpret) over the lead", "jobs": ["JTBD-1"]},
+        {"text": "Let the consultant spawn a cross-sell opportunity", "jobs": ["JTBD-1"]},
+        {"text": "Surface RGPD consent state so it's clear the lead is workable", "jobs": ["JTBD-3"]},
+        {"text": "Show attribution / origin context for the lead", "jobs": ["JTBD-1"]},
+        {"text": "Enforce per-team RBAC — see only your own opportunity", "jobs": ["JTBD-5"]},
+        {"text": "Let a manager read the lead across verticals in one pass", "jobs": ["JTBD-2"]}
+      ],
+      "appears_in": [
+        {"journey": "J3", "step": "open lead / produtos"},
+        {"journey": "J4", "step": "oversight", "variant": "permission-filtered"}
+      ],
+      "connects": [
+        {"trigger": "Abrir processo de crédito", "target": "P2 Credit process", "kind": "page", "job": "JTBD-1", "note": "same job, deeper surface"},
+        {"trigger": "Abrir conversa", "target": "Channels thread", "kind": "external", "job": "JTBD-1", "note": "non-navigational handoff — leaves for the channel"},
+        {"trigger": "Abrir no agente IA", "target": "Agent panel", "kind": "external", "job": "JTBD-1", "note": "agent reads over this lead"},
+        {"trigger": "Adicionar produto", "target": "Routing (Journey 2)", "kind": "journey", "job": "JTBD-4", "note": "triggers ANOTHER job — spawns an opportunity and re-enters routing"}
+      ],
+      "acceptance": {
+        "factual": [
+          "Opportunity states per vertical are shown (Crédito · Avaliação, Seguro · Atribuída)",
+          "RGPD consent status is visible before any action is offered",
+          "Attribution is shown: canal · ponto de entrada · selo",
+          "A team sees only its own opportunity (RBAC enforced in the view, not just the API)"
+        ],
+        "qualitative": [
+          "Can you tell me which opportunities are on this lead, and which vertical each belongs to?",
+          "Can you tell me whether you're allowed to work this lead right now?",
+          "Can you tell me where this lead came from?",
+          "Which opportunity would you pick up first, and why?"
+        ]
+      }
+    },
+    {
+      "id": "P2",
+      "name": "Credit process",
+      "route": "app#/leads/:id/credito/:oppId · view-only mirror of Portal PE",
+      "ref": "/app#/…/credito/:oppId",
+      "responsibilities": "Give the consultant the full working surface for ONE credit opportunity — the PE pipeline state (read-only), plus the people, documents, proposals and follow-ups needed to move it — mirrored from Portal Grupo PE so they never leave the CRM.",
+      "checklist": [
+        {"text": "Show the current PE pipeline stage (of 14), read-only", "jobs": ["JTBD-1"]},
+        {"text": "Let the consultant capture follow-up tasks", "jobs": ["JTBD-1"]},
+        {"text": "Manage the document dossier + expose agent doc-analysis", "jobs": ["JTBD-1"]},
+        {"text": "Show bank proposals (PE + manual) for the decision", "jobs": ["JTBD-1"]},
+        {"text": "Capture proponentes (co-titular / fiador) + KYC", "jobs": ["JTBD-1"]},
+        {"text": "Let the consultant record notes / next steps", "jobs": ["JTBD-1"]},
+        {"text": "(Manager variant) reassign the process", "jobs": ["JTBD-4"]},
+        {"text": "Show the Seguro side of this client alongside the credit", "jobs": [], "flag": "serves an unlisted job? — Seguro is a different product; is this a cross-sell job we never wrote down, or does it belong on its own page?"}
+      ],
+      "appears_in": [
+        {"journey": "J3", "step": "credit-process detail"}
+      ],
+      "connects": [
+        {"trigger": "Reatribuir (mgr)", "target": "Routing / reassign", "kind": "journey", "job": "JTBD-4", "note": "manager action — different job and actor"},
+        {"trigger": "Abrir conversa", "target": "Channels thread", "kind": "external", "job": "JTBD-1", "note": "non-navigational handoff"},
+        {"trigger": "Abrir no agente IA", "target": "Agent panel", "kind": "external", "job": "JTBD-1", "note": "agent reads over this process"}
+      ],
+      "acceptance": {
+        "factual": [
+          "Current stage (of 14) is shown and is unmistakably read-only",
+          "Valor solicitado is present",
+          "Proponentes are listed with their role (co-titular / fiador)",
+          "Each bank proposal shows its origin (Portal PE vs manual upload)"
+        ],
+        "qualitative": [
+          "Can you tell me what was requested, and how much?",
+          "Can you tell me where in the process this is, without asking anyone?",
+          "Can you quickly see who the proponentes are?",
+          "Can you compare the bank proposals and say which is better?"
+        ]
+      }
+    }
+  ]
+}
