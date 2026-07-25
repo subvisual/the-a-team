@@ -15,7 +15,7 @@ One paragraph: the user problem, proposed solution direction, expected impact.
 
 - Status: Draft | In Review | Approved | In Delivery | Shipped
 - Last updated: <YYYY-MM-DD>
-- Feature: docs/features/<slug>/ · Plans: docs/product/PLAN.md, docs/product/research-plan.md
+- Feature: docs/features/<slug>/ · Plans: docs/product/ateam-plan.md, docs/product/research-plan.md
 - Jobs in scope: [[01-<slug>]], [[03-<slug>]]
 
 ## Business context and strategic fit
@@ -62,7 +62,7 @@ valuable, testable.
 
 - Research completed: cited research/ runs and findings.
 - Open questions: | Question | Why it matters | Answer or TBD | Owner | Due |
-  Mirror unresolved ones into the context.md ledger / PLAN.md rather than
+  Mirror unresolved ones into the context.md ledger / ateam-plan.md rather than
   letting the PRD fork its own list.
 
 ## Goals, non-goals, and scope

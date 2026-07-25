@@ -28,7 +28,7 @@ reference re-reads.
 
 ## Contract (CONTRACT.md is authoritative)
 
-- **Reads**: `docs/product/**` (context.md, `jtbd/`, PLAN.md,
+- **Reads**: `docs/product/**` (context.md, `jtbd/`, ateam-plan.md,
   research-plan.md); the manifest (`prompt`, `run_brief`); the target repo.
 - **Writes**:
   - `prd.md` in the feature directory — every scoped item traces to a JTBD id.
@@ -53,7 +53,7 @@ reference re-reads.
 
 Read `context.md` (glossary is the vocabulary every artifact must speak),
 the JTBD set (active jobs are the North Star; parked ones are boundaries),
-`PLAN.md` + `research-plan.md` (what was promised and what is unknown), the
+`ateam-plan.md` + `research-plan.md` (what was promised and what is unknown), the
 manifest's `prompt` + `run_brief`, and the target repo lightly (stack,
 existing screens). **Consume jobs verbatim by id — never mint, reword, or
 paraphrase a job.** A scoped item that traces to no job is either out of

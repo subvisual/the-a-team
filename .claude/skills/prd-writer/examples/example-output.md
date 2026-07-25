@@ -14,7 +14,7 @@ without trust loss.
 
 - Status: Draft
 - Last updated: 2026-07-24
-- Feature: docs/features/assisted-triage-v0/ · Plans: docs/product/PLAN.md,
+- Feature: docs/features/assisted-triage-v0/ · Plans: docs/product/ateam-plan.md,
   docs/product/research-plan.md
 - Jobs in scope: [[01-focus-on-urgent-cases]]
 

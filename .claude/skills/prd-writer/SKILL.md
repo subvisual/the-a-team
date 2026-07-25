@@ -1,6 +1,6 @@
 ---
 name: prd-writer
-description: Use when defining or refining a product feature document — a feature-level PRD aligning business context, scope, and success metrics across multiple tickets and stakeholders. Trigger on "write a PRD", "spec this feature", MoSCoW scoping, or turning discovery output (jobs, PLAN.md, research-plan.md, syntheses) into a delivery-ready definition. In the A-Team pipeline this is the definition phase's core artifact: docs/features/<slug>/prd.md, where every scoped item traces to a JTBD id. Do not use for a single ticket, bug fix, or minor tweak (ticket-writer); when the idea is too vague to commit to scope (discovery-plan first); or for a repo-level implementation plan feeding issue decomposition (the building plugin's write-a-prd owns the repo feature plan — this skill owns the product feature doc).
+description: Use when defining or refining a product feature document — a feature-level PRD aligning business context, scope, and success metrics across multiple tickets and stakeholders. Trigger on "write a PRD", "spec this feature", MoSCoW scoping, or turning discovery output (jobs, ateam-plan.md, research-plan.md, syntheses) into a delivery-ready definition. In the A-Team pipeline this is the definition phase's core artifact: docs/features/<slug>/prd.md, where every scoped item traces to a JTBD id. Do not use for a single ticket, bug fix, or minor tweak (ticket-writer); when the idea is too vague to commit to scope (discovery-plan first); or for a repo-level implementation plan feeding issue decomposition (the building plugin's write-a-prd owns the repo feature plan — this skill owns the product feature doc).
 metadata:
   version: 0.2.0
   owner: Alvaro Bezerra
@@ -17,7 +17,7 @@ gate **together with the JTBD set it scopes against** — a PRD's claims are onl
 checkable against the jobs they trace to.
 
 This skill **consumes** jobs (`jobs-to-be-done` owns them), the product team's
-plan (`PLAN.md`), the research plan (`research-plan.md`), syntheses
+plan (`ateam-plan.md`), the research plan (`research-plan.md`), syntheses
 (`research/`), and — when the pages were already shaped — the `wireflow` +
 `page-brief` catalog. It never mints or rewrites any of them.
 
@@ -61,7 +61,7 @@ If the work is really one ticket, hand off instead of writing a thin PRD.
 - The feature prompt (manifest or invocation).
 - **The context layer, read before drafting**: `docs/product/context.md`
   (glossary — use its settled terms; ledger), `jtbd/` (active jobs in scope),
-  `PLAN.md` (goals + deliverables the feature serves), `research-plan.md`
+  `ateam-plan.md` (goals + deliverables the feature serves), `research-plan.md`
   (assumptions + confidence, open questions, technical research),
   `research/` (evidence). Build on what exists instead of re-asking.
 - `briefs/` (wireflow + page briefs) when the definition phase already shaped
@@ -76,7 +76,7 @@ If the work is really one ticket, hand off instead of writing a thin PRD.
 1. **Confirm the trigger** (feature-level, not a ticket).
 2. **Load the context layer** (above). Note which research-plan.md
    assumptions the PRD builds on — cite them, don't restate them as facts —
-   and which PLAN.md deliverables this feature realizes.
+   and which ateam-plan.md deliverables this feature realizes.
 3. **Question pass, honestly bounded.** Identify missing baseline/target,
    jobs in scope, constraints, ownership. With a human present, one focused
    clarifying round is fine. In the pipeline (draft + review mode), do not

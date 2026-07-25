@@ -54,7 +54,7 @@ Repo-first-and-always; a Cowork folder is a valid target, never a blocker.
   `jobs-to-be-done`; keep the epic out of committed scope until resolved.
 - `docs/features/<slug>/prd.md` — requirement IDs to bundle (when run in a
   feature's definition phase).
-- `docs/product/PLAN.md` — the goals/deliverables the epics must ladder up to;
+- `docs/product/ateam-plan.md` — the goals/deliverables the epics must ladder up to;
   `context.md` for glossary terms and the ledger.
 - Existing `docs/product/epics/` — always read before writing; extend and
   supersede, never duplicate.
@@ -84,7 +84,7 @@ Repo-first-and-always; a Cowork folder is a valid target, never a blocker.
 7. **Read-back / gate, write, commit.** Present drafted or revised epics for
    correction; write per the durable rules; commit.
 8. **Hand off.** `ticket-writer` / `prd-to-issues` decompose the epics into
-   the backlog; `discovery-plan` folds epic-level deliverables into PLAN.md's
+   the backlog; `discovery-plan` folds epic-level deliverables into ateam-plan.md's
    initiatives. Close with **Next likely skill(s)** · **What to pass forward**
    (epic ids, requirement bundles, priority calls) · **Suggested next
    prompts**.

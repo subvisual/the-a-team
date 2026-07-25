@@ -9,7 +9,7 @@ Context layer state:
   support teams triage a new queue of incoming tickets, I want reliable
   priority guidance, so I can focus attention on the most urgent cases without
   re-sorting everything manually."
-- `PLAN.md` — deliverable: "Clickable triage v0 with rationale UI"; decision
+- `ateam-plan.md` — deliverable: "Clickable triage v0 with rationale UI"; decision
   criterion: pilot go/no-go on precision + auditability.
 - `research-plan.md` — assumption: "auditable rationale is the trust unlock,
   not raw accuracy" (moderate); open question: PII controls for model inputs.
