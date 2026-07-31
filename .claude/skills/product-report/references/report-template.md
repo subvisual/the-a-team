@@ -101,8 +101,11 @@ Durable:
 - [context.md](context.md) — framing, digest, source index, glossary, ledger
 - [jtbd/](jtbd/) — the jobs, one file per id (active + parked)
 - [epics/](epics/) — the epics, one file per id
-- [ateam-plan.md](ateam-plan.md) — the plan built for the A-Team agents
+- [ateam-plan.md](ateam-plan.md) — the plan built for the A-Team agents (to reach v0)
 - [research-plan.md](research-plan.md) — open questions, assumptions, technical research
+- [project-plan.md](project-plan.md) — the plan for the project after v0 (forward-looking).
+  Omit this row when the file does not exist — a standalone report refreshed
+  before any pr phase has none, and every row here must resolve.
 
 Run `<feature-slug>` (v0):
 

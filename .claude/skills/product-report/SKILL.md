@@ -58,7 +58,9 @@ index), `jtbd/` (active + parked jobs — ids and verbatim headlines),
 `epics/NN-*.md` (every epic: MoSCoW class, jobs served, requirements
 realized), `ateam-plan.md` (goals, deliverables, status),
 `research-plan.md` post-refresh (open questions, assumptions + confidence —
-including every phase-appended entry).
+including every phase-appended entry), and `project-plan.md` (written moments
+earlier by the same plan refresh — read it so you can link it, and so your
+scope table and its "what comes next" do not contradict each other).
 
 From `docs/features/<slug>/` (this run): `prd.md` (requirements, ACs, decision
 log), `briefs/` (wireflow + page cards — inventory them; deep-read where a
@@ -110,6 +112,12 @@ is reported as **partial**, with the gap named — never smoothed over.
    found) for the orchestrator's gate report.
 
 ## What this skill never does
+
+- Never plans forward. `project-plan.md` (written earlier in the same pr phase,
+  at the plan refresh) holds what comes *after* v0. This report is
+  backward-looking and code-grounded; keeping speculation out is what lets its
+  shipped-verdicts be trusted. Link it from `## Supporting documentation`,
+  never absorb it.
 
 - Never mints, edits, or re-prioritizes an epic or a job — it reports them
   (`epics` / `jobs-to-be-done` own changes; a wrong epic found here is a
