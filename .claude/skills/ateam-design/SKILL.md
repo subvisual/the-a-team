@@ -11,9 +11,14 @@ against `CONTRACT.md`. This stub only exercises the orchestration wiring.
 Given the feature directory `docs/features/<slug>/`, the product directory
 `docs/product/`, and `feature.json`:
 
-1. Read the **required floor** — `docs/product/context.md` and every file in
-   `docs/product/jtbd/`. Then read `prd.md` and `briefs/` **if present** (optional
-   enrichment; the design phase must still run without them).
+1. Read the **required floor** — `docs/product/context.md` (including its
+   `## Design context` and `## Technical context` sections), every file in
+   `docs/product/jtbd/`, and `docs/product/research-plan.md`'s technical
+   assumptions + open questions. The research plan is a *required* read, not
+   enrichment: jobs cite technical findings rather than restating them, so a
+   design that skips it can be specced straight past a constraint the dev
+   review already surfaced. Then read `prd.md` and `briefs/` **if present**
+   (optional enrichment; the design phase must still run without them).
 2. Write `design.md` in the feature directory:
    ```markdown
    # Design (stub) — <slug>

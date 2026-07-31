@@ -43,7 +43,8 @@ Artifacts split by **lifetime**, not by producer.
 
 ```
 docs/product/
-  context.md                  # digest, glossary, Know/Don't-Know ledger
+  context.md                  # digest, sources, glossary, design + technical context,
+                              #   Know/Don't-Know ledger
   jtbd/NN-<slug>.md           # one file per job
   epics/NN-<slug>.md          # one file per epic — durable delivery structures, same lifecycle rules
                               # Citation syntax: bare [[NN]] / [[NN-slug]] ALWAYS cites a job;
@@ -93,6 +94,12 @@ The orchestrator sets working context before invoking a phase skill:
   fields other than your own phase entry (see "done-signal").
 - **Role intake banks**: the harness repo's `intake/` directory — absolute path
   passed at invocation. Rubric pre-work each role skill reads at run start.
+  Three banks, one per role: `pm-intake.md`, `design-intake.md`,
+  `dev-intake.md`. Each seeds ledger entries tagged with its role; all three
+  route through the same answerability rule. `dev-intake.md` additionally
+  carries a **`## Declared defaults`** section (required heading, Dev-owned
+  contents) — the team-level technical defaults discovery applies instead of
+  asking. Precedence: **project binding > team default > ask**.
 - **Target config**: the target repo's `CLAUDE.md`, including the `## A-Team Config`
   block (test command, base branch, design-system path, package manager).
 - **Revision notes** (on a `revise` gate loop): the human's feedback is appended to
@@ -115,12 +122,13 @@ Everything else — especially durable writes and their review step — behaves
 
 - **May read**: the feature `prompt` (manifest or args); `docs/product/` in full;
   `docs/product/input/**`; the target repo; the harness repo's `intake/` banks
-  (`design-intake.md`, `dev-intake.md` — authored by the role owners as rubric
-  pre-work).
+  (`pm-intake.md`, `design-intake.md`, `dev-intake.md` — authored by the role
+  owners as rubric pre-work, including the dev bank's `## Declared defaults`).
 - **Must write**:
   - `docs/product/context.md` — digest of raw input, the source index, glossary,
-    and the `Know / Don't Know` ledger. Frontmatter tracks which `input/` batches
-    have been ingested.
+    the `## Design context` and `## Technical context` briefing sections, and the
+    `Know / Don't Know` ledger. Frontmatter tracks which `input/` batches have
+    been ingested.
   - `docs/product/jtbd/NN-<slug>.md` — one file per job (template below).
   - `docs/product/ateam-plan.md` — the **plan built for the A-Team agents**:
     goals (job-traced) and deliverables to reach v0, grouped into initiatives
@@ -135,15 +143,49 @@ Everything else — especially durable writes and their review step — behaves
     the question · the recommended answer · the human's answer). Grill answers
     are raw input like any other; this is the batch `sources:` cites for
     grill-derived facts, and later runs read it instead of re-asking.
-- **Process shape**: `challenge (+ run brief) → research → straw-man → grill →
-  read-back → independence handoff → write`.
-- **Run brief**: during the challenge beat, capture how the human wants the
-  A-Team to run — purpose (throwaway concept / client-facing v0 / seed of
-  production), fidelity expectation, timebox, what "done" looks like — as 3–5
-  questions, stored in the manifest's `run_brief`. Durable per-project defaults
-  may live in `context.md` so repeat runs don't re-ask.
-- **Intake routing**: seed the ledger from the `intake/` banks, each entry
-  tagged with its consumer role (`[design]` / `[dev]` / `[pm]`), then route by
+  - `docs/product/research/<YYYY-MM-DD>-<slug>.md` — **evidence-heavy runs
+    only**: the append-only synthesis run (themes, contradictions, verdicts
+    against existing jobs, new-job signals). Declared here so it is a permitted
+    output path rather than a stray write.
+- **Process shape**: `challenge (+ run brief) → research → straw-man →
+  dev review → grill → read-back → independence handoff → write`.
+- **Dev review of the drafted jobs**: after the straw-man and **before** the
+  grill, discovery dispatches a **one-shot subagent** running the Dev-owned dev
+  research skill, over the drafted job set + the target repo. It is not a phase
+  and has no reserved name; the orchestrator is not involved. Rules:
+  - **Announce before dispatching.** The skill declares 🔥 grill mode, so
+    silent work would break the mode's promise that the human always knows
+    whether the agent is waiting or working.
+  - **Returns through the ledger, never directly.** Its findings enter the
+    `Know / Don't Know` ledger tagged `[dev]` and route by the same
+    answerability rule as any bank entry. The return path is **role-agnostic**
+    by design, so a future design agent plugs into the same slot.
+  - **Three-way answer rule** (the carve-out to *no autonomous degrade*, below):
+    verifiable from the target repo → answer it, with its source; a **settled
+    technical fact lands in `## Technical context`**, and the ledger entry
+    simply closes with a pointer at it (one fact, one home — the ledger records
+    that the question is answered, it does not become a second copy) ·
+    covered by a `## Declared defaults` entry → apply it, record a
+    confidence-stamped assumption in `research-plan.md`, surface at the gate ·
+    neither → it is a question, routed by the ledger.
+  - **Fires once, re-fires at most once** — only if the grill materially
+    reshaped the jobs (headline changed, job added, confidence moved). On the
+    re-fire only *blocking* findings may reopen the grill; everything else goes
+    to `research-plan.md`. Termination stays defined, not felt.
+  - **Optional by absence.** If the dev research skill is not available, say so
+    in-conversation, record the gap in `research-plan.md` as an open item, and
+    continue. Not a blocking flag, not a halt — an unreviewed job set is a
+    degraded run, and a *recorded* degradation is not a dishonest one.
+  - **Substance lands in `research-plan.md`; jobs carry citations only** — see
+    the JTBD template's technical rule below.
+- **Run brief**: capture how the human wants the A-Team to run. The manifest's
+  `run_brief` holds four fields — `purpose`, `fidelity`, `timebox`,
+  `done_looks_like`. The **questions and their answer options** live in
+  `intake/pm-intake.md`; skills read them there rather than carrying copies. Runs alongside the challenge beat but is **not
+  skippable with it** — `run_brief` is a required manifest write. Durable
+  per-project defaults may live in `context.md` so repeat runs don't re-ask.
+- **Intake routing**: seed the ledger from all three `intake/` banks, each entry
+  tagged with its consumer role (`[pm]` / `[design]` / `[dev]`), then route by
   **answerability**: blocking + answerable by this human → asked in the grill;
   blocking but not answerable by this human → a research activity in
   `research-plan.md` (never a wasted question); non-blocking → stays in the
@@ -183,6 +225,9 @@ ingested: [2026-07-17-client-call, 2026-07-24-granola-pulled]  # digested input/
 ## Glossary            # term | working definition | status (settled/forming/TBD) | source
 ## Design context      # from the design briefing: users & emotional goals, brand personality,
                        #   aesthetic direction (refs + anti-refs), accessibility, 3–5 design principles
+## Technical context   # settled technical facts: stack binding, external dependencies,
+                       #   infra/deploy, data sensitivity,
+                       #   non-functional constraints, v0 test bar
 ## Know / Don't know   # Don't-Knows tagged blocking (naming what they block) or non-blocking,
                        #   plus a consumer tag ([pm] | [design] | [dev]) when a role's intake seeded it
 ## Awaiting answers    # present only while an escalation is open
@@ -196,6 +241,12 @@ resolves — a live URL or a path on disk — and `## Overview` keeps only the 2
 load-bearing product links (Sources is the complete index); the ledger's
 **blocking** set is the grill's termination condition — non-blocking unknowns
 flow to `research-plan.md` as open questions.
+
+**One fact, one home.** `## Design context` and `## Technical context` hold only
+*settled* facts. Uncertainty belongs in `research-plan.md` with a confidence
+level; machine-readable config belongs in the target's `## A-Team Config`. No
+file restates another — a fact stored twice will disagree with itself, and both
+copies are durable.
 
 #### JTBD template — this is the contract design couples to
 
@@ -246,6 +297,13 @@ Load-bearing:
 - **Parked candidates are real files.** Triage writes each unpursued struggle as
   `status: parked` holding only a draft headline and open questions — nothing
   invented — so no candidate evaporates with a conversation.
+- **Technical findings are cited, never restated.** A job is demand-side by
+  construction. The dev review's substance — API analysis, auth needs, stack
+  constraints — lives in `research-plan.md`; what reaches the job file is only
+  the *effect on the job*: a moved `confidence:`, a `sources:` entry citing the
+  review, and at most a one-line pointer. Solution-side content in a job body
+  fails the `jobs-to-be-done` rubric, and a second copy under ids-forever
+  semantics is a durable contradiction waiting to happen.
 
 ### `ateam-definition` — 📝 draft + review
 
@@ -266,10 +324,13 @@ Load-bearing:
 - **May read**: `docs/product/context.md` + `docs/product/jtbd/**` (**required
   floor** — context.md's `## Design context` section carries the design
   briefing: users & emotional goals, brand personality, aesthetic direction,
-  accessibility, design principles); `prd.md` and `briefs/` (**optional** —
-  consume when present); the target repo's design system (path from A-Team
-  Config); the manifest's `run_brief` (`fidelity` calibrates how deep the
-  lo-fi goes).
+  accessibility, design principles; and `## Technical context`, the settled
+  technical facts) **plus `research-plan.md`'s technical assumptions and open
+  questions** — also a required floor, so a design can never be specced past a
+  constraint the dev review already surfaced; `prd.md` and `briefs/`
+  (**optional** — consume when present); the target repo's design system (path
+  from A-Team Config); the manifest's `run_brief` (`fidelity` calibrates how
+  deep the lo-fi goes).
 - **Must write**:
   - `design.md` in the feature directory — IA, user flows, screen/layout
     direction, visual approach, and the options considered with reasoning.
@@ -345,6 +406,19 @@ continues. An escalation is a defined output, not a failure.
 questions and writes invented user needs into `docs/product/jtbd/` manufactures a
 North Star from nothing, and every downstream agent treats it as ground truth.
 Assumption-flags do not mitigate this.
+
+**The one carve-out — the dev review.** The dev reviewer may resolve a question
+two ways without a human: when it is **verifiable from the target repo** (a read
+is a fact, not a guess — the design bank already holds this rule: *a question the
+codebase already answers is never asked*), or when it is **covered by a
+`## Declared defaults` entry** (a standing team decision applied openly, recorded
+as a confidence-stamped assumption and surfaced at the gate — not an invention).
+
+The carve-out is **technical only and does not widen**. No agent may answer a
+demand-side question — user need, who it is for, priority, scope, business
+context — under any confidence flag. The prohibition above stands undiminished
+for everything job-shaped; reading `package.json` is not manufacturing a North
+Star, and the two must never be conflated to justify each other.
 
 ## Status vocabulary
 
