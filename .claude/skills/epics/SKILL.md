@@ -34,6 +34,14 @@ to `jtbd/`:
   `done` marks a delivered one.
 - **Never write without human review in the same session** — read-back before
   every write (standalone) or the definition gate (pipeline).
+- **`milestone:` is not yours.** The harness's issues phase writes that single
+  frontmatter key back into an epic after projecting it to GitHub (the one
+  cross-owner write `CONTRACT.md` permits). You never author or edit it — but
+  a REVISE that rewrites frontmatter "per the template" must **carry it
+  through unchanged**. Dropping it strips the back-reference, and the next run
+  creates a duplicate milestone in GitHub. A superseded epic keeps its
+  `milestone:` too: the issues phase closes that milestone with a pointer to
+  the replacement rather than deleting it.
 - **One commit per run**, message naming what changed and why
   (`docs(epics): 02 split from 01 — triage and reporting are different
   outcomes`).

@@ -67,15 +67,17 @@ the feature dir silently drops the durable artifacts — `git add` both paths th
 ```
 <target>/docs/product/           # DURABLE — outlives any feature
   context.md  jtbd/NN-*.md  epics/NN-*.md  ateam-plan.md  research-plan.md
-  ateam-product-report.md  research/  input/<YYYY-MM-DD-label>/
+  project-plan.md  ateam-product-report.md  research/  input/<YYYY-MM-DD-label>/
 <target>/docs/features/<slug>/   # PER-FEATURE — everything else
   feature.json  prd.md  briefs/  design.md  spec.md  issues.md  lofi/
 ```
 
 Durable artifacts are cited by feature artifacts and outlive them. You never edit
 them yourself — phase skills own them per `CONTRACT.md` (discovery most of the
-layer; definition the epics; the pr phase the plan refresh and the product
-report), updating in place per the superseding rules there.
+layer; definition the epics; the pr phase the plan refresh, the project plan,
+and the product report), updating in place per the superseding rules there.
+One exception you *do* own: the `milestone:` frontmatter key the issues phase
+writes back into `epics/NN-*.md`, and nothing else in those files.
 
 ## Git and filesystem mechanics
 
@@ -102,9 +104,11 @@ the user (resume it, or pick a different slug) — never silently overwrite.
 
 1. Resolve the **target repo** (`--repo`, else CWD).
 2. Read `<target>/CLAUDE.md`. Find the `## A-Team Config` block (test command,
-   base branch, design-system path, package manager). If missing, run the
-   **bootstrap** (below) first. **Base branch precedence:** A-Team Config value
-   wins over any default.
+   base branch, design-system path, package manager, `github issues`). If the
+   block is missing, run the **bootstrap** (below) first. **Base branch
+   precedence:** A-Team Config value wins over any default. **`github issues`
+   absent → treat as `off`** — an older config predating the key is not
+   consent.
 3. **New feature:**
    - Compute `<slug>`. Check that neither the feature dir nor the branch
      `feature/<slug>` already exists (`git -C <target> rev-parse --verify
@@ -248,7 +252,7 @@ checked on resume), a killed session resumes at the same gate.
 
 ### `issues` phase
 
-Two steps, one phase:
+Three steps, one phase:
 
 1. Invoke `prd-to-issues` against `prd.md` + `spec.md`, with `briefs/` as
    supporting context (the page briefs carry per-page ACs), → `issues.md`
@@ -259,17 +263,88 @@ Two steps, one phase:
    Enrichment edits `issues.md` in place without adding, removing, or
    reordering issues; decomposition gaps it reports are surfaced to the human
    at the next gate, not silently fixed.
+3. **GitHub projection (conditional)** — mirror the decomposition into the
+   target's GitHub repo. Skipped by default; see the subsection below.
 
-**Path mapping:** `prd-to-issues`' own PRD-location/output defaults (`prds/`,
-`docs/agents/prds.md`) do **not** apply in-pipeline — the input is
+When all three steps are done, set status `complete`, commit, advance to `dev`.
+
+**Path mapping (steps 1–2):** `prd-to-issues`' own PRD-location/output defaults
+(`prds/`, `docs/agents/prds.md`) do **not** apply in-pipeline — the input is
 `docs/features/<slug>/prd.md` (+ `spec.md`) and the output is
 `docs/features/<slug>/issues.md`. Pass both explicitly in the invocation args.
 
-**Files-touched notes:** each issue's technical notes must name the files it
-expects to touch, so the dev phase can sequence file-colliding issues up front
-instead of discovering conflicts at integration.
+**Files-touched notes (step 1):** each issue's technical notes must name the
+files it expects to touch, so the dev phase can sequence file-colliding issues
+up front instead of discovering conflicts at integration.
 
-Then set status `complete`, commit, advance to `dev`.
+**Requirement trace (step 1):** each issue must also record the **PRD
+requirement IDs** it implements. Ask for it explicitly in the `prd-to-issues`
+invocation args — it decomposes *from* the PRD, so the mapping exists at that
+moment and is expensive to reconstruct later. It is what step 3 resolves an
+issue's epic through (epics bundle requirement IDs), and what lets a reviewer
+check coverage: a requirement no issue claims is a hole in the decomposition.
+
+#### Step 3 — the GitHub projection
+
+**`issues.md` remains the source of truth.** The swarm reads it, not GitHub.
+This is a projection: everything downstream keeps working when it is skipped,
+which is what lets the skip conditions below be safe.
+
+**Fire it only when all three hold:**
+
+- `## A-Team Config` says `github issues: on`. **Absent or `off` → skip.**
+  Silence is not consent to write into a shared repo, and skipping costs
+  nothing recoverable.
+- The target has a GitHub remote and `gh` is authenticated
+  (`gh auth status`). Otherwise skip.
+- **Hard guard — the target is not the A-Team's own repo.** Skip if either
+  holds: the target's `origin` remote resolves to **`subvisual/the-a-team`**
+  (host-agnostic, `.git` suffix and protocol ignored), or the target root
+  contains **both `CONTRACT.md` and an `intake/` directory** at its top level —
+  the harness's own signature, which also catches a fork or a rename. A
+  `/feature` run pointed at the A-Team must **never** create issues in it: it
+  is a harness that operates on *other* repos, and dry runs would litter it.
+  **Not overridable by config** — `github issues: on` does not lift it.
+  The second test can false-positive on an unrelated repo that happens to have
+  both. It fails **safe** — the projection is skipped and `issues.md` is
+  untouched — and the skip is reported with its reason, so a legitimate
+  collision is visible rather than silent.
+
+**What it creates**, in this order:
+
+- **Milestones from epics.** One per `active` epic in `docs/product/epics/`,
+  titled from the epic. `done` epics keep any `milestone:` they already have —
+  reconcile (close it if still open), never create a new one. `parked` epics
+  get no milestone until they go active. Write the returned number back as a `milestone:`
+  frontmatter key in the epic file — the one cross-owner write CONTRACT.md
+  permits, and what makes re-runs reconcile instead of duplicate. A **re-titled**
+  epic still matches by number; a **superseded** epic's milestone is **closed**
+  with its description pointing at the replacement, never deleted.
+- **Labels from job ids**, `jtbd:NN-slug` (e.g. `jtbd:03-recover-a-mis-filed-contract`)
+  — id first, since the id is the stable part and the slug can be re-worded.
+  Created if missing. A **superseded** job's label **stays**: closed issues
+  wear it, and deleting it would strip their history. New issues use the
+  replacement's label.
+- **Issues from `issues.md`**, each carrying a label per job it traces to and
+  its epic's milestone. **Deriving the epic**: an issue's `[[NN]]` job stamps
+  and the PRD requirement IDs it implements resolve to an epic via that epic's
+  bundled requirement IDs (`Requirements realized`) — requirement match first,
+  job match only as a fallback. An issue resolving to **two** epics means the
+  decomposition crosses an epic boundary; assign the requirement-matched one
+  and surface the overlap. An issue resolving to **none** gets no milestone,
+  which is itself a flag worth reporting.
+  An issue tracing to **no job** is a decomposition defect — surface it to the
+  human at the next gate rather than creating an untraceable issue.
+
+**Write every returned issue number back into `issues.md`.** Without it the
+step is not idempotent, and a revise loop or crash resume silently duplicates
+the whole set in GitHub. With the numbers on disk it becomes reconcile-not-create:
+re-runs update existing issues and create only what is genuinely new.
+
+**Never fatal, never a blocking flag.** A skipped or failed projection does not
+make an artifact wrong, and blocking flags halt the run regardless of
+`gate_policy` — that power is reserved for correctness defects. State the skip
+and its reason in the phase report and in the PR body, then continue.
 
 ### `dev` phase
 
@@ -305,6 +380,12 @@ Sequence dependent issues; only truly independent issues run in parallel.
   feeding the error back. Never re-run `complete` issues. Bump only the failed
   issue's `attempts`.
 
+**Closing the projected GitHub issue** (only when step 3 actually ran): as each
+issue reaches `complete`, close its mapped GitHub issue, referencing the branch.
+Read the number from `issues.md` — never re-derive it by searching GitHub by
+title. If the number is absent, the projection was skipped; do nothing and say
+so once in the phase report rather than per issue.
+
 Retry a failed issue up to **2×** (per-issue `attempts`); never skip a failed
 issue silently. Issue still failing after 2 retries → escalate: set that issue's
 `status = "failed"` **and** `phases.dev.status = "failed"`, set `last_error`, save +
@@ -327,7 +408,19 @@ discarded) for the human to integrate after resolving the failure.
    invoke `discovery-plan` once to fold every phase-appended assumption and
    open question into current `ateam-plan.md` + `research-plan.md` — the v0
    ships with plans that reflect what was actually built, not what discovery
-   predicted. Commit.
+   predicted. The same step writes **`docs/product/project-plan.md`**: the plan
+   for the **project after v0** — what is left undone, what the epics say comes
+   next, what the research plan's open questions imply for the roadmap. Durable
+   rules apply.
+
+   Keep the three plans distinct; conflating them is what made this file
+   necessary. `ateam-plan.md` is the plan to **reach** v0 (the agents' own
+   plan) · `research-plan.md` is the honest disclosure **shipping with** v0 ·
+   `project-plan.md` is the plan for what happens **after** v0, for the human
+   team. Keep it separate from `ateam-product-report.md` too: the report is
+   backward-looking and code-grounded, the project plan is forward-looking and
+   necessarily speculative, and mixing verified claims with speculation is how
+   a report loses its authority. Commit.
 3. **Config refresh** (keep-artifacts-live, extended to config): update any
    `## A-Team Config` fact the run invalidated — e.g. dev introduced a test
    suite, so `test command: none` becomes the real command. Commit as `chore`.
@@ -343,7 +436,8 @@ discarded) for the human to integrate after resolving the failure.
 5. When all issues are integrated and the full suite is green, open one PR
    `feature/<slug> → <base_branch>` (via `gh`). Body assembled from `prd.md` +
    `design.md` + the issue list — and link `research-plan.md` as the run's
-   honest disclosure.
+   honest disclosure. If the GitHub projection ran, reference the milestone;
+   if it was **skipped**, say so and why, so nobody assumes issues exist.
 6. Present the PR link for final human review. Set `state = "done"`, save + commit.
 
 ## Failure handling
@@ -378,7 +472,14 @@ If the target `CLAUDE.md` lacks `## A-Team Config`:
    - base branch: <default branch>
    - design system path: <path>
    - package manager: <from lockfile>
+   - github issues: <on|off — ask; write the literal word, not the choice list>
    ```
+   **`github issues` must be asked, never detected.** Creating issues is an
+   outward-facing write to a shared repo, and bootstrap is the one moment a
+   human is reliably present — under `notify-and-continue` or `run-to-pr`
+   nobody is there when the issues phase runs, so an interactive prompt then
+   would either hang or defeat the policy. This line is that consent, given
+   once and recorded durably. If you cannot ask, write `off`.
 3. Commit the new/updated `CLAUDE.md` to the **base branch, before the feature
    branch is created** (`git -C <target> add CLAUDE.md && git -C <target>
    commit -m "chore: bootstrap A-Team Config"`). Config is repo infrastructure

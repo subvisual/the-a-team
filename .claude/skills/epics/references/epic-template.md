@@ -13,6 +13,10 @@ status: active            # active | done | superseded | parked
 owner: <human or agent — or TBD>
 jobs: [01]                # JTBD ids this epic serves
 features: [assisted-triage-v0]   # feature slugs realizing parts of this epic
+milestone: 7              # GitHub milestone number — WRITTEN BY THE ISSUES PHASE.
+                          # Omit until it exists; never author or edit it by hand.
+                          # PRESERVE IT ON EVERY REVISE — dropping it makes the
+                          # next run duplicate the milestone in GitHub.
 ---
 
 # Epic: <title>

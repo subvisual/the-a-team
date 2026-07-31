@@ -23,10 +23,11 @@ care about a skill's internals. Reserved names:
 
 The `issues`, `dev`, and `pr` phases are owned by the harness (reuse of
 `prd-to-issues` / `issue-swarm` + PR glue, with `ticket-writer` enriching
-`issues.md` acceptance criteria after decomposition, and `product-report`
-writing the durable `docs/product/ateam-product-report.md` at the end of the
-pr phase — from the run's artifacts **and the final v0 code**, before the PR
-opens) and are not authored via this contract.
+`issues.md` acceptance criteria after decomposition, an optional **GitHub
+projection** of the decomposed issues, and `product-report` writing the durable
+`docs/product/ateam-product-report.md` at the end of the pr phase — from the
+run's artifacts **and the final v0 code**, before the PR opens) and are not
+authored via this contract.
 
 Every skill **declares exactly one interaction mode** in its SKILL.md. Mixed modes
 are a contract violation: the human cannot tell whether the agent is waiting or
@@ -54,6 +55,8 @@ docs/product/
                               #   technical research (services, stack, integration costs)
   ateam-product-report.md     # the PRD for the product — end-of-run report (pr phase):
                               #   product framing, epics on the MoSCoW scope, what actually shipped
+  project-plan.md             # the plan for the PROJECT after v0 — what the human team picks up
+                              #   (pr phase). Distinct from ateam-plan.md, the plan to REACH v0.
   research/<YYYY-MM-DD>-<slug>.md  # append-only synthesis runs — the evidence audit trail
   input/<YYYY-MM-DD-label>/   # raw evidence — human-dropped or skill-staged verbatim pulls; never edited
 
@@ -101,7 +104,13 @@ The orchestrator sets working context before invoking a phase skill:
   contents) — the team-level technical defaults discovery applies instead of
   asking. Precedence: **project binding > team default > ask**.
 - **Target config**: the target repo's `CLAUDE.md`, including the `## A-Team Config`
-  block (test command, base branch, design-system path, package manager).
+  block (test command, base branch, design-system path, package manager,
+  `github issues`). `github issues` is `on` or `off` — the human's consent to
+  the issues phase writing into the target's GitHub. **Absent means `off`**:
+  silence is never consent to an outward-facing write. The orchestrator writes
+  the key at bootstrap **from the human's answer**; no agent may set it to `on`
+  on its own, infer it, or flip it without an explicit instruction in the
+  conversation.
 - **Revision notes** (on a `revise` gate loop): the human's feedback is appended to
   your invocation prompt. Re-produce the artifact incorporating it.
 
@@ -367,6 +376,8 @@ Load-bearing:
   a confidence level. This is the mechanism behind the independence promise:
   assumptions made while no human is present must land there, not in a report
   that scrolls away.
+  (For the harness's own exception to this rule, see **The milestone
+  back-reference** below — it binds a phase this section does not govern.)
 - **Report blocking flags loudly.** Your return report must surface, as a
   distinct list, every blocking flag your run produced: "serves an unlisted
   job?" signals, `TBD`s inside committed (Must) scope, failed self-checks,
@@ -388,6 +399,22 @@ Load-bearing:
   tokens over px/hex, import style, test command).
 - **Self-check before returning.** Verify your output against your own quality bar.
   "Done" is defined in the skill, not felt by the agent.
+
+## The milestone back-reference (harness-owned phases)
+
+The rules above bind **authored phase skills**. The `issues` phase is
+harness-owned and not authored via this contract, so its one durable-layer
+write is recorded here instead:
+
+> The `issues` phase may write the single frontmatter key `milestone:` into
+> `docs/product/epics/NN-*.md` — and nothing else in those files.
+
+It lives in the epic rather than in `issues.md` because a milestone outlives a
+feature directory exactly as its epic does; keeping the mapping per-feature
+would lose it on the next run and duplicate every milestone in GitHub. The
+`epics` skill still owns those files: it never authors or edits `milestone:`,
+but **must preserve it across a REVISE** — a rewrite that drops the key breaks
+the back-reference the projection depends on.
 
 ## No human present
 

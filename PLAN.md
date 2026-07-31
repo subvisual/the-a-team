@@ -58,6 +58,8 @@ artifacts split by lifetime, not by producer:
     ateam-plan.md               #   the plan built for the A-Team agents: goals + deliverables to v0
     research-plan.md            #   ships with v0: open questions, assumptions +
                                 #   confidence, technical research
+    project-plan.md             #   the plan for the PROJECT after v0 (pr phase) — not
+                                #   ateam-plan.md, which is the plan to REACH v0
     ateam-product-report.md     #   the PRD for the product — end-of-run report (pr phase)
     research/<YYYY-MM-DD>-<slug>.md #   append-only synthesis runs (evidence audit)
     input/<YYYY-MM-DD-label>/   #   raw evidence: images, transcripts, Slack, docs
@@ -111,7 +113,7 @@ the orchestrator reads the manifest and continues from the current phase.
 | `definition` | `prd.md` + `briefs/` | human | `ateam-definition` (authored) |
 | `design` | `design.md` + lo-fi prototype | human | `ateam-design` (stub now) |
 | `spec` | `spec.md` (incl. design-system mapping) | auto | `ateam-spec` (stub now) |
-| `issues` | `issues.md` | auto | reuse `prd-to-issues` |
+| `issues` | `issues.md` (+ optional GitHub projection) | auto | reuse `prd-to-issues` |
 | `dev` | code on `feature/<slug>` | auto | reuse `issue-swarm` |
 | `pr` | one open PR | final human review | glue we write |
 
@@ -264,6 +266,42 @@ mapping**: for every component/state, which existing components/tokens it uses.
 This is what makes dev output production-grade rather than bespoke.
 *Figma integration (Figma MCP) optional later.*
 
+### Issues in GitHub
+
+The call asked for issues in GitHub, labelled by JTBD, with epics as milestones.
+The trace `job → requirement → epic` already exists end-to-end, so nothing about
+the **decomposition source** changes — only the projection:
+
+- **epics → milestones** (milestone number written back as `milestone:` in the
+  epic's frontmatter — the one cross-owner write the contract permits, and what
+  makes re-runs reconcile instead of duplicate)
+- **requirements → issues** (issue numbers written back into `issues.md`)
+- **job ids → labels**, `jtbd:NN-slug`
+
+`issues.md` **stays the source of truth**; the swarm reads it, not GitHub.
+Making GitHub authoritative would mean rewriting a dev-owned shared skill and
+putting a network dependency in front of every dev step — and it would break
+the no-remote case, which the harness must survive.
+
+Superseding follows the durable rules rather than inventing a second lifecycle:
+a superseded epic's milestone is **closed** with a pointer, never deleted; a
+superseded job's label **stays** (closed issues wear it).
+
+**Consent is explicit and durable.** Creating issues is an outward-facing write
+to a shared repo, and under `notify-and-continue` / `run-to-pr` nobody is
+present when the issues phase runs — an interactive prompt would hang or defeat
+the policy. So bootstrap asks once and records `github issues: on | off` in
+`A-Team Config`; **default off** when absent. A surprise batch of issues in a
+client repo is a far worse failure than a missing mirror.
+
+**Hard guard, not overridable:** the projection never fires when the target is
+the A-Team's own repo. Running the A-Team from its home repo must not litter it
+with issues from dry runs; real project targets are where GitHub is used.
+
+Skipped or failed projection is **never fatal and never a blocking flag** — it
+isn't a correctness defect in an artifact, and blocking flags halt regardless of
+`gate_policy`. It is stated in the phase report and the PR body.
+
 ### Dev + PR
 
 - One feature branch `feature/<slug>`.
@@ -356,6 +394,7 @@ appends a small structured block under a known heading that phases can grep:
 - base branch: <branch>
 - design system path: <path>
 - package manager: <pm>
+- github issues: <on|off — asked at bootstrap; absent means off>
 ```
 
 ## Pluggable phase skills
@@ -391,7 +430,7 @@ output. Real skills are drop-in — same name, same contract.
     defaults, `## Technical context`, `pm-intake.md`, design-floor widening. ✅
 12. GitHub projection of the issues phase (epics → milestones, requirements →
     issues, job ids → labels), consented via A-Team Config, plus
-    `docs/product/project-plan.md` written by the pr phase's plan refresh. ← next
+    `docs/product/project-plan.md` written by the pr phase's plan refresh. ✅
 13. Block-mode mini-run: exercise the gates under `notify-and-continue` /
     `run-to-pr`, the REVISE loop, and a tripped tripwire — run it after 12 so it
     exercises the new paths in one pass.
@@ -432,9 +471,7 @@ The test: **every file in `docs/product/` should say what it is without needing
 a conversation.** `Plan.md` and `product.md` both fail it; that failure is the
 symptom being reported.
 
-**Decided, not yet built** (build order item 12): #2 will arrive as
-`docs/product/project-plan.md`, written by the pr phase's plan refresh — kept
-separate from the product report so backward-looking verified claims and
-forward-looking speculation don't share a document. Nothing in `CONTRACT.md`
-or any skill specifies it yet; it is not part of the durable tree until it
-does.
+#2 arrives as `docs/product/project-plan.md`, written by the pr phase's plan
+refresh — kept separate from `ateam-product-report.md` so backward-looking
+verified claims and forward-looking speculation don't share a document, which
+is how a report loses its authority.
