@@ -1,6 +1,6 @@
 ---
 name: project-context
-description: Use when a project's durable context needs to be seeded or refreshed — creating or updating docs/product/context.md (overview + digest + source index + glossary + Know/Don't-Know ledger + design context) in the target repo; when a project has no context layer yet (Stage-0 setup); when domain terminology is still forming or has drifted; after a meeting, new evidence batch, or scope change that outdates the current context. Also use to ingest new docs/product/input/ batches into the digest. Do not use for repo scaffolding or CI setup, for writing the discovery plan, PRD, or epics (use discovery-plan, prd-writer, epics), or for creating or revising Jobs to be Done — this skill records finished JTBDs by id and marks missing ones TBD; jobs-to-be-done owns minting them.
+description: Use when a project's durable context needs to be seeded or refreshed — creating or updating docs/product/context.md (overview + digest + source index + glossary + Know/Don't-Know ledger + design context + technical context) in the target repo; when a project has no context layer yet (Stage-0 setup); when domain terminology is still forming or has drifted; after a meeting, new evidence batch, or scope change that outdates the current context. Also use to ingest new docs/product/input/ batches into the digest. Do not use for repo scaffolding or CI setup, for writing the discovery plan, PRD, or epics (use discovery-plan, prd-writer, epics), or for creating or revising Jobs to be Done — this skill records finished JTBDs by id and marks missing ones TBD; jobs-to-be-done owns minting them.
 metadata:
   version: 0.2.0
   owner: Alvaro Bezerra
@@ -11,7 +11,8 @@ metadata:
 
 Seed or refresh the project's **durable context layer**: a single
 `docs/product/context.md` holding the overview, the digest of raw evidence, the
-glossary, and the Know/Don't-Know ledger. This file is what every other A-Team
+source index, the glossary, the design and technical context sections, and the
+Know/Don't-Know ledger. This file is what every other A-Team
 skill — and every agent in the pipeline — reads instead of holding project facts.
 The canonical shape is `references/context-template.md` (mirrored in
 `CONTRACT.md`).
@@ -98,12 +99,19 @@ where a repo exists — one commit per run, message naming what changed and why
    (naming the JTBD or scope call it blocks) or **non-blocking** (destined for
    `research-plan.md` as an open question). Uncertainty stays visible as TBD — a
    confident-sounding guess is a landmine for every skill that reads this file.
-8. **Design context.** On a first run, synthesize the design briefing's answers
-   (from the `intake/` design bank) into `## Design context` — users & emotional
-   goals, brand personality, aesthetic direction with references and
-   anti-references, accessibility, 3–5 design principles. On a refresh, preserve
-   the section and update only what the human changed — dropping it is a
-   forbidden overwrite like any other section.
+8. **Design and technical context.** On a first run, synthesize the design
+   briefing's answers (from the `intake/` design bank) into `## Design
+   context` — users & emotional goals, brand personality, aesthetic direction
+   with references and anti-references, accessibility, 3–5 design principles —
+   and the dev bank's answers into `## Technical context` — stack binding,
+   external dependencies, infra/deploy, data sensitivity, non-functional
+   constraints, v0 test bar. On a refresh, preserve both sections and update only what the
+   human changed; dropping either is a forbidden overwrite like any other
+   section.
+   **Settled facts only, in both.** An uncertain or assumed fact belongs in
+   `research-plan.md` with a confidence level, a machine-readable one in the
+   target's `## A-Team Config`. One fact, one home — never restate across
+   files, because both copies are durable and will eventually disagree.
 9. **Read-back — mandatory before writing.** `context.md` is a durable
    artifact: present the drafted file (or the diff, on a refresh) for the human
    to correct in this session. Only then write, update `ingested:` and

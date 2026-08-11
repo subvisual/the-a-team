@@ -1,6 +1,6 @@
 ---
 name: ateam-discovery
-description: Use when the A-Team orchestrator invokes the discovery phase for a feature, or when a human runs discovery standalone to seed docs/product/ from raw input (a client transcript, a fuzzy prompt) before any feature exists. The 🔥 grill phase skill — conducts the ported PM skills (product-brainstorming, project-context, research-synthesis, jobs-to-be-done, discovery-plan) through challenge → run brief → research → straw-man → grill → read-back → independence handoff → write, producing context.md, the JTBD set, ateam-plan.md, and research-plan.md, and writing gate_policy + run_brief to the manifest. Cannot run without a human: escalates via ## Awaiting answers, never guesses. Implemented against CONTRACT.md.
+description: Use when the A-Team orchestrator invokes the discovery phase for a feature, or when a human runs discovery standalone to seed docs/product/ from raw input (a client transcript, a fuzzy prompt) before any feature exists. The 🔥 grill phase skill — conducts the ported PM skills (product-brainstorming, project-context, research-synthesis, jobs-to-be-done, discovery-plan) through challenge → run brief → research → straw-man → dev review → grill → read-back → independence handoff → write, producing context.md, the JTBD set, ateam-plan.md, and research-plan.md, and writing gate_policy + run_brief to the manifest. Cannot run without a human: escalates via ## Awaiting answers, never guesses. Implemented against CONTRACT.md.
 metadata:
   version: 0.1.0
   owner: Alvaro Bezerra
@@ -31,9 +31,12 @@ the human's answers, not on eager loading.
 - **Reads**: the feature `prompt` (manifest or invocation args);
   `docs/product/**` including `input/`; the target repo; the harness `intake/`
   banks.
-- **Writes** (durable, all rules apply): `context.md`, `jtbd/NN-*.md`,
-  `ateam-plan.md`, `research-plan.md`. Plus, manifest present: `gate_policy` +
-  `run_brief` (the one write beyond your own phase status).
+- **Writes** (durable, all rules apply): `context.md` (including its
+  `## Design context` and `## Technical context` sections), `jtbd/NN-*.md`,
+  `ateam-plan.md`, `research-plan.md`, `input/<YYYY-MM-DD>-grill-digest/`, and
+  — on evidence-heavy runs — `research/<YYYY-MM-DD>-<slug>.md`. Plus, manifest
+  present: `gate_policy` + `run_brief` (the one write beyond your own phase
+  status).
 - **Done-signal**: `phases.discovery.status = "complete"`. No orchestrator
   gate — your read-back is the gate.
 - **Manifest-optional**: absent → prompt from args, skip all manifest writes.
@@ -56,17 +59,22 @@ so plainly and route out — `ticket-writer` or the building skills — instead 
 running the pipeline. Minting durable jobs for a chore pollutes the North
 Star.
 
-### 2. Run brief (in the same beat)
+### 2. Run brief (alongside the challenge — but never skipped with it)
 
-Capture how the human wants the A-Team to run — 3–5 questions, recommended
-answers offered: purpose (throwaway concept / client-facing v0 / seed of
-production) · fidelity expectation · timebox · what "done" looks like. **The
-run brief follows the same grill discipline as everything else: one question
-at a time, each with its recommendation — never batched into a single dialog**
-(batching proved confusing in the 2026-07 dry run). Check `context.md` for
-durable per-project defaults first; don't re-ask what's recorded. Hold the
-answers; they're written at the handoff (manifest runs) or into `context.md`
-as durable defaults (standalone — see movement 7).
+Capture how the human wants the A-Team to run. **The questions live in
+`intake/pm-intake.md`'s `## Run brief`** — read them there; do not carry a copy
+here. This movement owns only how to conduct them.
+
+**Runs even when movement 1 is skipped.** The challenge beat is skippable; the
+run brief is not — `run_brief` is a required manifest write. A skipped
+challenge means going straight to the run brief, never past it.
+
+**Same grill discipline as everything else: one question at a time, each with
+its recommendation — never batched into a single dialog** (batching proved
+confusing in the 2026-07 dry run). Check `context.md` for durable per-project
+defaults first; don't re-ask what's recorded. Hold the answers; they're written
+at the handoff (manifest runs) or into `context.md` as durable defaults
+(standalone — see movement 8).
 
 ### 3. Research (ingest, never invent)
 
@@ -76,13 +84,22 @@ as durable defaults (standalone — see movement 7).
 - Evidence-heavy runs (transcripts, surveys, tickets): apply
   **`research-synthesis`** craft — themes, contradictions, verdicts against
   any existing jobs, new-job signals — as a drafted `research/` run.
-- **Seed the ledger from the `intake/` banks** (`design-intake.md`,
-  `dev-intake.md`), each entry tagged `[design]` / `[dev]` / `[pm]`. The
-  design bank includes the **design briefing** (migrated from
+- **Seed the ledger from all three `intake/` banks** (`pm-intake.md`,
+  `design-intake.md`, `dev-intake.md`), each entry tagged `[pm]` / `[design]` /
+  `[dev]`. Three banks, one seeding mechanism, one routing rule. The **PM bank**
+  holds your own topics — problem, who for, how it's solved today, switching
+  forces, success signal, v0 scope boundary — plus the run-brief questions: it
+  holds the *questions*, you hold *how to conduct them*, and neither restates
+  the other. The **design bank** includes the design briefing (migrated from
   teach-impeccable): on a project's first run, its answers synthesize into
   `context.md`'s `## Design context` section (users & emotional goals, brand
   personality, aesthetic direction with references and anti-references,
-  accessibility, 3–5 design principles); later runs ask only deltas.
+  accessibility, 3–5 design principles); later runs ask only deltas. The **dev
+  bank**'s answers synthesize the same way into `## Technical context` (stack
+  binding, external dependencies, infra/deploy, data sensitivity,
+  non-functional constraints, v0 test bar), and its `## Declared defaults`
+  section is what
+  movement 5's three-way rule applies instead of asking.
 - Read the target repo enough to ground technical unknowns (stack, existing
   screens) — grounding, not a code audit.
 - **Track every source you consume as you go** — each link visited (search
@@ -102,7 +119,58 @@ forces, honest confidence, parked candidates as real files — *before* asking
 the human anything about jobs. A straw-man the human corrects beats a
 questionnaire the human authors.
 
-### 5. Grill (ledger-driven)
+### 5. Dev review (subagent, before the grill)
+
+Dispatch a **one-shot subagent** running the Dev-owned dev research skill over
+the drafted job set + the target repo. It is not a phase and has no reserved
+name — you dispatch it, the orchestrator is not involved.
+
+**Announce before dispatching.** You declare 🔥 grill mode; silent work breaks
+the promise that the human always knows whether you are waiting or working.
+Say what you are sending and why, then dispatch.
+
+**Pass it**: the drafted jobs, the target repo path, `context.md`, and the dev
+bank's `## Declared defaults`. **Expect back**: technical findings shaped as
+`research-plan.md` assumptions with confidence, per-job confidence deltas, and
+any new questions.
+
+**Everything returns through the ledger**, never straight into an artifact.
+Findings enter the `Know / Don't Know` ledger tagged `[dev]` and route by the
+same answerability rule as any bank entry — so dev's questions and design's
+bank questions reach the grill by one mechanism. Keep this path
+**role-agnostic**: a future design agent plugs into the same slot.
+
+**Three-way answer rule** — this is the carve-out to *autonomous degrade is
+forbidden*, and it does not widen:
+
+- **verifiable from the target repo** → answer it, with its source (a read is a
+  fact; the design bank already holds this rule). A **settled technical fact
+  lands in `## Technical context`**; the ledger entry closes with a pointer at
+  it rather than restating it — one fact, one home, inside `context.md` too;
+- **covered by a `## Declared defaults` entry** → apply it, record a
+  confidence-stamped assumption in `research-plan.md`, surface at the gate;
+- **neither** → it is a question, routed by the ledger like any other.
+
+**The dev reviewer never answers a demand-side question** — user need, who it
+is for, priority, scope, business context. No confidence flag mitigates that.
+
+**Fires once here; re-fires at most once**, and only if the grill materially
+reshaped the jobs (headline changed, job added, confidence moved) — a review of
+a job whose framing changed is stale. On the re-fire only *blocking* findings
+may reopen the grill; everything else goes to `research-plan.md`. Hard cap at
+one re-fire, so termination stays defined, not felt.
+
+**Substance goes to `research-plan.md`; jobs carry citations only** — a moved
+`confidence:`, a `sources:` entry, at most a one-line pointer. Never
+solution-side content in a job body.
+
+**Optional by absence.** If the dev research skill is not available, say so
+in-conversation, record the gap in `research-plan.md` as an open item
+("jobs not reviewed for technical feasibility — dev reviewer unavailable"),
+and continue. Not a blocking flag, not a halt. You are not answering the dev
+questions yourself; you are declaring them unanswered.
+
+### 6. Grill (ledger-driven)
 
 Ask **only blocking Don't-Knows**, one at a time, recommended answer first,
 routed by **answerability**:
@@ -116,7 +184,7 @@ Intake-bank questions are never asked raw — they enter through the ledger and
 this routing. **Termination is defined, not felt**: stop when the blocking set
 is empty or the human stops you.
 
-### 6. Read-back (mandatory, consolidated)
+### 7. Read-back (mandatory, consolidated)
 
 Present, for correction before anything durable is written: the JTBD set in
 full (headlines + confidence — this is the North Star, read it carefully),
@@ -124,7 +192,7 @@ plus tight summaries of `context.md` (glossary + ledger), the plans, and any
 synthesis run. One consolidated read-back covers every ported skill's
 read-back duty. The human corrects; you fix; re-present what changed.
 
-### 7. Independence handoff (the human opens the valve)
+### 8. Independence handoff (the human opens the valve)
 
 Present how the run will proceed and have the **human** choose the
 `gate_policy` — recommended default first:
@@ -140,7 +208,7 @@ answer → `block` stands. Standalone (no manifest): skip the policy — there i
 no run to govern — but record the run-brief answers in `context.md` as the
 durable per-project defaults movement 2 reads, so the next run doesn't re-ask.
 
-### 8. Write & commit
+### 9. Write & commit
 
 Apply **`discovery-plan`** craft to compile the ledger into `ateam-plan.md` (goals +
 deliverables) and `research-plan.md` (open questions, assumptions +
@@ -180,6 +248,11 @@ invented jobs into `docs/product/jtbd/` manufactures a North Star from
 nothing, and every downstream agent treats it as ground truth.
 Assumption-flags do not mitigate this.
 
+The **one carve-out** is the dev review's three-way rule (movement 5), and it
+is technical only: repo-verifiable facts and declared defaults. It never
+reaches a demand-side question — need, audience, priority, scope — and it
+grants *you* nothing here. If you are the one without an answer, you escalate.
+
 ## Self-check before returning
 
 - Every active job passes the jobs-to-be-done rubric; every job has
@@ -189,6 +262,15 @@ Assumption-flags do not mitigate this.
   `## Awaiting answers`.
 - ateam-plan.md and research-plan.md cross-reference cleanly (every resolution
   deliverable points at its question).
-- Intake entries are tagged and routed; no bank question was asked raw.
+- Intake entries from **all three** banks are tagged and routed; no bank
+  question was asked raw.
+- The dev review ran and its findings routed through the ledger — or its
+  absence is recorded in `research-plan.md` as an open item. It re-fired at
+  most once. No job body holds solution-side content; every technical finding
+  the jobs reference resolves to a `research-plan.md` entry.
+- `context.md` has `## Technical context` populated or honestly `TBD`, and no
+  fact is restated across `context.md` / `research-plan.md` / `A-Team Config`
+  — nor **within** `context.md` (a ledger Know that duplicates a
+  `## Technical context` or `## Design context` entry is the same bug).
 - Manifest (if present): `gate_policy` + `run_brief` written, own status
   `complete`, nothing else touched.
