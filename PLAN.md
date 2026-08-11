@@ -114,7 +114,7 @@ the orchestrator reads the manifest and continues from the current phase.
 | `discovery` | `context.md` + `jtbd/` + `ateam-plan.md` + `research-plan.md` (durable) | in-skill read-back | `ateam-discovery` |
 | `definition` | `prd.md` + `briefs/` | human | `ateam-definition` (authored) |
 | `design` | `design.md` + lo-fi prototype + `docs/product/design-system/` | human | `ateam-design` (authored) |
-| `spec` | `spec.md` (incl. design-system mapping) | auto | `ateam-spec` (stub now) |
+| `spec` | `spec.md` (incl. design-system mapping) | auto | `ateam-spec` (authored) |
 | `issues` | `issues.md` (+ optional GitHub projection) | auto | reuse `prd-to-issues` |
 | `dev` | code on `feature/<slug>` | auto | reuse `issue-swarm` |
 | `pr` | one open PR | final human review | glue we write |
@@ -430,11 +430,10 @@ interface each skill implements is fixed in [`CONTRACT.md`](./CONTRACT.md): inpu
 it may read, output paths it must write, manifest fields it sets, and its
 done-signal.
 
-`ateam-discovery`, `ateam-definition`, and `ateam-design` are authored
-(`ateam-design` conducts the vendored subvisual/harness design skills,
-implemented on Design's behalf). `ateam-spec` remains a **no-op stub** until
-its PR lands — testing orchestration wiring only, not real output. Real
-skills are drop-in — same name, same contract.
+All four phase skills are authored: `ateam-discovery`, `ateam-definition`,
+`ateam-design` (conducting the vendored subvisual/harness design skills,
+implemented on Design's behalf), and `ateam-spec`. Real skills are drop-in —
+same name, same contract.
 
 ## Build order (our scope)
 
@@ -465,7 +464,7 @@ skills are drop-in — same name, same contract.
     durable tokens at `docs/product/design-system/` with the shadcn bridge,
     design-intake typography questions + `## Declared defaults` (shadcn/ui). ✅
 15. `ateam-spec` — the real spec skill (shadcn registry mapping, components-to-
-    install, four-states self-check), stacked on 14.
+    install, four-states self-check), stacked on 14. ✅
 
 ## Deferred (not blocking v1)
 

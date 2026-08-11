@@ -375,17 +375,30 @@ Load-bearing:
 
 ### `ateam-spec` — 🚀 autonomous
 
-- **May read**: `prd.md`, `design.md`, the lo-fi prototype, `docs/product/**`, and
-  the target repo's design system.
+- **May read**: `prd.md`, `design.md` (its `## Screens & flows` is the
+  coverage checklist), the lo-fi prototype, `docs/product/**` (including
+  `design-system/`), the target repo's design system, and the design bank's
+  `## Declared defaults`.
 - **Must write**: `spec.md` in the feature directory.
+- **Component-library resolution** — binding > default > TBD: the target's
+  own library always wins; with none, the declared default (**shadcn/ui**)
+  applies openly — recorded as a confidence-stamped assumption in
+  `research-plan.md`; unresolvable → `TBD` + a flag, never a guess.
 - **Content expectations** — this is the dev-facing contract, so it must be explicit:
-  - Component breakdown.
+  - Component breakdown, per screen — full coverage of `## Screens & flows`.
   - Every state per component: empty / loading / error / populated.
   - Responsive behavior.
-  - **Design-system mapping (required)**: for each component/piece, which existing
-    design-system components and tokens it uses. This is what makes dev output
-    production-grade instead of bespoke. No raw px/hex — reference tokens.
+  - **Design-system mapping (required)**: for each component/piece, which
+    design-system component and tokens it uses — the target library's names
+    under a binding, shadcn registry names under the default; tokens as role
+    vars or scale steps. This is what makes dev output production-grade
+    instead of bespoke. No raw px/hex — reference tokens. A piece no
+    primitive covers is specced as a composite first; a truly bespoke
+    `custom:` component is a loud flag in the phase report.
   - Interactions and edge cases.
+  - **`## Components to install`** — the deduplicated list dev needs. Spec
+    *names*, dev *installs*: this phase never writes code or touches the
+    target repo.
 - **Done-signal**: set `phases.spec.status = "complete"`. No gate; orchestrator
   advances automatically.
 
