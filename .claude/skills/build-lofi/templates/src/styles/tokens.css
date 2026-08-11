@@ -1,0 +1,30 @@
+/* Greyscale baseline. Replaced when `design-system` materialises tokens. */
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: var(--font-sans);
+  color: rgb(17, 17, 17);
+  background-color: rgb(250, 250, 250);
+}
+
+/* A-Team extension: brand fallback chain. The default render defines no
+   --brand-* variables, so these resolve to greyscale — a mounted
+   palette-variant stylesheet defines them and links/CTAs tint without any
+   markup change. Greyscale by default is the design discipline, not a bug. */
+a {
+  color: oklch(var(--brand-700, 0.32 0 0));
+}
+a:hover {
+  color: oklch(var(--brand-900, 0.22 0 0));
+}
+.cta,
+[data-cta] {
+  background-color: oklch(var(--brand-600, 0.42 0 0));
+  color: oklch(var(--neutral-50, 0.985 0 0));
+}

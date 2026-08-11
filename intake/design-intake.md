@@ -43,6 +43,18 @@ was left TBD.
   technical, organic…)
 - Light mode, dark mode, or both?
 - Colors that must be used or avoided?
+- Is there a brand color already locked — a hex, a hue, or a brand whose
+  color to match? (The palette generator's seed; without one, the design
+  phase ships a TBD-draft and a blocking flag.)
+
+### Typography & density
+*(Sourced from the design-system skill's own interview — the questions its
+pipeline mode wishes the grill had asked. Feel-questions, not font-questions.)*
+- What should reading this product feel like — a dense professional tool, a
+  steady default, something calm and editorial, or airy and spacious? (Maps
+  to the type-scale presets: Compact / Balanced / Relaxed / Spacious.)
+- Character of the letterforms: sans-serif (default), serif, monospace, or
+  display? (Specimen category only — the concrete font is a later decision.)
 
 ### Accessibility & inclusion
 - Specific accessibility requirements? (WCAG level, known user needs)
@@ -59,12 +71,32 @@ was left TBD.
 - Who decides between design options at the design gate — and if nobody will
   be present, may the agent self-select (record it as a provisional call)?
 
+## Declared defaults
+
+*Owned by the Design role owner — fill and maintain. This heading is required
+by CONTRACT.md; its contents are not the PM's to author.*
+
+The **team-level** design defaults. Discovery reads them so that a question
+already answered by a standing team decision is never put to the human: a
+default that applies is **applied openly** — recorded as a confidence-stamped
+assumption in `research-plan.md` and surfaced at the gate — rather than
+asked. Precedence: **project binding > team default > ask.** A project
+binding (the target already has a component library, or A-Team Config names
+one) always wins.
+
+- Component library — **shadcn/ui** — does not apply when the target already
+  has a component library or `## A-Team Config` names another. The spec
+  phase's design-system mapping resolves against it; dev installs components
+  on demand (`npx shadcn add`). *(Design team decision, 2026-08-11.)*
+
 ## Where the answers land
 
 The briefing's synthesis is written by discovery into `context.md` under
 `## Design context` (canonical shape in the context template): **Users &
 emotional goals** · **Brand personality** (3 words, voice) · **Aesthetic
-direction** (references, anti-references, theme, color constraints) ·
+direction** (references, anti-references, theme, color constraints, brand
+seed) · **Typography & density** (specimen category, scale-preset feel) ·
 **Accessibility** · **Design principles** (3–5, derived from the answers —
 these guide every design decision downstream). The design phase reads this
-section as its floor alongside the JTBD set.
+section as its floor alongside the JTBD set; unanswered entries become
+derived calls or TBDs there, never mid-phase questions.
