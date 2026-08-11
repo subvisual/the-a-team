@@ -61,6 +61,8 @@ artifacts split by lifetime, not by producer:
     project-plan.md             #   the plan for the PROJECT after v0 (pr phase) — not
                                 #   ateam-plan.md, which is the plan to REACH v0
     ateam-product-report.md     #   the PRD for the product — end-of-run report (pr phase)
+    design-system/              #   canonical design tokens — scale.ts, palette.ts,
+                                #   shadcn-theme.css (design phase, create-once)
     research/<YYYY-MM-DD>-<slug>.md #   append-only synthesis runs (evidence audit)
     input/<YYYY-MM-DD-label>/   #   raw evidence: images, transcripts, Slack, docs
   docs/features/<slug>/         # PER-FEATURE — scoped to one run
@@ -111,7 +113,7 @@ the orchestrator reads the manifest and continues from the current phase.
 |-------|----------|------|-------|
 | `discovery` | `context.md` + `jtbd/` + `ateam-plan.md` + `research-plan.md` (durable) | in-skill read-back | `ateam-discovery` |
 | `definition` | `prd.md` + `briefs/` | human | `ateam-definition` (authored) |
-| `design` | `design.md` + lo-fi prototype | human | `ateam-design` (stub now) |
+| `design` | `design.md` + lo-fi prototype + `docs/product/design-system/` | human | `ateam-design` (authored) |
 | `spec` | `spec.md` (incl. design-system mapping) | auto | `ateam-spec` (stub now) |
 | `issues` | `issues.md` (+ optional GitHub projection) | auto | reuse `prd-to-issues` |
 | `dev` | code on `feature/<slug>` | auto | reuse `issue-swarm` |
@@ -222,7 +224,12 @@ as reading the synthesis those answers produced, and the synthesis is where jobs
 get subtly mis-stated.
 
 Formal gates are state transitions with resume semantics, and fire at
-`definition`, `design`, and `pr`. How they fire is governed by a
+`definition`, `design`, and `pr`. **The standing aim: one required HITL
+moment — the discovery grill — unless the human opts into more.** Every
+post-discovery phase must be able to run gate-less (derive from
+grill-captured context, draft with TBDs, flag loudly); the gates then work
+as reviews the human schedules, not stops the pipeline needs. How they fire
+is governed by a
 **`gate_policy`** the human chooses at discovery's independence handoff
 (default `block` — the safety valve stays shut unless the human opens it):
 
@@ -257,14 +264,32 @@ in both modes — standalone is not a back door with weaker review.
 Design's floor is **JTBDs + `context.md` + `research-plan.md`'s technical
 assumptions**; it consumes `prd.md` and page briefs when present. The board assigns `Information architecture (with Design)` to PM —
 *with*, not *for* — so neither side hard-blocks the other, and design keeps room
-to diverge rather than executing a fixed screen list.
+to diverge rather than executing a fixed screen list. When `briefs/` is
+absent, `design.md` drafts its own `## Screens & flows` from the JTBDs — a
+proposal the gate reviews; when the wireflow exists, that section derives
+from it with divergences recorded as explicit calls. Either way it is the
+lo-fi's single input.
 
 Design output is not shippable code. Lo-fi prototypes are a throwaway greyscale
-visual reference only. Dev builds the production UI against the **target repo's
-existing design system**. Therefore `spec.md` must include a **design-system
-mapping**: for every component/state, which existing components/tokens it uses.
-This is what makes dev output production-grade rather than bespoke.
+visual reference only (token variants ride behind `?scale=` / `?palette=` for
+the gate's comparison). Dev builds the production UI against the **target's
+design system**: the one it already has, or — the 0→1 case — the one the
+design phase creates at `docs/product/design-system/` from the ported
+subvisual design-system guidelines, with **shadcn/ui as the declared-default
+component library** (Design-owned entry in `intake/design-intake.md`'s
+`## Declared defaults`; a project binding always wins). The tokens carry a
+`shadcn-theme.css` bridge binding shadcn's role variables to OKLCH scale
+steps, so `spec.md`'s **design-system mapping** — for every component/state,
+which components/tokens it uses — resolves to real names: shadcn registry
+components plus token role vars, no raw px/hex. This is what makes dev output
+production-grade rather than bespoke.
 *Figma integration (Figma MCP) optional later.*
+
+**The design skills are implemented on Design's behalf** (2026-08-11): every
+design opinion in them traces to the design team's own skills —
+subvisual/harness `design-system` and `build-lofi`, vendored verbatim with
+provenance lines — conducted by `ateam-design`. Nothing design-flavored is
+invented harness-side.
 
 ### Issues in GitHub
 
@@ -405,10 +430,11 @@ interface each skill implements is fixed in [`CONTRACT.md`](./CONTRACT.md): inpu
 it may read, output paths it must write, manifest fields it sets, and its
 done-signal.
 
-`ateam-discovery` and `ateam-definition` are authored. Until Design delivers,
-`ateam-design` and `ateam-spec` remain **no-op stubs** (write a placeholder
-file, set the manifest status) — testing orchestration wiring only, not real
-output. Real skills are drop-in — same name, same contract.
+`ateam-discovery`, `ateam-definition`, and `ateam-design` are authored
+(`ateam-design` conducts the vendored subvisual/harness design skills,
+implemented on Design's behalf). `ateam-spec` remains a **no-op stub** until
+its PR lands — testing orchestration wiring only, not real output. Real
+skills are drop-in — same name, same contract.
 
 ## Build order (our scope)
 
@@ -434,6 +460,12 @@ output. Real skills are drop-in — same name, same contract.
 13. Block-mode mini-run: exercise the gates under `notify-and-continue` /
     `run-to-pr`, the REVISE loop, and a tripped tripwire — run it after 12 so it
     exercises the new paths in one pass.
+14. Design round (2026-08-11, on Design's behalf): vendor subvisual/harness
+    `design-system` + `build-lofi`, author the `ateam-design` conductor,
+    durable tokens at `docs/product/design-system/` with the shadcn bridge,
+    design-intake typography questions + `## Declared defaults` (shadcn/ui). ✅
+15. `ateam-spec` — the real spec skill (shadcn registry mapping, components-to-
+    install, four-states self-check), stacked on 14.
 
 ## Deferred (not blocking v1)
 
@@ -445,8 +477,11 @@ output. Real skills are drop-in — same name, same contract.
 - **Project-level defaults layer.** `## Declared defaults` is team-level for
   v0; per-client standing choices arrive when the A-Team runs on live projects
   (the "0.1" stage — ongoing work on an existing codebase).
-- **A design agent.** Design stays a static intake bank; the dev review's
-  return path is built role-agnostic so an agent can take the same slot later.
+- **A design agent.** The design *skills* are now real (build order 14 —
+  vendored subvisual/harness skills conducted by `ateam-design`, implemented
+  on Design's behalf), but an autonomous design *agent* — one that plugs into
+  the dev review's role-agnostic return slot with its own research loop —
+  stays deferred. The intake bank remains Design-owned content.
 - **Product-scoped issue generation.** Issues are feature-scoped, which is the
   same set in a 0→1 run (exactly one feature). The distinction only bites at
   the 0.1 stage.

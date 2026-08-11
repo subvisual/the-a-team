@@ -50,6 +50,8 @@ docs/product/
   epics/NN-<slug>.md          # one file per epic — durable delivery structures, same lifecycle rules
                               # Citation syntax: bare [[NN]] / [[NN-slug]] ALWAYS cites a job;
                               # epics cite as [[epic:NN]] (any future durable class gets a prefix)
+  design-system/              # canonical design tokens — scale.ts, palette.ts, shadcn-theme.css
+                              #   (design phase, create-once; the design gate is their review)
   ateam-plan.md               # the plan built for the A-Team agents: goals + deliverables to reach v0
   research-plan.md            # ships with v0: open questions, assumptions + confidence,
                               #   technical research (services, stack, integration costs)
@@ -99,10 +101,12 @@ The orchestrator sets working context before invoking a phase skill:
   passed at invocation. Rubric pre-work each role skill reads at run start.
   Three banks, one per role: `pm-intake.md`, `design-intake.md`,
   `dev-intake.md`. Each seeds ledger entries tagged with its role; all three
-  route through the same answerability rule. `dev-intake.md` additionally
-  carries a **`## Declared defaults`** section (required heading, Dev-owned
-  contents) — the team-level technical defaults discovery applies instead of
-  asking. Precedence: **project binding > team default > ask**.
+  route through the same answerability rule. `dev-intake.md` and
+  `design-intake.md` additionally carry a **`## Declared defaults`** section
+  (required heading, contents owned by that bank's role owner) — the
+  team-level standing decisions discovery applies instead of asking (e.g. the
+  Design-owned default component library). Precedence: **project binding >
+  team default > ask**.
 - **Target config**: the target repo's `CLAUDE.md`, including the `## A-Team Config`
   block (test command, base branch, design-system path, package manager,
   `github issues`). `github issues` is `on` or `off` — the human's consent to
@@ -333,20 +337,39 @@ Load-bearing:
 - **May read**: `docs/product/context.md` + `docs/product/jtbd/**` (**required
   floor** — context.md's `## Design context` section carries the design
   briefing: users & emotional goals, brand personality, aesthetic direction,
-  accessibility, design principles; and `## Technical context`, the settled
-  technical facts) **plus `research-plan.md`'s technical assumptions and open
-  questions** — also a required floor, so a design can never be specced past a
-  constraint the dev review already surfaced; `prd.md` and `briefs/`
-  (**optional** — consume when present); the target repo's design system (path
-  from A-Team Config); the manifest's `run_brief` (`fidelity` calibrates how
-  deep the lo-fi goes).
+  typography preferences, accessibility, design principles; and `## Technical
+  context`, the settled technical facts) **plus `research-plan.md`'s technical
+  assumptions and open questions** — also a required floor, so a design can
+  never be specced past a constraint the dev review already surfaced; `prd.md`
+  and `briefs/` (**optional** — consume when present; when the wireflow
+  exists, design.md's screen section derives from it, divergences recorded as
+  explicit calls); the target repo's design system (path from A-Team Config);
+  the manifest's `run_brief` (`fidelity` calibrates how deep the lo-fi goes).
 - **Must write**:
-  - `design.md` in the feature directory — IA, user flows, screen/layout
-    direction, visual approach, and the options considered with reasoning.
+  - `docs/product/design-system/` — canonical design tokens (`scale.ts`,
+    `palette.ts`, `shadcn-theme.css`). **Durable rules apply**; the design
+    gate is the human review that covers them. **Create-once**: an existing
+    system (here or at A-Team Config's `design system path`) is consumed,
+    never regenerated — regeneration only on an explicit human instruction; a
+    contradiction between existing tokens and `## Design context` is a gate
+    flag, not an auto-rewrite. With no brand seed in `## Design context`, the
+    phase ships a TBD-draft (seed-free scales generated, brand marked TBD)
+    and a **blocking flag** — never an invented brand.
+  - `design.md` in the feature directory — a `## Screens & flows` section
+    (the lo-fi's single input: derived from the wireflow when `briefs/`
+    exists, drafted from the JTBDs when not, marked as such), visual
+    approach, and the options considered with reasoning.
   - a throwaway lo-fi prototype under `docs/features/<slug>/lofi/` — visual
-    reference only, not production code.
-- **Diverge by default**: produce multiple options, not one. Record why the
-  non-chosen ones were dropped.
+    reference only, not production code. Greyscale by default; token
+    variants mounted behind `?scale=` / `?palette=` for comparison.
+  - (standalone debrief only) `docs/product/input/<YYYY-MM-DD>-lofi-debrief-<slug>/`
+    — user-test sessions staged as append-only evidence batches, declared
+    here so they are a permitted output path rather than a stray write.
+- **Diverge by default**: produce multiple options, not one — as mounted,
+  clickable variants, with `design.md` recording why the non-chosen ones were
+  dropped. Under a non-block `gate_policy` the skill self-selects the
+  recommended variant only if the design bank's self-select consent was
+  captured at the grill, recorded as a provisional call in `research-plan.md`.
 - **Done-signal**: set `phases.design.status = "complete"`. Orchestrator flips to
   `approved` after the human gate.
 
