@@ -79,14 +79,46 @@ current with deltas. The design phase reads this as its floor.>
 - **Design principles:** <3–5 principles derived from the answers; every
   downstream design decision should be defensible against these>
 
+## Technical context
+
+<The settled technical facts about this project, captured from the grill (the
+dev intake bank's entries reach it via the ledger) and kept current with
+deltas. Dev reads it; design reads it as part of its floor.
+
+Home rule — one fact, one home, others cite:
+**settled + durable + project-level → here** · **uncertain or assumed →
+research-plan.md, confidence-stamped** · **machine-readable → the target's
+`## A-Team Config`**. Never restate across files.>
+
+- **Stack binding:** <does the target's stack bind the v0, or is the team
+  default fine? — cite the binding, or "team default applies">
+- **External dependencies:** <services/APIs in play · access or credentials ·
+  mocked vs real — or TBD>
+- **Infrastructure & deploy:** <where the v0 runs; local-first unless stated>
+- **Data sensitivity:** <real data? PII/compliance constraints — or "none">
+- **Non-functional constraints:** <auth model, offline, latency — anything that
+  changes the architecture even for a prototype>
+- **v0 test bar:** <the target's full suite / smoke only / none — what must
+  pass. A-Team Config carries the *command*; this is what must go green.>
+
 ## Know / Don't know
 
 ### Know
 - <fact> — <source: batch, meeting, person>
+- <a Don't-Know the dev review closed> — answered, see `## Technical context`
+
+A Know that a briefing section already holds is recorded as **closed with a
+pointer**, never re-stated: the ledger tracks whether a question is open, the
+briefing sections hold the fact. Two copies inside one file drift as surely as
+two copies across files.
 
 ### Don't know
-- **[blocking → <the JTBD id or scope call it blocks>]** <question>
-- **[non-blocking]** <question — survives into research-plan.md as an open question>
+- **[blocking → <the JTBD id or scope call it blocks>] [pm|design|dev]** <question>
+- **[non-blocking] [dev]** <question — survives into research-plan.md as an open question>
+
+The role tag is carried whenever an `intake/` bank seeded the entry — it is
+what the answerability routing keys off, and with three banks feeding one
+ledger an untagged entry loses its consumer.
 
 ## Awaiting answers
 
@@ -108,3 +140,7 @@ Rules that bind every writer of this file:
 - **The ledger drives the grill.** Only blocking Don't-Knows justify questions;
   non-blocking ones flow into `research-plan.md` as open questions, so stopping
   loses nothing.
+- **One fact, one home.** `## Design context` and `## Technical context` hold
+  *settled* briefing facts; uncertainty belongs in `research-plan.md` with a
+  confidence level, and machine-readable config in the target's
+  `## A-Team Config`. A fact restated in two files will disagree with itself.

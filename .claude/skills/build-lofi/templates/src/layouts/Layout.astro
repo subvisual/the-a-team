@@ -1,0 +1,51 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/tokens.css';
+
+const { title, purpose } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{title} — Lo-fi</title>
+    <script is:inline>
+      // A-Team extension: runtime token-variant swap for design comparison.
+      // ?scale=<name> / ?palette=<name> mount /scale-variants/<name>.css and
+      // /palette-variants/<name>.css from public/. The choice sticks across
+      // navigation via localStorage; ?scale=default / ?palette=default clears.
+      (() => {
+        const params = new URLSearchParams(location.search);
+        for (const kind of ['scale', 'palette']) {
+          let name = params.get(kind);
+          if (name === 'default' || name === 'off') {
+            localStorage.removeItem('lofi-' + kind);
+            name = null;
+          } else if (name) {
+            localStorage.setItem('lofi-' + kind, name);
+          } else {
+            name = localStorage.getItem('lofi-' + kind);
+          }
+          if (name && /^[a-z0-9-]+$/.test(name)) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = '/' + kind + '-variants/' + name + '.css';
+            document.head.appendChild(link);
+          }
+        }
+      })();
+    </script>
+  </head>
+  <body class="min-h-screen flex flex-col bg-gray-50 text-gray-900">
+    <Header />
+    <main class="flex-1 max-w-3xl mx-auto w-full px-6 py-10">
+      <h1 class="text-3xl font-semibold mb-1">{title}</h1>
+      {purpose && <p class="text-gray-600 mb-8">{purpose}</p>}
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

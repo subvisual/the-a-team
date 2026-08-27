@@ -56,6 +56,12 @@ reasoning and quotes: `references/theory.md`.
   is a unique blend of emotional forces; typing creates false categories.
 - **No demographics or personas.** The job lives in the *situation and struggle*,
   not in who the person is.
+- **Cite technical findings, never restate them.** When a dev review touches a
+  job, what belongs in the job file is the *effect on the job* — a moved
+  `confidence:`, a `sources:` entry, at most a one-line pointer. The substance
+  (API analysis, auth needs, stack constraints) lives in `research-plan.md`.
+  Solution-side content in a job body fails the rubric, and a second durable
+  copy under ids-forever semantics will eventually contradict the first.
 - **Honesty over flattery.** A job built from someone's assertions is a
   *hypothesis*, not a validated job. Say so, every time — in the `confidence:`
   field, not just in conversation.

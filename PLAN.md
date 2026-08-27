@@ -51,7 +51,8 @@ artifacts split by lifetime, not by producer:
 ```
 <target>/
   docs/product/                 # DURABLE — outlives any one feature
-    context.md                  #   digest, glossary, Know/Don't-Know ledger
+    context.md                  #   digest, sources, glossary, design + technical
+                                #   context, Know/Don't-Know ledger
     jtbd/NN-<slug>.md           #   one file per job — the North Star
     epics/NN-<slug>.md          #   one file per epic — durable delivery structures
     adr/NN-<slug>.md            #   one file per architecture decision — repo shape, stack,
@@ -59,7 +60,11 @@ artifacts split by lifetime, not by producer:
     ateam-plan.md               #   the plan built for the A-Team agents: goals + deliverables to v0
     research-plan.md            #   ships with v0: open questions, assumptions +
                                 #   confidence, technical research
+    project-plan.md             #   the plan for the PROJECT after v0 (pr phase) — not
+                                #   ateam-plan.md, which is the plan to REACH v0
     ateam-product-report.md     #   the PRD for the product — end-of-run report (pr phase)
+    design-system/              #   canonical design tokens — scale.ts, palette.ts,
+                                #   shadcn-theme.css (design phase, create-once)
     research/<YYYY-MM-DD>-<slug>.md #   append-only synthesis runs (evidence audit)
     input/<YYYY-MM-DD-label>/   #   raw evidence: images, transcripts, Slack, docs
   docs/features/<slug>/         # PER-FEATURE — scoped to one run
@@ -110,9 +115,9 @@ the orchestrator reads the manifest and continues from the current phase.
 |-------|----------|------|-------|
 | `discovery` | `context.md` + `jtbd/` + `ateam-plan.md` + `research-plan.md` (durable) | in-skill read-back | `ateam-discovery` |
 | `definition` | `prd.md` + `briefs/` | human | `ateam-definition` (authored) |
-| `design` | `design.md` + lo-fi prototype | human | `ateam-design` (stub now) |
-| `spec` | `spec.md` (incl. design-system mapping) | auto | `ateam-spec` (stub now) |
-| `issues` | `issues.md` | auto | reuse `prd-to-issues` |
+| `design` | `design.md` + lo-fi prototype + `docs/product/design-system/` | human | `ateam-design` (authored) |
+| `spec` | `spec.md` (incl. design-system mapping) | auto | `ateam-spec` (authored) |
+| `issues` | `issues.md` (+ optional GitHub projection) | auto | reuse `prd-to-issues` |
 | `dev` | code on `feature/<slug>` | auto | reuse `issue-swarm` |
 | `pr` | one open PR | final human review | glue we write |
 
@@ -134,43 +139,14 @@ together.
 ### Discovery flow
 
 ```
-challenge -> research -> straw-man -> dev-research -> architecture -> grill -> read-back -> artifacts
-(go/no-go)  (ingest +   (committed   (implementation  (v0 shape,      (ledger-  (human
-             codebase)   first pass)  reality)         for ratifying)  driven)   corrects)
+challenge -> run brief -> research -> straw-man -> dev review -> architecture -> grill ->
+(go/no-go)   (how this    (ingest +    (committed    (subagent,    (ledger-
+              run runs)   codebase)    first pass)   technical)    driven)
+
+  -> read-back -> independence handoff -> write
+     (human        (human picks           (durable
+      corrects)     gate_policy)           artifacts)
 ```
-
-### The dev beats
-
-The board wires Dev back into discovery twice — *"What dev needs from grillme"*
-and *"When building the JTBD get dev insights"* — and both connectors point at
-the grill, not at the dev phase. Scope called without implementation contact
-produces a North Star nobody can build, and today nothing finds that out until
-`issue-swarm` is already running.
-
-Two skills sit between the straw-man and the grill:
-
-- **`dev-research`** (🚀 autonomous) sweeps the target repo and the services the
-  jobs imply. It keeps only findings that change a **product** decision — scope
-  call, job feasibility, sequencing, buy-vs-build — stamps each `cheap` /
-  `moderate` / `expensive` / `unknown` with a confidence level and a resolving
-  evidence pointer, and routes them by the ledger's own answerability rule. It
-  writes no artifact; discovery routes and writes its output.
-- **`architecture`** (📝 draft + review) turns those findings into decisions:
-  repo shape, stack per surface, where the v0 runs (local-first by default), the
-  v0 data strategy (mocked API-shaped by default). Each lands as a durable ADR
-  at `docs/product/adr/NN-<slug>.md` with alternatives, consequences, and a
-  revisit-when trigger. The grill is its review.
-
-**Presented is not ratified.** A decision that costs money, forecloses an
-expensive-to-reopen option, contradicts the target repo, or rests on an
-`expensive`/`unknown` finding needs the human to actually say yes; unanswered,
-it is written `status: parked` with an open question in `research-plan.md`.
-
-Depth is bounded on purpose. These beats decide the v0's **shape** — never its
-schema, component breakdown, or library picks inside a settled stack. Board
-order in the Dev lane is Architecture → Dev research, which is the dev *phase's*
-own turn and still to be built; at discovery time the order inverts, because you
-cannot pick a stack for a repo you have not read.
 
 The challenge beat exists because a straw-man cannot ask "should this feature
 exist at all" — the board puts `critical request → go/no-go/reshape` first and as
@@ -183,6 +159,90 @@ when the blocking set is empty. Surviving non-blocking unknowns are written into
 `research-plan.md` as open questions — so stopping loses nothing. A question is
 only asked if its answer changes an artifact.
 
+### Technical reality reaches the PM (2026-07-29 call)
+
+The board draws **two separate arrows** from Dev into the PM column —
+`what dev needs from grillme` into the grill box, and `When building the JTBD
+get dev insights` into the JTBD box — so these are two mechanisms, not one.
+They cannot collapse: stack constraints must be available *before* jobs are
+framed (a job framed for a local mocked v0 is a different job), while a job
+review needs jobs to exist.
+
+- **Into the grill**: `intake/dev-intake.md` seeds the ledger as it always has,
+  and now also carries **`## Declared defaults`** — the team-level technical
+  defaults (Dev-owned contents) that discovery *applies* rather than asks.
+  Precedence: **project binding > team default > ask**.
+- **Into the JTBD build**: a **one-shot subagent** dispatched from inside
+  `ateam-discovery` after the straw-man, running the Dev-owned dev research
+  skill. Not a phase, no reserved name, no orchestrator change — the board
+  draws it as an arrow, not a box, and the loop back into the grill is only
+  natural inside discovery. It also keeps repo-reading out of the grill's
+  context, which the skill's load discipline explicitly wants.
+
+Everything it finds **returns through the ledger**, role-agnostic so a future
+design agent uses the same slot. It fires once and **re-fires at most once**
+(only if the grill materially reshaped the jobs), so termination stays defined.
+If the dev skill isn't installed yet, the review is **optional by absence**:
+skip, record the gap in `research-plan.md`, continue — our track and Davide's
+stay decoupled.
+
+**The autonomous-degrade carve-out.** Discovery otherwise forbids an agent
+answering its own questions. The dev reviewer may resolve exactly two kinds:
+verifiable-from-the-repo (a read is a fact) and covered-by-a-declared-default
+(a standing decision applied openly). It may **never** answer a demand-side
+question — need, audience, priority, scope. The carve-out is technical only.
+
+**Where technical facts live** — one fact, one home, others cite: settled +
+durable → `context.md`'s new **`## Technical context`** (mirroring
+`## Design context`) · uncertain → `research-plan.md`, confidence-stamped ·
+machine-readable → the target's `## A-Team Config`. Jobs cite technical
+findings, never restate them: a job is demand-side by construction, and a
+second durable copy would eventually contradict the first.
+
+**From facts to decisions — the ADR layer.** The dev review settles technical
+*facts*. Nothing yet settled the *decisions* those facts imply, so
+`ateam-plan.md` could promise "deliverables to reach v0" without anyone having
+said what the v0 *is*: one repo or three, which surfaces, which stack, running
+where, with what data. A second beat — **`architecture`** (📝 draft + review) —
+sits between the dev review and the grill and answers exactly those four, each
+written as a durable ADR at `docs/product/adr/NN-<slug>.md` with alternatives,
+consequences, and a revisit-when trigger.
+
+It reuses the machinery rather than adding any: precedence is the dev bank's
+**project binding > team default > ask**; an applied Declared default is named
+in its ADR and stamped as an assumption; ADRs cite `## Technical context`
+instead of restating it, so *one fact, one home* holds across the new class too.
+
+**The carve-out does not extend to decisions.** The dev reviewer may resolve a
+*fact* without a human. Nobody may resolve a *decision* that way. A decision
+that costs money, forecloses an expensive-to-reopen option, contradicts a
+project binding, or rests on an `expensive`/`unknown` finding is ratified in the
+grill — and **presented is not ratified**: unanswered lands `status: parked`
+with an open question, never `active`. Depth is capped at the v0's shape; schema
+and component breakdown stay with `ateam-spec` and the dev phase.
+
+The board draws Architecture *before* Dev research in the Dev lane. That is the
+dev phase's own turn and is untouched; at discovery time the order inverts,
+because you cannot pick a stack for a repo you have not read.
+
+`research-plan.md`'s technical assumptions join **`ateam-design`'s required
+floor** — otherwise a constraint the dev review surfaced sits in a file design
+may skip.
+
+### Three intake banks
+
+`CONTRACT.md` always referenced a `[pm]` ledger tag, but only Design and Dev
+had banks — PM's own questions lived in the conductor skill's head, which is
+exactly what the bank pattern exists to prevent. `intake/pm-intake.md` closes
+it, carrying the board's PM grill topics (problem · who for · how it's solved
+today · switching forces · success signal · v0 scope boundary) plus the
+run-brief questions.
+
+The split that keeps it from drifting: **the bank holds the questions, the
+skill holds how to conduct them.** The grill stays ledger-driven, never a
+script read aloud — an entry already answered by the prompt, the repo, or
+`context.md` enters as a Know and is never asked.
+
 ### Gates
 
 Discovery ends with an **in-skill read-back**: the drafted JTBD set is presented
@@ -192,7 +252,12 @@ as reading the synthesis those answers produced, and the synthesis is where jobs
 get subtly mis-stated.
 
 Formal gates are state transitions with resume semantics, and fire at
-`definition`, `design`, and `pr`. How they fire is governed by a
+`definition`, `design`, and `pr`. **The standing aim: one required HITL
+moment — the discovery grill — unless the human opts into more.** Every
+post-discovery phase must be able to run gate-less (derive from
+grill-captured context, draft with TBDs, flag loudly); the gates then work
+as reviews the human schedules, not stops the pipeline needs. How they fire
+is governed by a
 **`gate_policy`** the human chooses at discovery's independence handoff
 (default `block` — the safety valve stays shut unless the human opens it):
 
@@ -224,17 +289,71 @@ in both modes — standalone is not a back door with weaker review.
 
 ### Design → dev contract
 
-Design's floor is **JTBDs + `context.md`**; it consumes `prd.md` and page briefs
-when present. The board assigns `Information architecture (with Design)` to PM —
+Design's floor is **JTBDs + `context.md` + `research-plan.md`'s technical
+assumptions**; it consumes `prd.md` and page briefs when present. The board assigns `Information architecture (with Design)` to PM —
 *with*, not *for* — so neither side hard-blocks the other, and design keeps room
-to diverge rather than executing a fixed screen list.
+to diverge rather than executing a fixed screen list. When `briefs/` is
+absent, `design.md` drafts its own `## Screens & flows` from the JTBDs — a
+proposal the gate reviews; when the wireflow exists, that section derives
+from it with divergences recorded as explicit calls. Either way it is the
+lo-fi's single input.
 
 Design output is not shippable code. Lo-fi prototypes are a throwaway greyscale
-visual reference only. Dev builds the production UI against the **target repo's
-existing design system**. Therefore `spec.md` must include a **design-system
-mapping**: for every component/state, which existing components/tokens it uses.
-This is what makes dev output production-grade rather than bespoke.
+visual reference only (token variants ride behind `?scale=` / `?palette=` for
+the gate's comparison). Dev builds the production UI against the **target's
+design system**: the one it already has, or — the 0→1 case — the one the
+design phase creates at `docs/product/design-system/` from the ported
+subvisual design-system guidelines, with **shadcn/ui as the declared-default
+component library** (Design-owned entry in `intake/design-intake.md`'s
+`## Declared defaults`; a project binding always wins). The tokens carry a
+`shadcn-theme.css` bridge binding shadcn's role variables to OKLCH scale
+steps, so `spec.md`'s **design-system mapping** — for every component/state,
+which components/tokens it uses — resolves to real names: shadcn registry
+components plus token role vars, no raw px/hex. This is what makes dev output
+production-grade rather than bespoke.
 *Figma integration (Figma MCP) optional later.*
+
+**The design skills are implemented on Design's behalf** (2026-08-11): every
+design opinion in them traces to the design team's own skills —
+subvisual/harness `design-system` and `build-lofi`, vendored verbatim with
+provenance lines — conducted by `ateam-design`. Nothing design-flavored is
+invented harness-side.
+
+### Issues in GitHub
+
+The call asked for issues in GitHub, labelled by JTBD, with epics as milestones.
+The trace `job → requirement → epic` already exists end-to-end, so nothing about
+the **decomposition source** changes — only the projection:
+
+- **epics → milestones** (milestone number written back as `milestone:` in the
+  epic's frontmatter — the one cross-owner write the contract permits, and what
+  makes re-runs reconcile instead of duplicate)
+- **requirements → issues** (issue numbers written back into `issues.md`)
+- **job ids → labels**, `jtbd:NN-slug`
+
+`issues.md` **stays the source of truth**; the swarm reads it, not GitHub.
+Making GitHub authoritative would mean rewriting a dev-owned shared skill and
+putting a network dependency in front of every dev step — and it would break
+the no-remote case, which the harness must survive.
+
+Superseding follows the durable rules rather than inventing a second lifecycle:
+a superseded epic's milestone is **closed** with a pointer, never deleted; a
+superseded job's label **stays** (closed issues wear it).
+
+**Consent is explicit and durable.** Creating issues is an outward-facing write
+to a shared repo, and under `notify-and-continue` / `run-to-pr` nobody is
+present when the issues phase runs — an interactive prompt would hang or defeat
+the policy. So bootstrap asks once and records `github issues: on | off` in
+`A-Team Config`; **default off** when absent. A surprise batch of issues in a
+client repo is a far worse failure than a missing mirror.
+
+**Hard guard, not overridable:** the projection never fires when the target is
+the A-Team's own repo. Running the A-Team from its home repo must not litter it
+with issues from dry runs; real project targets are where GitHub is used.
+
+Skipped or failed projection is **never fatal and never a blocking flag** — it
+isn't a correctness defect in an artifact, and blocking flags halt regardless of
+`gate_policy`. It is stated in the phase report and the PR body.
 
 ### Dev + PR
 
@@ -328,6 +447,7 @@ appends a small structured block under a known heading that phases can grep:
 - base branch: <branch>
 - design system path: <path>
 - package manager: <pm>
+- github issues: <on|off — asked at bootstrap; absent means off>
 ```
 
 ## Pluggable phase skills
@@ -338,10 +458,10 @@ interface each skill implements is fixed in [`CONTRACT.md`](./CONTRACT.md): inpu
 it may read, output paths it must write, manifest fields it sets, and its
 done-signal.
 
-`ateam-discovery` and `ateam-definition` are authored. Until Design delivers,
-`ateam-design` and `ateam-spec` remain **no-op stubs** (write a placeholder
-file, set the manifest status) — testing orchestration wiring only, not real
-output. Real skills are drop-in — same name, same contract.
+All four phase skills are authored: `ateam-discovery`, `ateam-definition`,
+`ateam-design` (conducting the vendored subvisual/harness design skills,
+implemented on Design's behalf), and `ateam-spec`. Real skills are drop-in —
+same name, same contract.
 
 ## Build order (our scope)
 
@@ -359,11 +479,23 @@ output. Real skills are drop-in — same name, same contract.
 8. Wire `prd-to-issues` + `issue-swarm`. ✅
 9. `pr` phase glue (serialized integration + PR body assembly). ✅
 10. Bootstrap step (CLAUDE.md target config). ✅
-11. `dev-research` + `architecture` — the dev role's planning-time voice and the
-    ADR layer, conducted by discovery between the straw-man and the grill. ✅
-    (2026-08-27)
-12. Block-mode mini-run: exercise the gates under `notify-and-continue` /
-    `run-to-pr`, the REVISE loop, and a tripped tripwire. ← next
+11. PM round from the 2026-07-29 dev-role call: dev review subagent, declared
+    defaults, `## Technical context`, `pm-intake.md`, design-floor widening. ✅
+12. GitHub projection of the issues phase (epics → milestones, requirements →
+    issues, job ids → labels), consented via A-Team Config, plus
+    `docs/product/project-plan.md` written by the pr phase's plan refresh. ✅
+13. Block-mode mini-run: exercise the gates under `notify-and-continue` /
+    `run-to-pr`, the REVISE loop, and a tripped tripwire — run it after 12 so it
+    exercises the new paths in one pass.
+14. Design round (2026-08-11, on Design's behalf): vendor subvisual/harness
+    `design-system` + `build-lofi`, author the `ateam-design` conductor,
+    durable tokens at `docs/product/design-system/` with the shadcn bridge,
+    design-intake typography questions + `## Declared defaults` (shadcn/ui). ✅
+15. `ateam-spec` — the real spec skill (shadcn registry mapping, components-to-
+    install, four-states self-check), stacked on 14. ✅
+16. Dev round: `dev-research` (the skill that fills 11's dev-review slot) +
+    `architecture` and the ADR layer at `docs/product/adr/`, plus the dev bank's
+    `## Declared defaults` filled from the board. ✅ (2026-08-27)
 
 ## Deferred (not blocking v1)
 
@@ -371,4 +503,43 @@ output. Real skills are drop-in — same name, same contract.
 - Figma integration for the design phase.
 - Concurrent features in flight.
 - Rendered breadcrumb / rewind viewer.
-- Service-architecture artifact (board: disagreement, parked).
+- Service-architecture artifact (board: disagreement, parked). Distinct from
+  the ADR layer (build order 16): ADRs record *decisions* about the v0's shape,
+  not a service/component architecture document — that disagreement stays
+  parked.
+- **Project-level defaults layer.** `## Declared defaults` is team-level for
+  v0; per-client standing choices arrive when the A-Team runs on live projects
+  (the "0.1" stage — ongoing work on an existing codebase).
+- **A design agent.** The design *skills* are now real (build order 14 —
+  vendored subvisual/harness skills conducted by `ateam-design`, implemented
+  on Design's behalf), but an autonomous design *agent* — one that plugs into
+  the dev review's role-agnostic return slot with its own research loop —
+  stays deferred. The intake bank remains Design-owned content.
+- **Product-scoped issue generation.** Issues are feature-scoped, which is the
+  same set in a 0→1 run (exactly one feature). The distinction only bites at
+  the 0.1 stage.
+
+## Artifact naming (2026-07-29)
+
+The call surfaced a real gap — **three** forward-looking documents were being
+conflated by two names:
+
+1. the plan to reach v0 (`ateam-plan.md`),
+2. the plan for the project *after* v0 (did not exist),
+3. the honest-disclosure doc shipping with v0 (`research-plan.md`).
+
+The proposal was to rename #1 to `product.md` and free `Plan.md` for #2. We
+kept the names and added the missing file instead: the `ateam-` prefix already
+disambiguates #1 from this repo's own `PLAN.md`, bare `Plan.md` would re-create
+exactly that collision, `product.md` would collide with
+`ateam-product-report.md` ("the PRD for the product"), and renaming durable
+artifacts breaks the paths-resolve-forever property for no gain.
+
+The test: **every file in `docs/product/` should say what it is without needing
+a conversation.** `Plan.md` and `product.md` both fail it; that failure is the
+symptom being reported.
+
+#2 arrives as `docs/product/project-plan.md`, written by the pr phase's plan
+refresh — kept separate from `ateam-product-report.md` so backward-looking
+verified claims and forward-looking speculation don't share a document, which
+is how a report loses its authority.
