@@ -45,6 +45,14 @@ costs (money, effort, risk), and what was chosen or still open. This is the
 "cost breakdown of every integration the client mentioned" — the genuinely
 useful, non-obvious output.
 
+Fed by **`dev-research`**: its blocking-but-not-human-answerable findings land
+here as research activities, and its non-blocking ones carry over from the
+ledger. Keep each finding's stamps — cost (`cheap` / `moderate` / `expensive` /
+`unknown`), confidence, and the evidence pointer — so a reader can tell a swept
+fact from a guess. Where a decision was settled, cite the ADR (`[[adr:NN]]`)
+rather than restating it; where one was **parked** for want of ratification,
+that parked decision is an open question and belongs above.
+
 ## Research activities
 
 Question → activity → owner (human or agent) → date. The work of closing the

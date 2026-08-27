@@ -32,6 +32,12 @@ matters · what it unblocks. Includes artifact deliverables (prototype, PRD,
 briefs) and resolution deliverables ("compliance answer on ticket data" — the
 work of closing an unknown, tracked as a question in research-plan.md).
 
+**Stated against the decided shape.** The ADRs (`docs/product/adr/`) say what
+the v0 *is* — repo shape, stack, where it runs, whether its data is real. A
+deliverable that assumes a shape no ADR decided is fiction; a deliverable
+blocked on a **parked** ADR says so and names it (`[[adr:NN]]`), because
+"awaiting a stack decision" is a real, plannable state.
+
 ## Initiatives
 
 The deliverables grouped into workstreams, ordered by what most directly

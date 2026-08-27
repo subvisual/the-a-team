@@ -10,6 +10,14 @@ answerability (see CONTRACT.md): blocking + human-answerable → asked in the
 grill · blocking but not answerable by this human → research activity in
 `research-plan.md` · non-blocking → stays in the ledger.
 
+**`dev-research` runs before the grill and answers several of these outright.**
+It sweeps the target repo and the implied services, so questions like "which
+integrations are in play" and "does the repo bind the stack" should reach the
+human already answered, or not at all. What survives the sweep is what genuinely
+needs a person — and that is the version of the question worth asking. Entries
+here that turn into decisions rather than facts belong to `architecture`, which
+records them as ADRs.
+
 ## Seed questions
 
 - Stack: does the target project's stack bind the v0, or is the default

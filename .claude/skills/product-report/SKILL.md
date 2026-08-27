@@ -2,7 +2,7 @@
 name: product-report
 description: Use when an A-Team run's pr phase reaches its report step — dev integrated, plans/config refreshed, PR not yet open — or when a human asks for the product-level PRD after the fact ("what is this product now", "refresh the product report"). Compiles the durable docs/product/ateam-product-report.md — the PRD for the product: product framing, the epics on the MoSCoW scope with shipped-status, grounded in the run's artifacts AND the final v0 code, never in intentions. Do not use for the feature-level prd.md (prd-writer), to define or restructure epics (epics), or mid-run before dev has integrated — a report written from plans instead of code is fiction.
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   owner: Alvaro Bezerra
   provenance: authored 2026-07-25 from the output-feedback round — the "PRD for the product" Alvaro asked for after the F5 dry run, distinguished by name from the per-feature prd.md.
 ---
@@ -56,7 +56,9 @@ commit: `docs(<slug>): product report`.
 From `docs/product/` (durable): `context.md` (framing, glossary, source
 index), `jtbd/` (active + parked jobs — ids and verbatim headlines),
 `epics/NN-*.md` (every epic: MoSCoW class, jobs served, requirements
-realized), `ateam-plan.md` (goals, deliverables, status),
+realized), `adr/NN-*.md` (the decided shape — and any decision still `parked`,
+which is a live open item, not a footnote), `ateam-plan.md` (goals,
+deliverables, status),
 `research-plan.md` post-refresh (open questions, assumptions + confidence —
 including every phase-appended entry).
 
@@ -73,7 +75,7 @@ is reported as **partial**, with the gap named — never smoothed over.
 
 ## Workflow
 
-1. **Read the durable layer first** (context → jobs → epics → plans), then the
+1. **Read the durable layer first** (context → jobs → epics → ADRs → plans), then the
    run's feature artifacts. Note every deviation the plans/research-plan
    recorded during the run.
 2. **Read the code.** Walk the integrated feature branch: what exists, what
