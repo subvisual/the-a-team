@@ -54,6 +54,8 @@ artifacts split by lifetime, not by producer:
     context.md                  #   digest, glossary, Know/Don't-Know ledger
     jtbd/NN-<slug>.md           #   one file per job — the North Star
     epics/NN-<slug>.md          #   one file per epic — durable delivery structures
+    adr/NN-<slug>.md            #   one file per architecture decision — repo shape, stack,
+                                #   where v0 runs, v0 data strategy; cited as [[adr:NN]]
     ateam-plan.md               #   the plan built for the A-Team agents: goals + deliverables to v0
     research-plan.md            #   ships with v0: open questions, assumptions +
                                 #   confidence, technical research
@@ -132,10 +134,43 @@ together.
 ### Discovery flow
 
 ```
-challenge  ->  research  ->  straw-man  ->  grill  ->  read-back  ->  artifacts
-(go/no-go)     (ingest +     (committed     (ledger-   (human
-               codebase)     first pass)    driven)    corrects)
+challenge -> research -> straw-man -> dev-research -> architecture -> grill -> read-back -> artifacts
+(go/no-go)  (ingest +   (committed   (implementation  (v0 shape,      (ledger-  (human
+             codebase)   first pass)  reality)         for ratifying)  driven)   corrects)
 ```
+
+### The dev beats
+
+The board wires Dev back into discovery twice — *"What dev needs from grillme"*
+and *"When building the JTBD get dev insights"* — and both connectors point at
+the grill, not at the dev phase. Scope called without implementation contact
+produces a North Star nobody can build, and today nothing finds that out until
+`issue-swarm` is already running.
+
+Two skills sit between the straw-man and the grill:
+
+- **`dev-research`** (🚀 autonomous) sweeps the target repo and the services the
+  jobs imply. It keeps only findings that change a **product** decision — scope
+  call, job feasibility, sequencing, buy-vs-build — stamps each `cheap` /
+  `moderate` / `expensive` / `unknown` with a confidence level and a resolving
+  evidence pointer, and routes them by the ledger's own answerability rule. It
+  writes no artifact; discovery routes and writes its output.
+- **`architecture`** (📝 draft + review) turns those findings into decisions:
+  repo shape, stack per surface, where the v0 runs (local-first by default), the
+  v0 data strategy (mocked API-shaped by default). Each lands as a durable ADR
+  at `docs/product/adr/NN-<slug>.md` with alternatives, consequences, and a
+  revisit-when trigger. The grill is its review.
+
+**Presented is not ratified.** A decision that costs money, forecloses an
+expensive-to-reopen option, contradicts the target repo, or rests on an
+`expensive`/`unknown` finding needs the human to actually say yes; unanswered,
+it is written `status: parked` with an open question in `research-plan.md`.
+
+Depth is bounded on purpose. These beats decide the v0's **shape** — never its
+schema, component breakdown, or library picks inside a settled stack. Board
+order in the Dev lane is Architecture → Dev research, which is the dev *phase's*
+own turn and still to be built; at discovery time the order inverts, because you
+cannot pick a stack for a repo you have not read.
 
 The challenge beat exists because a straw-man cannot ask "should this feature
 exist at all" — the board puts `critical request → go/no-go/reshape` first and as
@@ -324,7 +359,10 @@ output. Real skills are drop-in — same name, same contract.
 8. Wire `prd-to-issues` + `issue-swarm`. ✅
 9. `pr` phase glue (serialized integration + PR body assembly). ✅
 10. Bootstrap step (CLAUDE.md target config). ✅
-11. Block-mode mini-run: exercise the gates under `notify-and-continue` /
+11. `dev-research` + `architecture` — the dev role's planning-time voice and the
+    ADR layer, conducted by discovery between the straw-man and the grill. ✅
+    (2026-08-27)
+12. Block-mode mini-run: exercise the gates under `notify-and-continue` /
     `run-to-pr`, the REVISE loop, and a tripped tripwire. ← next
 
 ## Deferred (not blocking v1)
