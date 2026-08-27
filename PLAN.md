@@ -55,6 +55,8 @@ artifacts split by lifetime, not by producer:
                                 #   context, Know/Don't-Know ledger
     jtbd/NN-<slug>.md           #   one file per job — the North Star
     epics/NN-<slug>.md          #   one file per epic — durable delivery structures
+    adr/NN-<slug>.md            #   one file per architecture decision — repo shape, stack,
+                                #   where v0 runs, v0 data strategy; cited as [[adr:NN]]
     ateam-plan.md               #   the plan built for the A-Team agents: goals + deliverables to v0
     research-plan.md            #   ships with v0: open questions, assumptions +
                                 #   confidence, technical research
@@ -137,7 +139,7 @@ together.
 ### Discovery flow
 
 ```
-challenge -> run brief -> research -> straw-man -> dev review -> grill ->
+challenge -> run brief -> research -> straw-man -> dev review -> architecture -> grill ->
 (go/no-go)   (how this    (ingest +    (committed    (subagent,    (ledger-
               run runs)   codebase)    first pass)   technical)    driven)
 
@@ -196,6 +198,32 @@ durable → `context.md`'s new **`## Technical context`** (mirroring
 machine-readable → the target's `## A-Team Config`. Jobs cite technical
 findings, never restate them: a job is demand-side by construction, and a
 second durable copy would eventually contradict the first.
+
+**From facts to decisions — the ADR layer.** The dev review settles technical
+*facts*. Nothing yet settled the *decisions* those facts imply, so
+`ateam-plan.md` could promise "deliverables to reach v0" without anyone having
+said what the v0 *is*: one repo or three, which surfaces, which stack, running
+where, with what data. A second beat — **`architecture`** (📝 draft + review) —
+sits between the dev review and the grill and answers exactly those four, each
+written as a durable ADR at `docs/product/adr/NN-<slug>.md` with alternatives,
+consequences, and a revisit-when trigger.
+
+It reuses the machinery rather than adding any: precedence is the dev bank's
+**project binding > team default > ask**; an applied Declared default is named
+in its ADR and stamped as an assumption; ADRs cite `## Technical context`
+instead of restating it, so *one fact, one home* holds across the new class too.
+
+**The carve-out does not extend to decisions.** The dev reviewer may resolve a
+*fact* without a human. Nobody may resolve a *decision* that way. A decision
+that costs money, forecloses an expensive-to-reopen option, contradicts a
+project binding, or rests on an `expensive`/`unknown` finding is ratified in the
+grill — and **presented is not ratified**: unanswered lands `status: parked`
+with an open question, never `active`. Depth is capped at the v0's shape; schema
+and component breakdown stay with `ateam-spec` and the dev phase.
+
+The board draws Architecture *before* Dev research in the Dev lane. That is the
+dev phase's own turn and is untouched; at discovery time the order inverts,
+because you cannot pick a stack for a repo you have not read.
 
 `research-plan.md`'s technical assumptions join **`ateam-design`'s required
 floor** — otherwise a constraint the dev review surfaced sits in a file design
@@ -465,6 +493,9 @@ same name, same contract.
     design-intake typography questions + `## Declared defaults` (shadcn/ui). ✅
 15. `ateam-spec` — the real spec skill (shadcn registry mapping, components-to-
     install, four-states self-check), stacked on 14. ✅
+16. Dev round: `dev-research` (the skill that fills 11's dev-review slot) +
+    `architecture` and the ADR layer at `docs/product/adr/`, plus the dev bank's
+    `## Declared defaults` filled from the board. ✅ (2026-08-27)
 
 ## Deferred (not blocking v1)
 
@@ -472,7 +503,10 @@ same name, same contract.
 - Figma integration for the design phase.
 - Concurrent features in flight.
 - Rendered breadcrumb / rewind viewer.
-- Service-architecture artifact (board: disagreement, parked).
+- Service-architecture artifact (board: disagreement, parked). Distinct from
+  the ADR layer (build order 16): ADRs record *decisions* about the v0's shape,
+  not a service/component architecture document — that disagreement stays
+  parked.
 - **Project-level defaults layer.** `## Declared defaults` is team-level for
   v0; per-client standing choices arrive when the A-Team runs on live projects
   (the "0.1" stage — ongoing work on an existing codebase).

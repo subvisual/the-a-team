@@ -52,6 +52,8 @@ docs/product/
                               # epics cite as [[epic:NN]] (any future durable class gets a prefix)
   design-system/              # canonical design tokens — scale.ts, palette.ts, shadcn-theme.css
                               #   (design phase, create-once; the design gate is their review)
+  adr/NN-<slug>.md            # one file per architecture decision — repo shape, stack, where the v0
+                              #   runs, v0 data strategy; same lifecycle rules; cited as [[adr:NN]]
   ateam-plan.md               # the plan built for the A-Team agents: goals + deliverables to reach v0
   research-plan.md            # ships with v0: open questions, assumptions + confidence,
                               #   technical research (services, stack, integration costs)
@@ -143,6 +145,12 @@ Everything else — especially durable writes and their review step — behaves
     `Know / Don't Know` ledger. Frontmatter tracks which `input/` batches have
     been ingested.
   - `docs/product/jtbd/NN-<slug>.md` — one file per job (template below).
+  - `docs/product/adr/NN-<slug>.md` — the architecture decisions the v0's shape
+    rests on (repo shape, stack per surface, where the v0 runs, v0 data
+    strategy), drafted by the `architecture` beat and ratified in the grill.
+    Only decisions that block planning; implementation-level decisions belong to
+    the dev phase. A decision requiring ratification the human never answered is
+    written `status: parked`, never `active`.
   - `docs/product/ateam-plan.md` — the **plan built for the A-Team agents**:
     goals (job-traced) and deliverables to reach v0, grouped into initiatives
     with decision criteria.
@@ -161,7 +169,8 @@ Everything else — especially durable writes and their review step — behaves
     against existing jobs, new-job signals). Declared here so it is a permitted
     output path rather than a stray write.
 - **Process shape**: `challenge (+ run brief) → research → straw-man →
-  dev review → grill → read-back → independence handoff → write`.
+  dev review → architecture → grill → read-back → independence handoff →
+  write`.
 - **Dev review of the drafted jobs**: after the straw-man and **before** the
   grill, discovery dispatches a **one-shot subagent** running the Dev-owned dev
   research skill, over the drafted job set + the target repo. It is not a phase
@@ -191,6 +200,31 @@ Everything else — especially durable writes and their review step — behaves
     degraded run, and a *recorded* degradation is not a dishonest one.
   - **Substance lands in `research-plan.md`; jobs carry citations only** — see
     the JTBD template's technical rule below.
+- **Architecture of the v0**: after the dev review and **before** the grill,
+  discovery conducts the `architecture` skill (📝 draft + review) over the dev
+  review's findings. It answers up to four questions — repo shape, tech stack
+  per surface, where the v0 runs, the v0 data strategy — and drafts each as an
+  ADR. Rules:
+  - **Facts vs decisions.** The dev review settles *facts* and they land in
+    `## Technical context`; `architecture` records *decisions* and they land in
+    `adr/`. One fact, one home — an ADR cites the technical context rather than
+    restating it, and a question a project binding already settled is an
+    observation, not a decision to mint.
+  - **Precedence is the dev bank's**, unchanged: **project binding > team
+    default > ask**. An applied `## Declared defaults` entry is named in its ADR
+    *and* recorded as a confidence-stamped assumption in `research-plan.md`.
+  - **The carve-out does not extend to decisions.** The dev review may resolve a
+    fact without a human; `architecture` may not resolve a *decision* that way.
+    A decision that costs money, forecloses an expensive-to-reopen option,
+    contradicts a project binding, or rests on an `expensive`/`unknown` finding
+    is ratified by the human in the grill — **presented is not ratified**, and
+    unanswered is `status: parked` with an open question, never `active`.
+  - **Depth is bounded.** The v0's shape only: never its schema, component
+    breakdown, or library picks inside a settled stack. `ateam-spec` and the dev
+    phase own depth.
+  - **Optional by absence**, like the dev review: if the skill is unavailable,
+    say so, record the gap in `research-plan.md`, and continue. An undecided
+    shape is a degraded run, and a recorded degradation is not a dishonest one.
 - **Run brief**: capture how the human wants the A-Team to run. The manifest's
   `run_brief` holds four fields — `purpose`, `fidelity`, `timebox`,
   `done_looks_like`. The **questions and their answer options** live in
@@ -318,9 +352,70 @@ Load-bearing:
   fails the `jobs-to-be-done` rubric, and a second copy under ids-forever
   semantics is a durable contradiction waiting to happen.
 
+#### ADR template — the shape a decision is recorded in
+
+```markdown
+---
+id: 02
+slug: monorepo-with-contract-surface
+status: active            # active | superseded | parked
+confidence: moderate      # strong | moderate | directional | hypothesis
+decided: 2026-08-27
+decided_by: human         # human | agent
+sources: [2026-08-27-grill-digest, dev-review]
+---
+
+# 02. One monorepo, with the contract surface beside the app
+
+## Status
+active — ratified by the human at the 2026-08-27 grill.   # or: superseded by [[adr:07]]
+
+## Context
+The forces. The project binding or Declared default that applied, cited not
+restated. Which dev review finding this rests on and how it was rated. The jobs
+that turn on it: [[03]], [[05]].
+
+## Decision
+What we will do. Active voice, present tense.
+
+## Alternatives considered
+Option · the real reason it was dropped. At least one, always.
+
+## Consequences
+What gets easier, what gets harder, what this forecloses.
+
+## Revisit when
+The signal that reopens this — mirrored into research-plan.md as an open question.
+```
+
+Load-bearing:
+
+- **The headline is the decision, not the topic.** "02. Stack" is not auditable;
+  "02. One monorepo, with the contract surface beside the app" is. Same
+  discipline as the JTBD headline rule.
+- **`decided_by: human` means they said yes** — not that a recommendation was
+  presented and nobody objected. Presented-but-unanswered is `status: parked`
+  plus an open question in `research-plan.md`.
+- **Facts are cited, not copied.** A settled technical fact lives in
+  `## Technical context`; the ADR points at it. One fact, one home — the same
+  rule the dev review follows, and for the same reason: two copies under
+  ids-forever semantics is a durable contradiction waiting to happen.
+- **Alternatives are the artifact's value.** The code already records what was
+  picked; only the ADR records what was ruled out and why. That is the
+  breadcrumb the board asks for.
+- **`revisit when` is mandatory.** An ADR with no reopening trigger is a
+  tombstone, and a v0's decisions are provisional by construction.
+- **Only decisions that block planning belong here at discovery time.** Schema,
+  component breakdown, and library picks inside a settled stack are dev-phase
+  depth — minting them as durable ADRs from a grill fabricates authority.
+
+Full annotated template: the `architecture` skill's
+`references/adr-template.md`. The team defaults it falls back to live in
+`intake/dev-intake.md`'s `## Declared defaults`, owned by the Dev role owner.
+
 ### `ateam-definition` — 📝 draft + review
 
-- **May read**: `docs/product/**` (context, JTBDs, `ateam-plan.md`); the manifest; the target repo.
+- **May read**: `docs/product/**` (context, JTBDs, the ADRs, `ateam-plan.md`); the manifest; the target repo.
 - **Must write**:
   - `prd.md` in the feature directory — problem, goals/non-goals, scope, user
     stories, acceptance criteria. Every scoped item traces to a JTBD id.
@@ -377,7 +472,8 @@ Load-bearing:
 
 - **May read**: `prd.md`, `design.md` (its `## Screens & flows` is the
   coverage checklist), the lo-fi prototype, `docs/product/**` (including
-  `design-system/`), the target repo's design system, and the design bank's
+  `design-system/` and `adr/` — the settled stack and v0 data strategy bind the
+  spec), the target repo's design system, and the design bank's
   `## Declared defaults`.
 - **Must write**: `spec.md` in the feature directory.
 - **Component-library resolution** — binding > default > TBD: the target's

@@ -1,6 +1,6 @@
 ---
 name: ateam-discovery
-description: Use when the A-Team orchestrator invokes the discovery phase for a feature, or when a human runs discovery standalone to seed docs/product/ from raw input (a client transcript, a fuzzy prompt) before any feature exists. The 🔥 grill phase skill — conducts the ported PM skills (product-brainstorming, project-context, research-synthesis, jobs-to-be-done, discovery-plan) through challenge → run brief → research → straw-man → dev review → grill → read-back → independence handoff → write, producing context.md, the JTBD set, ateam-plan.md, and research-plan.md, and writing gate_policy + run_brief to the manifest. Cannot run without a human: escalates via ## Awaiting answers, never guesses. Implemented against CONTRACT.md.
+description: Use when the A-Team orchestrator invokes the discovery phase for a feature, or when a human runs discovery standalone to seed docs/product/ from raw input (a client transcript, a fuzzy prompt) before any feature exists. The 🔥 grill phase skill — conducts the ported PM skills (product-brainstorming, project-context, research-synthesis, jobs-to-be-done, discovery-plan) through challenge → run brief → research → straw-man → dev review → architecture → grill → read-back → independence handoff → write, producing context.md, the JTBD set, the ADRs, ateam-plan.md, and research-plan.md, and writing gate_policy + run_brief to the manifest. Cannot run without a human: escalates via ## Awaiting answers, never guesses. Implemented against CONTRACT.md.
 metadata:
   version: 0.1.0
   owner: Alvaro Bezerra
@@ -33,7 +33,7 @@ the human's answers, not on eager loading.
   banks.
 - **Writes** (durable, all rules apply): `context.md` (including its
   `## Design context` and `## Technical context` sections), `jtbd/NN-*.md`,
-  `ateam-plan.md`, `research-plan.md`, `input/<YYYY-MM-DD>-grill-digest/`, and
+  `adr/NN-*.md`, `ateam-plan.md`, `research-plan.md`, `input/<YYYY-MM-DD>-grill-digest/`, and
   — on evidence-heavy runs — `research/<YYYY-MM-DD>-<slug>.md`. Plus, manifest
   present: `gate_policy` + `run_brief` (the one write beyond your own phase
   status).
@@ -74,7 +74,7 @@ its recommendation — never batched into a single dialog** (batching proved
 confusing in the 2026-07 dry run). Check `context.md` for durable per-project
 defaults first; don't re-ask what's recorded. Hold the answers; they're written
 at the handoff (manifest runs) or into `context.md` as durable defaults
-(standalone — see movement 8).
+(standalone — see movement 9).
 
 ### 3. Research (ingest, never invent)
 
@@ -121,8 +121,8 @@ questionnaire the human authors.
 
 ### 5. Dev review (subagent, before the grill)
 
-Dispatch a **one-shot subagent** running the Dev-owned dev research skill over
-the drafted job set + the target repo. It is not a phase and has no reserved
+Dispatch a **one-shot subagent** running the Dev-owned dev research skill —
+**`dev-research`** — over the drafted job set + the target repo. It is not a phase and has no reserved
 name — you dispatch it, the orchestrator is not involved.
 
 **Announce before dispatching.** You declare 🔥 grill mode; silent work breaks
@@ -170,7 +170,43 @@ in-conversation, record the gap in `research-plan.md` as an open item
 and continue. Not a blocking flag, not a halt. You are not answering the dev
 questions yourself; you are declaring them unanswered.
 
-### 6. Grill (ledger-driven)
+### 6. Architecture (the v0's shape, drafted for ratification)
+
+Conduct **`architecture`** craft over what the dev review just returned.
+`ateam-plan.md` promises *"deliverables to reach v0"* — an empty promise until
+someone has said what the v0 *is*. It drafts up to four decisions: repo shape,
+tech stack per surface, where the v0 runs, and the v0 data strategy.
+
+**Facts versus decisions.** Movement 5 settled *facts*, and they live in
+`## Technical context`. This movement records *decisions*, and they live in
+`adr/`. A question a project binding already settled is an observation — the ADR
+cites it rather than minting a decision nobody made. Precedence is the dev
+bank's, unchanged: **project binding > team default > ask**, and an applied
+`## Declared defaults` entry is named in its ADR *and* recorded as a
+confidence-stamped assumption in `research-plan.md`.
+
+**The carve-out does not extend here.** Movement 5's three-way rule lets the dev
+reviewer resolve a *fact* without a human. It does not let anyone resolve a
+*decision* that way. Split the drafted set:
+
+- **agent-decided** — a project binding settles it, a Declared default covers
+  it, or one option survives a constraint. These pass to the write step.
+- **needs ratification** — costs money, forecloses an expensive-to-reopen
+  option, contradicts a project binding, rests on an `expensive`/`unknown`
+  finding, or picks a v0 data strategy for a job whose value *is* the live data.
+  These become grill questions in movement 7, recommendation first.
+
+**Presented is not ratified.** A decision the human never actually answered is
+written `status: parked` with an open question in `research-plan.md` — never
+`active`. Stamping an unanswered ADR active manufactures authority the whole
+pipeline then builds on.
+
+**Depth is bounded**: the v0's shape only, never its schema, component
+breakdown, or library picks inside a settled stack. **Optional by absence**, like
+the dev review: if the skill is unavailable, say so, record the gap in
+`research-plan.md`, and continue.
+
+### 7. Grill (ledger-driven)
 
 Ask **only blocking Don't-Knows**, one at a time, recommended answer first,
 routed by **answerability**:
@@ -184,7 +220,7 @@ Intake-bank questions are never asked raw — they enter through the ledger and
 this routing. **Termination is defined, not felt**: stop when the blocking set
 is empty or the human stops you.
 
-### 7. Read-back (mandatory, consolidated)
+### 8. Read-back (mandatory, consolidated)
 
 Present, for correction before anything durable is written: the JTBD set in
 full (headlines + confidence — this is the North Star, read it carefully),
@@ -192,7 +228,13 @@ plus tight summaries of `context.md` (glossary + ledger), the plans, and any
 synthesis run. One consolidated read-back covers every ported skill's
 read-back duty. The human corrects; you fix; re-present what changed.
 
-### 8. Independence handoff (the human opens the valve)
+Present the **ADR set** too — one line per decision with its `decided_by`
+stamp. A decision the human is seeing for the first time here has not been
+ratified; say so plainly and let it park. Where a dev review finding moved a job
+out of v0, name it: a straw-man that quietly shrinks between draft and read-back
+is exactly what movement 5 exists to surface.
+
+### 9. Independence handoff (the human opens the valve)
 
 Present how the run will proceed and have the **human** choose the
 `gate_policy` — recommended default first:
@@ -208,7 +250,7 @@ answer → `block` stands. Standalone (no manifest): skip the policy — there i
 no run to govern — but record the run-brief answers in `context.md` as the
 durable per-project defaults movement 2 reads, so the next run doesn't re-ask.
 
-### 9. Write & commit
+### 10. Write & commit
 
 Apply **`discovery-plan`** craft to compile the ledger into `ateam-plan.md` (goals +
 deliverables) and `research-plan.md` (open questions, assumptions +
@@ -220,8 +262,18 @@ cites for grill-derived facts, and later runs read it instead of re-asking
 (ask-once-then-deltas). In `context.md`, compile `## Sources` — the audit
 index of everything this run consumed: one line per source (link visited,
 provided file, connector pull, the grill digest batch) with type · pointer
-(URL or `input/` path) · date · what it informed. Then write everything:
-`context.md`, `jtbd/` files (active + parked), the plans, any `research/` run.
+(URL or `input/` path) · date · what it informed.
+
+Write the **ADRs** as `adr/NN-<slug>.md` — ratified ones `active` with
+`decided_by: human`, agent-decided ones `active` with `decided_by: agent`, and
+anything the human never actually answered `status: parked` plus a matching open
+question in `research-plan.md`. The ADRs are compiled **before** the plans, so
+`ateam-plan.md`'s deliverables are stated against the shape that was actually
+decided rather than one nobody chose.
+
+Then write everything:
+`context.md`, `jtbd/` files (active + parked), the ADRs, the plans, any
+`research/` run.
 Durable rules bind every write: ids forever, supersede never delete, `input/`
 verbatim staging only. Manifest present: write `gate_policy` + `run_brief`,
 set `phases.discovery.status = "complete"`. Commit with messages naming what
@@ -268,6 +320,16 @@ grants *you* nothing here. If you are the one without an answer, you escalate.
   absence is recorded in `research-plan.md` as an open item. It re-fired at
   most once. No job body holds solution-side content; every technical finding
   the jobs reference resolves to a `research-plan.md` entry.
+- Every ADR rests on a dev review finding or a fact already in
+  `## Technical context`, carries ≥1 real alternative, consequences, and a
+  revisit-when trigger — or the architecture beat's absence is recorded in
+  `research-plan.md`.
+- No ADR is `active` with `decided_by: human` unless the human actually
+  answered; unratified decisions are `parked` with an open question logged.
+  Every applied Declared default is named in its ADR and stamped as an
+  assumption.
+- `ateam-plan.md`'s deliverables are consistent with the ADRs — no deliverable
+  assumes a shape the ADR set did not decide.
 - `context.md` has `## Technical context` populated or honestly `TBD`, and no
   fact is restated across `context.md` / `research-plan.md` / `A-Team Config`
   — nor **within** `context.md` (a ledger Know that duplicates a

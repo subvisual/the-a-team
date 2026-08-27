@@ -66,7 +66,8 @@ the feature dir silently drops the durable artifacts — `git add` both paths th
 
 ```
 <target>/docs/product/           # DURABLE — outlives any feature
-  context.md  jtbd/NN-*.md  epics/NN-*.md  ateam-plan.md  research-plan.md
+  context.md  jtbd/NN-*.md  epics/NN-*.md  adr/NN-*.md  ateam-plan.md
+  research-plan.md
   project-plan.md  ateam-product-report.md  research/  input/<YYYY-MM-DD-label>/
 <target>/docs/features/<slug>/   # PER-FEATURE — everything else
   feature.json  prd.md  briefs/  design.md  spec.md  issues.md  lofi/
@@ -425,7 +426,8 @@ discarded) for the human to integrate after resolving the failure.
    `## A-Team Config` fact the run invalidated — e.g. dev introduced a test
    suite, so `test command: none` becomes the real command. Commit as `chore`.
 4. **Product report** (durable): invoke `product-report`. It reads the run's
-   artifacts — `context.md`, jobs, epics, `ateam-plan.md`, `research-plan.md`
+   artifacts — `context.md`, jobs, epics, the ADRs, `ateam-plan.md`,
+   `research-plan.md`
    (post-refresh), `prd.md`, `design.md`, `spec.md`, `issues.md` — **and the
    final v0 code** on `feature/<slug>`, and writes
    `docs/product/ateam-product-report.md`: the PRD for the product — product

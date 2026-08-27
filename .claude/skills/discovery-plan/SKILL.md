@@ -2,7 +2,7 @@
 name: discovery-plan
 description: Use when a problem space still has unvalidated assumptions and open questions blocking confident scope or build decisions — e.g. research-synthesis produced job verdicts, contradictions, or gaps needing targeted follow-up; the context.md ledger holds surviving unknowns that must become a plan; or a team needs goals, deliverables, research activities, and go/no-go criteria before writing a PRD. Compiles the ledger + evidence into TWO durable artifacts in one pass: docs/product/ateam-plan.md (the plan built for the A-Team agents — goals and deliverables to reach v0) and docs/product/research-plan.md (the research plan that ships with the v0 — open questions, agent assumptions + confidence, technical research: services, stack, integration costs). Re-run it at any phase to keep both live. At the pr phase's plan refresh it also writes docs/product/project-plan.md — the plan for the project AFTER v0, which the human team picks up. Do not use when requirements are validated and delivery is underway (prd-writer), to synthesize raw research (research-synthesis first), or to create or rewrite job statements (jobs-to-be-done).
 metadata:
-  version: 0.3.0
+  version: 0.4.0
   owner: Alvaro Bezerra
   provenance: ported 2026-07-24 from product-craft discovery-plan (github.com/ABZerra/product-craft) and adapted to the A-Team contract — output split into ateam-plan.md (goals & deliverables) and research-plan.md (the research plan shipped with v0), written together.
 ---

@@ -10,6 +10,15 @@ answerability (see CONTRACT.md): blocking + human-answerable → asked in the
 grill · blocking but not answerable by this human → research activity in
 `research-plan.md` · non-blocking → stays in the ledger.
 
+**The dev review answers several of these outright.** `dev-research` — the
+skill discovery dispatches at that movement — sweeps the target repo and the
+implied services before the grill, so a question like "which integrations are in
+play" or "does the repo bind the stack" should reach the human already answered,
+or not at all. What survives the sweep is what genuinely needs a person, and
+that is the version of the question worth asking. Entries that turn into
+*decisions* rather than facts belong to `architecture`, which records them as
+ADRs under `docs/product/adr/`.
+
 ## Seed questions
 
 - Stack: does the target project's stack bind the v0, or is the default
@@ -48,5 +57,23 @@ A default only belongs here if it is a real standing decision. An entry nobody
 has agreed to is worse than an absent one: it converts an open question into a
 silent assumption.
 
-<!-- Fill in. Shape, one line each: area — the default — when it does not apply. -->
+Source: the A-Team board (17 Jul session), Dev lane — *"Techstack default,
+unless specified"* — plus its HMW working answer on v0 data. These are standing
+team decisions, not aspirations; each names when it does not apply.
+
+| Area | The default | When it does not apply |
+|---|---|---|
+| Frontend | **React + Tailwind** | A project binding says otherwise. Tailwind is also the downstream design-system assumption — `ateam-spec` maps to tokens, never raw px/hex. |
+| Backend | **Elixir** | No job needs a backend (see below), or a project binding says otherwise. |
+| Quick visual prototype | **Astro-style static** | The v0's purpose is not visual review — `context.md` indicates server-side or genuinely complex behavior. The carve-out is about *audience*, not size. |
+| Infrastructure | **Local-first for v0** | The run brief's deploy answer asks for a shared link or real staging. |
+| v0 data | **Mocked, API-shaped** | A job's whole value *is* the live data — then it is an `architecture` decision, ratified by the human. |
+
+**Defaults answer "which", never "whether".** If no job needs a backend, the
+default backend is not a reason to have one. Shape follows the jobs.
+
+**A default is not a ratification.** Applying one still records a
+confidence-stamped assumption in `research-plan.md`, surfaced at the definition
+gate — and a decision on `architecture`'s ratification list still needs the
+human, cheap and defaulted though it may be.
 
