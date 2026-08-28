@@ -21,10 +21,11 @@ care about a skill's internals. Reserved names:
 | Design | `ateam-design` | 📝 draft + review | yes — per `gate_policy` (approval before spec; provisional under notify-and-continue) |
 | Design spec | `ateam-spec` | 🚀 autonomous | no |
 
-The `issues`, `dev`, and `pr` phases are owned by the harness (reuse of
-`prd-to-issues` / `issue-swarm` + PR glue, with `ticket-writer` enriching
-`issues.md` acceptance criteria after decomposition, an optional **GitHub
-projection** of the decomposed issues, and `product-report` writing the durable
+The `issues`, `dev`, and `pr` phases are owned by the harness (`ticket-writer`
+decomposing `prd.md` + `spec.md` into `issues.md` with Gherkin acceptance
+criteria, the **runner** implementing and independently reviewing each issue,
+PR glue, an optional **GitHub projection** of the decomposed issues, and
+`product-report` writing the durable
 `docs/product/ateam-product-report.md` at the end of the pr phase — from the
 run's artifacts **and the final v0 code**, before the PR opens) and are not
 authored via this contract.
@@ -420,7 +421,7 @@ Full annotated template: the `architecture` skill's
   - `prd.md` in the feature directory — problem, goals/non-goals, scope, user
     stories, acceptance criteria. Every scoped item traces to a JTBD id.
   - `briefs/` in the feature directory — wireflow + per-screen requirements.
-  - the ticket backlog input consumed later by `prd-to-issues`.
+  - the ticket backlog input the issues phase decomposes later.
   - `docs/product/epics/NN-<slug>.md` — the Epics: durable delivery structures
     bundling the PRD's requirement IDs, traced to job ids (durable rules apply —
     ids forever, supersede never delete, human review at the gate).

@@ -1,6 +1,6 @@
 ---
 name: ticket-writer
-description: Use when concrete requirements, bug reports, maintenance needs, or research questions must become structured, implementation-ready delivery tickets; when a larger source (a PRD, spec, epic, or scoped request) needs splitting into multiple cohesive tickets; or when a ticket, story, or issues.md entry already exists and needs testable Gherkin acceptance criteria pasted straight in. In the A-Team pipeline, tickets are for agents and enter via the dev boundary: the issues phase runs this skill's AC-only mode over prd-to-issues' issues.md to enrich every issue's acceptance criteria before issue-swarm starts. Do not use for writing a full PRD (prd-writer), for planning discovery (discovery-plan), for structuring epics (epics), or for creating or rewriting Jobs to be Done (jobs-to-be-done).
+description: Use when concrete requirements, bug reports, maintenance needs, or research questions must become structured, implementation-ready delivery tickets; when a larger source (a PRD, spec, epic, or scoped request) needs splitting into multiple cohesive tickets; or when a ticket, story, or issues.md entry already exists and needs testable Gherkin acceptance criteria pasted straight in. In the A-Team pipeline, tickets are for agents and enter via the dev boundary: the issues phase runs this skill's batch decomposition mode over prd.md + spec.md to produce the whole issues.md — tracer-bullet vertical slices in dependency order, each with Gherkin acceptance criteria the runner's independent reviewer judges against. Do not use for writing a full PRD (prd-writer), for planning discovery (discovery-plan), for structuring epics (epics), or for creating or rewriting Jobs to be Done (jobs-to-be-done).
 metadata:
   version: 0.2.0
   owner: Alvaro Bezerra
@@ -16,27 +16,31 @@ acceptance criteria**, because criteria a tester — or an implementing agent �
 can't verify are the main reason work bounces back.
 
 In the A-Team, **tickets are written for agents first**: the reader who picks
-one up cold is usually `issue-worker` inside a swarm, with no conversation
-context. Implementation-ready means *agent*-ready — explicit scope, explicit
+one up cold is a fresh unattended session with no conversation context, and the
+independent reviewer that judges its diff has nothing to judge against but the
+acceptance criteria written here. Implementation-ready means *agent*-ready — explicit scope, explicit
 ACs, explicit dependencies, nothing implied.
 
-## Place in the A-Team pipeline — the AC enricher
+## Place in the A-Team pipeline — the decomposition
 
-The issues phase stays two-step, each skill owning its altitude:
+The issues phase is one step, and it is this skill in **batch decomposition
+mode**: `prd.md` + `spec.md` in (with `briefs/` as supporting context), the
+whole `docs/features/<slug>/issues.md` out — tracer-bullet vertical slices in
+dependency order, each carrying Gherkin acceptance criteria sourced from the
+PRD's requirement-level ACs (R-ids), the spec's per-state expectations, and the
+constraints behind known edge cases, and each stamped with the `[[NN]]` job it
+rolls up to.
 
-1. `prd-to-issues` decomposes prd.md + spec.md into `issues.md` (tracer-bullet
-   slices, dependency order).
-2. **This skill's AC-only mode runs over every issue in `issues.md`**,
-   upgrading each `### Acceptance criteria` checklist to Gherkin — sourced
-   from the PRD's requirement-level ACs (R-ids), the spec's per-state
-   expectations, and the constraints behind known edge cases — and stamping
-   each issue with the `[[NN]]` job it rolls up to. The enriched file is what
-   `issue-swarm` consumes.
+`references/decomposition.md` carries the slicing method — tracer bullet first,
+vertical over horizontal, expand → contract for wide mechanical changes, and the
+file shape the runner parses.
 
-Enrichment **edits `issues.md` in place** (per-feature artifact — overwrite
-cleanly, keep prd-to-issues' structure and dependency graph untouched; never
-add, remove, or reorder issues in this pass — decomposition gaps are reported,
-not silently fixed).
+**The acceptance criteria are the dev phase's contract, not documentation.** The
+runner refuses any issue whose `### Acceptance criteria` section has no checkable
+items — it will not hand an unverifiable issue to an implementer, because the
+independent reviewer downstream would have nothing to judge the diff against. An
+issue that reaches the dev phase without them costs a round trip and surfaces as
+a decomposition gap at the next gate.
 
 ## Modes
 
@@ -44,10 +48,11 @@ not silently fixed).
   implementation-ready ticket out.
 - **Mode 2 — batch decomposition**: a larger source (PRD, spec, epic, scoped
   request) in, multiple cohesive tickets out with explicit sibling
-  dependencies. (In-pipeline, decomposition belongs to `prd-to-issues`; batch
-  mode serves standalone use and non-feature work.)
+  dependencies. **This is the pipeline mode** — see `references/decomposition.md`.
 - **Mode 3 — AC-only**: an existing ticket/story/issue in, a pasteable Gherkin
-  acceptance-criteria block out. This is the pipeline mode.
+  acceptance-criteria block out. Serves tickets that already exist — a
+  hand-written GitHub issue the runner refused for want of criteria, or a
+  backlog entry being made agent-ready.
 
 ## When NOT to use
 
@@ -92,7 +97,9 @@ not silently fixed).
    ticket; sibling dependencies explicit ("blocks" / "depends on"); batch
    ordered so the dependency chain is obvious. Note the epic each ticket
    belongs to (`[[epic:NN]]` — bare `[[NN]]` always cites a job) when epics
-   exist. Continue to step 7.
+   exist. **In-pipeline**, follow `references/decomposition.md`: tracer bullet
+   first, vertical slices, and every issue records the files it expects to
+   touch plus the PRD requirement IDs it implements. Continue to step 7.
 6. **AC-only mode** (`references/acceptance_criteria_template.md`): parse the
    source into the primary job (preserved, or `TBD`), discrete user outcomes,
    and failure paths. State preconditions; tie edge cases to the constraints
@@ -100,9 +107,7 @@ not silently fixed).
    the PRD's requirement-level ACs downward into per-ticket Gherkin; never
    copy them verbatim (two levels, no duplication). The finished block must
    drop into an `## Acceptance Criteria` / `### Acceptance criteria` section
-   without editing. **Pipeline batch**: run this per issue across `issues.md`,
-   preserving structure and dependency graph; report decomposition gaps
-   instead of fixing them silently.
+   without editing.
 7. **Quality pass, all modes**: every criterion specific, observable,
    testable — strip "fast", "properly", "works correctly" for observable
    behavior. Each ticket agent-ready: someone (or something) with zero
@@ -115,14 +120,18 @@ not silently fixed).
 
 ## No human present
 
-Modes 1–2 with missing facts: draft with explicit `TBD`s and list the blocking
-questions — never invent owners, estimates, or constraints. Mode 3 in-pipeline
-is autonomous by design: it derives ACs from artifacts the human already
-gated (PRD, spec); when those don't support a testable criterion, flag the
-issue in the report rather than writing an untestable one.
+Mode 1 with missing facts: draft with explicit `TBD`s and list the blocking
+questions — never invent owners, estimates, or constraints. Mode 2 in-pipeline
+is autonomous by design: it decomposes and derives ACs from artifacts the human
+already gated (PRD, spec, briefs). When those don't support a testable
+criterion, flag the issue in the report rather than writing an untestable one —
+an untestable criterion is worse than a missing one, because the dev phase's
+gate accepts it and the reviewer then has nothing real to check.
 
 ## References & examples
 
+- `references/decomposition.md` — the pipeline decomposition method and the
+  `issues.md` shape the runner parses.
 - `references/ticket_feature_template.md` · `ticket_bug_template.md` ·
   `ticket_chore_template.md` — the ticket shapes.
 - `references/acceptance_criteria_template.md` — the pasteable AC block.

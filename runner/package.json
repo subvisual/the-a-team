@@ -1,0 +1,17 @@
+{
+  "name": "ateam-runner",
+  "version": "0.1.0",
+  "description": "Watch GitHub issues, drive a Claude session to implement each, and have an independent session assess the diff against the acceptance criteria.",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "ateam-runner": "./bin/ateam-runner.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {}
+}

@@ -20,9 +20,14 @@ rationale. This skill is the executable procedure.
   without one. If there is no human to prompt (e.g. you are a subagent), do not
   fabricate approval — halt and report.
 - You have the `ateam-discovery`, `ateam-definition`, `ateam-design`,
-  `ateam-spec`, `prd-to-issues`, and `issue-swarm` skills available. If a required
+  `ateam-spec`, and `ticket-writer` skills available, and the **runner** — the
+  `ateam-runner` CLI, either on `PATH` or as
+  `node <harness>/runner/bin/ateam-runner.mjs` (Node 20+, `gh`). If a required
   phase skill is not available, halt and tell the user to install it — do not
-  hand-simulate it.
+  hand-simulate it. If the runner is missing, halt and say where it lives
+  (`runner/` in the harness repo) rather than falling back to implementing
+  issues yourself: the dev phase's whole value is that an independent session
+  judges the diff.
 
 ## Invocation
 
@@ -154,8 +159,8 @@ rules in order (they resolve every resume case unambiguously):
 | `definition` | `ateam-definition` | ✅ | `design` |
 | `design` | `ateam-design` | ✅ | `spec` |
 | `spec` | `ateam-spec` | — | `issues` |
-| `issues` | `prd-to-issues` + `ticket-writer` (AC enrich) | — | `dev` |
-| `dev` | `issue-swarm` | — | `pr` |
+| `issues` | `ticket-writer` (batch decomposition) | — | `dev` |
+| `dev` | `ateam-runner` (`--source local`) | — | `pr` |
 | `pr` | integrate + open PR | ✅ final review | `done` |
 
 `discovery` has **no orchestrator gate**. It is a 🔥 grill: the human is present
@@ -253,39 +258,39 @@ checked on resume), a killed session resumes at the same gate.
 
 ### `issues` phase
 
-Three steps, one phase:
+Two steps, one phase:
 
-1. Invoke `prd-to-issues` against `prd.md` + `spec.md`, with `briefs/` as
-   supporting context (the page briefs carry per-page ACs), → `issues.md`
-   (decomposition: tracer-bullet slices, dependency order).
-2. Invoke `ticket-writer` (AC-only mode, batch across `issues.md`) to enrich
-   every issue's acceptance criteria to Gherkin — sourced from the PRD's
-   requirement ACs and the spec — and stamp each issue's `[[NN]]` job trace.
-   Enrichment edits `issues.md` in place without adding, removing, or
-   reordering issues; decomposition gaps it reports are surfaced to the human
-   at the next gate, not silently fixed.
-3. **GitHub projection (conditional)** — mirror the decomposition into the
+1. Invoke `ticket-writer` in **batch decomposition mode** against `prd.md` +
+   `spec.md`, with `briefs/` as supporting context (the page briefs carry
+   per-page ACs), → `issues.md` — tracer-bullet vertical slices in dependency
+   order, each with Gherkin acceptance criteria and its `[[NN]]` job stamp.
+2. **GitHub projection (conditional)** — mirror the decomposition into the
    target's GitHub repo. Skipped by default; see the subsection below.
 
-When all three steps are done, set status `complete`, commit, advance to `dev`.
+When both steps are done, set status `complete`, commit, advance to `dev`.
 
-**Path mapping (steps 1–2):** `prd-to-issues`' own PRD-location/output defaults
-(`prds/`, `docs/agents/prds.md`) do **not** apply in-pipeline — the input is
-`docs/features/<slug>/prd.md` (+ `spec.md`) and the output is
-`docs/features/<slug>/issues.md`. Pass both explicitly in the invocation args.
+**Path mapping (step 1):** the input is `docs/features/<slug>/prd.md` (+
+`spec.md`) and the output is `docs/features/<slug>/issues.md`. Pass both
+explicitly in the invocation args.
+
+**Acceptance criteria are load-bearing here, not decoration.** The dev phase
+refuses any issue without a checkable `### Acceptance criteria` section, because
+the reviewer that judges the resulting diff has nothing else to judge against.
+An issue that reaches `dev` without them is a decomposition gap, and it costs a
+round trip — get them right in step 1.
 
 **Files-touched notes (step 1):** each issue's technical notes must name the
 files it expects to touch, so the dev phase can sequence file-colliding issues
 up front instead of discovering conflicts at integration.
 
 **Requirement trace (step 1):** each issue must also record the **PRD
-requirement IDs** it implements. Ask for it explicitly in the `prd-to-issues`
-invocation args — it decomposes *from* the PRD, so the mapping exists at that
-moment and is expensive to reconstruct later. It is what step 3 resolves an
-issue's epic through (epics bundle requirement IDs), and what lets a reviewer
-check coverage: a requirement no issue claims is a hole in the decomposition.
+requirement IDs** it implements. Ask for it explicitly in the invocation args —
+decomposition happens *from* the PRD, so the mapping exists at that moment and
+is expensive to reconstruct later. It is what step 2 resolves an issue's epic
+through (epics bundle requirement IDs), and what lets a reviewer check coverage:
+a requirement no issue claims is a hole in the decomposition.
 
-#### Step 3 — the GitHub projection
+#### Step 2 — the GitHub projection
 
 **`issues.md` remains the source of truth.** The swarm reads it, not GitHub.
 This is a projection: everything downstream keeps working when it is skipped,
@@ -349,37 +354,51 @@ and its reason in the phase report and in the PR body, then continue.
 
 ### `dev` phase
 
-Invoke `issue-swarm` on `issues.md`, each issue in its own worktree, gated by the
-swarm's reviewer.
+Invoke the **runner** over `issues.md` — one issue at a time, each in its own
+worktree, each gated by an *independent* reviewer session before it counts as
+done:
 
-**Scope the swarm explicitly (in its invocation args).** The swarm implements
-and reviews only — it must **skip its own reconcile/cleanup phase**: branches
-stay unmerged for the `pr` phase; it never edits or deletes `issues.md` or
-`prd.md` (both are persistent contract artifacts — the PR body is assembled
-from `prd.md`); no push, no PRs. Followed verbatim, the building skill's own
-cleanup step merges into the base branch itself and then deletes both files.
+```
+ateam-runner run --source local \
+  --issues docs/features/<slug>/issues.md \
+  --path <target> \
+  --base feature/<slug> \
+  --branch-prefix "feature/<slug>-issue-" \
+  --json
+```
 
-**Branch naming:** the orchestrator supplies **full branch names** in the swarm
-args (overriding the swarm's `branch_prefix` default): each issue branch is
-`feature/<slug>-issue-<id>` (flat). **Never** `feature/<slug>/issue-<id>` —
-git refuses a nested ref when `feature/<slug>` already exists as a branch
-(ref-as-file vs ref-as-dir conflict).
+`--source local` is the point of the flag: the dev phase never touches GitHub.
+Issues come from `issues.md`, verdicts come back in the JSON report, and nothing
+is pushed — the `pr` phase owns integration and the single PR. `issues.md` and
+`prd.md` are contract artifacts; the runner never edits or deletes either.
 
-**Dependencies:** an issue that `depends-on` another must be based on its
-dependency's branch, not the bare `feature/<slug>` branch. Two issues branched
-independently that touch the same file are guaranteed to conflict at integration.
-Sequence dependent issues; only truly independent issues run in parallel.
+**Branch naming:** the orchestrator supplies the prefix, so each issue branch is
+`feature/<slug>-issue-<key>` (flat, `<key>` being the slugified issue title).
+**Never** `feature/<slug>/issue-<key>` — git refuses a nested ref when
+`feature/<slug>` already exists as a branch (ref-as-file vs ref-as-dir conflict).
 
-**Orchestrator ↔ swarm contract (avoids double-counting retries):**
-- The orchestrator invokes `issue-swarm` and **owns** `phases.dev.issues`
-  (`{ "<id>": {status, attempts} }`). Record each issue's outcome there from the
-  swarm's report — the swarm does not write the manifest.
-- One `issue-swarm` invocation of an issue = **one orchestrator attempt**, whatever
-  the swarm does internally (its reviewer gate and any internal fixups are part of
-  that single attempt — do not count them separately).
-- On failure, re-invoke `issue-swarm` **scoped to only the failed issue id(s)**,
-  feeding the error back. Never re-run `complete` issues. Bump only the failed
-  issue's `attempts`.
+**Dependencies:** the runner is serial and it *chains* — each approved branch
+becomes the next issue's base, so an issue that `depends-on` another is built on
+top of its dependency's work without a merge, and two issues touching the same
+file cannot conflict by construction. Nothing runs in parallel; that is
+deliberate, not a limitation to work around.
+
+**Orchestrator ↔ runner contract (avoids double-counting retries):**
+- The orchestrator **owns** `phases.dev.issues` (`{ "<key>": {status, attempts} }`)
+  and records each outcome from the runner's `--json` report. The runner writes
+  no manifest.
+- One runner invocation of an issue = **one orchestrator attempt**, whatever the
+  runner does internally. Its implement↔review cycles (capped at 3, with an
+  early stop when the reviewer's objections stop converging) are part of that
+  single attempt — do not count them separately.
+- On failure, re-invoke scoped to the failed issue with `--issue <key>`, feeding
+  the error back. Never re-run an issue the report marks `approved`. Bump only
+  the failed issue's `attempts`.
+
+**A `needs-detail` outcome is not a failure to retry.** It means the issue
+carried no checkable acceptance criteria, so no reviewer could verify it and the
+runner refused rather than guessing at requirements. Fix the issue text — that
+is a decomposition gap to surface at the next gate, not an implementation error.
 
 **Closing the projected GitHub issue** (only when step 3 actually ran): as each
 issue reaches `complete`, close its mapped GitHub issue, referencing the branch.

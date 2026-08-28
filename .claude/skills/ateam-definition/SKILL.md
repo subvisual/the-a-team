@@ -40,7 +40,7 @@ reference re-reads.
     (the contract's one standing exception), phase-tagged `[definition phase]`
     with confidence.
   - Together, `prd.md` (requirements + ACs) and the briefs ARE the ticket
-    backlog input `prd-to-issues` consumes later — no separate backlog file.
+    backlog input the issues phase decomposes later — no separate backlog file.
 - **Done-signal**: set `phases.definition.status = "complete"` — nothing else
   in the manifest. The orchestrator flips it to `approved` at the gate.
 - **Manifest-optional**: absent → prompt from invocation args, skip manifest
