@@ -83,7 +83,7 @@ Closing sections:
 - **`## Components to install`** — the deduplicated list dev needs
   (`npx shadcn add button card dialog …` under the default; the target's own
   instructions under a binding). Spec *names*, dev *installs* — this section
-  is what `prd-to-issues` lifts into setup work. Empty under a full project
+  is what the issues phase lifts into setup work. Empty under a full project
   binding; say so rather than omitting the section.
 - **`## Design-system gaps`** — token gaps, `custom:` components, `TBD`
   resolutions: everything the mapping could not settle, mirrored into the

@@ -12,8 +12,8 @@ metadata:
 Define and maintain **epics** — the durable delivery structures between the
 PRD and the ticket backlog. An epic bundles requirement IDs from feature PRDs
 into an outcome-oriented workstream, traced to the jobs it serves, prioritized
-explicitly, and owned. Epics are what `prd-to-issues` / `ticket-writer`
-decompose and what the product team steers delivery by.
+explicitly, and owned. Epics are what `ticket-writer` decomposes and what the
+product team steers delivery by.
 
 This skill **consumes** jobs and PRD requirements; it never mints or rewrites
 jobs (`jobs-to-be-done`) and never writes tickets or acceptance criteria
@@ -92,8 +92,8 @@ Repo-first-and-always; a Cowork folder is a valid target, never a blocker.
    `TBD`; genuinely open questions mirror into the context.md ledger.
 7. **Read-back / gate, write, commit.** Present drafted or revised epics for
    correction; write per the durable rules; commit.
-8. **Hand off.** `ticket-writer` / `prd-to-issues` decompose the epics into
-   the backlog; `discovery-plan` folds epic-level deliverables into ateam-plan.md's
+8. **Hand off.** `ticket-writer` decomposes the epics into the backlog;
+   `discovery-plan` folds epic-level deliverables into ateam-plan.md's
    initiatives. Close with **Next likely skill(s)** · **What to pass forward**
    (epic ids, requirement bundles, priority calls) · **Suggested next
    prompts**.

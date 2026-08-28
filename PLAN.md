@@ -96,8 +96,10 @@ read manifest state -> run phase skill -> gate if required -> advance state
 
 It runs on the main thread. It does **not** spawn persistent "PM/Design/Dev"
 subagents — in Claude Code, subagents generally cannot spawn their own subagents,
-which would deadlock the fan-out phases (`issue-swarm`, lo-fi generation). Instead
-each "agent" is a phase: a role-specific skill plus prompt, invoked in sequence.
+which would deadlock the fan-out phases (lo-fi generation). Instead each "agent"
+is a phase: a role-specific skill plus prompt, invoked in sequence. The dev phase
+sidesteps the limit entirely — the runner spawns its implementer and reviewer as
+separate OS processes, not as subagents.
 
 State persists in `feature.json`, so the pipeline is crash-resumable: re-running
 the orchestrator reads the manifest and continues from the current phase.
@@ -117,8 +119,8 @@ the orchestrator reads the manifest and continues from the current phase.
 | `definition` | `prd.md` + `briefs/` | human | `ateam-definition` (authored) |
 | `design` | `design.md` + lo-fi prototype + `docs/product/design-system/` | human | `ateam-design` (authored) |
 | `spec` | `spec.md` (incl. design-system mapping) | auto | `ateam-spec` (authored) |
-| `issues` | `issues.md` (+ optional GitHub projection) | auto | reuse `prd-to-issues` |
-| `dev` | code on `feature/<slug>` | auto | reuse `issue-swarm` |
+| `issues` | `issues.md` (+ optional GitHub projection) | auto | `ticket-writer` (batch) |
+| `dev` | code on `feature/<slug>` | auto | the runner (`--source local`) |
 | `pr` | one open PR | final human review | glue we write |
 
 ### The PM phase, split in two
@@ -331,10 +333,14 @@ the **decomposition source** changes — only the projection:
 - **requirements → issues** (issue numbers written back into `issues.md`)
 - **job ids → labels**, `jtbd:NN-slug`
 
-`issues.md` **stays the source of truth**; the swarm reads it, not GitHub.
-Making GitHub authoritative would mean rewriting a dev-owned shared skill and
-putting a network dependency in front of every dev step — and it would break
-the no-remote case, which the harness must survive.
+`issues.md` **stays the source of truth**; the runner reads it, not GitHub.
+Two of the three original reasons still hold: making GitHub authoritative would
+put a network dependency in front of every dev step, and it would break the
+no-remote case, which the harness must survive. The third — that it would mean
+rewriting a dev-owned shared skill — died with the `issue-swarm` dependency; the
+harness owns the runner now. That is exactly why the runner takes an issue
+*source*: `--source local` for the pipeline, `--source github` for the standalone
+daemon, one executor and one reviewer behind both.
 
 Superseding follows the durable rules rather than inventing a second lifecycle:
 a superseded epic's milestone is **closed** with a pointer, never deleted; a
@@ -358,7 +364,11 @@ isn't a correctness defect in an artifact, and blocking flags halt regardless of
 ### Dev + PR
 
 - One feature branch `feature/<slug>`.
-- `issue-swarm` implements issues in parallel worktrees.
+- The **runner** implements issues one at a time, each in its own worktree, each
+  gated by an independent reviewer session that judges the diff against the
+  issue's acceptance criteria and never sees the implementer's context. It
+  chains: an approved branch becomes the next issue's base, so a dependent issue
+  is built on its dependency's work. See `RUNNER.md`.
 - **Serialized integration**: merge completed+reviewed issues into the feature
   branch one-by-one, run the full test suite, flag conflicts — rather than N
   parallel merges.
@@ -476,7 +486,7 @@ same name, same contract.
 7. End-to-end dry run of `/feature` against a scratch target repo. ✅
    (2026-07-25; its findings drove the fixes-orchestrator / discovery-contract /
    engines round)
-8. Wire `prd-to-issues` + `issue-swarm`. ✅
+8. Wire issue decomposition + implementation. ✅ (superseded by 17)
 9. `pr` phase glue (serialized integration + PR body assembly). ✅
 10. Bootstrap step (CLAUDE.md target config). ✅
 11. PM round from the 2026-07-29 dev-role call: dev review subagent, declared
@@ -496,10 +506,23 @@ same name, same contract.
 16. Dev round: `dev-research` (the skill that fills 11's dev-review slot) +
     `architecture` and the ADR layer at `docs/product/adr/`, plus the dev bank's
     `## Declared defaults` filled from the board. ✅ (2026-08-27)
+17. **The runner** (`runner/`, `RUNNER.md`) — replaces the two borrowed
+    `building` skills, leaving the harness with no plugin dependency. Watches
+    GitHub for `agent:ready` issues, implements each in an isolated worktree,
+    and has an independent session judge the diff against the acceptance
+    criteria. `--source local` is the dev phase; `--source github` is the
+    standalone daemon. The issues phase moves to `ticket-writer`'s batch
+    decomposition mode. ✅ (2026-08-28)
 
 ## Deferred (not blocking v1)
 
-- Claude Agent SDK migration (durable autonomous runs past gates).
+- **Extracting the runner** to its own repo + Homebrew tap. It lives in
+  `runner/` for the proof of concept; the trigger to extract is one issue going
+  `agent:ready` → PR → verdict without hand-holding. A daemon with a launchd
+  unit does not belong in a skills repo, and `brew install` is the answer to
+  "teammates set it up easily".
+- Claude Agent SDK migration (durable autonomous runs past gates) — the runner's
+  process-spawn boundary is the seam this lands on.
 - Figma integration for the design phase.
 - Concurrent features in flight.
 - Rendered breadcrumb / rewind viewer.

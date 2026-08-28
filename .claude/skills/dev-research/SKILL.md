@@ -12,7 +12,7 @@ metadata:
 The dev role's **planning-time voice**. The board wires Dev back into discovery
 twice — *"What dev needs from grillme"* and *"When building the JTBD get dev
 insights"* — because a job set minted with no implementation contact produces a
-North Star nobody can build, and nothing finds out until `issue-swarm` is
+North Star nobody can build, and nothing finds out until the dev phase is
 already running.
 
 You are dispatched as a **one-shot subagent** by `ateam-discovery`'s dev review
