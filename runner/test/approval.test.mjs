@@ -8,6 +8,7 @@ import {
   existsSync,
   chmodSync,
   symlinkSync,
+  readdirSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -15,6 +16,7 @@ import { runIssue } from '../src/core/loop.mjs'
 import { reviewPullRequest } from '../src/review-pr.mjs'
 import {
   fixtureRepo,
+  publicationFixture,
   config,
   issue,
   impl,
@@ -24,12 +26,13 @@ import {
   adapter,
   git,
 } from './approval-fixtures.mjs'
-let root, repoPath, cfg
+let root, repoPath, cfg, publicationApi
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'ateam-approval-'))
   process.env.ATEAM_RUNNER_HOME = join(root, 'home')
   repoPath = fixtureRepo(root)
   cfg = config(repoPath)
+  publicationApi = publicationFixture()
 })
 afterEach(() => {
   rmSync(root, { recursive: true, force: true })
@@ -304,6 +307,7 @@ for (const [name, patch, reason] of [
       labels: {},
       deps: {
         gh: {
+          readPublication: (...args) => publicationApi.readPublication(...args),
           viewIssue: async () => ({ ...issue, number: 1 }),
           postVerdict: async (...args) => calls.push(args),
           setPhaseLabel: async (...args) => calls.push(args),
@@ -452,11 +456,12 @@ test('direct PR successful checks record exactly one approval; old markers are i
   }
   const deps = {
     gh: {
+      readPublication: (...args) => publicationApi.readPublication(...args),
       viewPR: async () => pr,
       viewIssue: async () => ({ ...issue, number: 1 }),
       postVerdict: async (r, n, v) => {
         calls.push(v.event)
-        return 'review'
+        return publicationApi.postVerdict(r, n, v)
       },
       setPhaseLabel: async () => {},
       removeLabels: async () => {},
@@ -508,7 +513,13 @@ for (const change of ['none', 'head', 'base', 'criteria', 'absent', 'receipt'])
     const { repoStatus } = await import('../src/status.mjs')
     const a = adapter(repoPath)
     a.onImplemented = async () => ({ prNumber: 9 })
-    a.onVerdict = async () => 'review'
+    a.onVerdict = async (i, ctx, v) =>
+      publicationApi.postVerdict('o/r', ctx.prNumber, {
+        event: v.verdict === 'approve' ? 'approve' : 'request-changes',
+        body: 'synthetic review',
+        headSha: ctx.head,
+        evidenceDigest: ctx.reviewDigest,
+      })
     const result = await runIssue({
       adapter: a,
       issue,
@@ -539,6 +550,7 @@ for (const change of ['none', 'head', 'base', 'criteria', 'absent', 'receipt'])
       { approved: 'approved' },
       {
         gh: {
+          readPublication: (...args) => publicationApi.readPublication(...args),
           listIssues: async () => [raw],
           listPRs: async () => [pr],
           viewPR: async () => pr,
@@ -546,7 +558,7 @@ for (const change of ['none', 'head', 'base', 'criteria', 'absent', 'receipt'])
         },
       },
     )
-    assert.equal(status.prs[0].reviewed, change === 'none')
+    assert.equal(status.prs[0].approvalValid, change === 'none')
     assert.equal(status.issues[0].phase, change === 'none' ? 'approved' : 'approval-invalid')
   })
 
@@ -574,6 +586,7 @@ for (const failure of [
     }
     const deps = {
       gh: {
+        readPublication: (...args) => publicationApi.readPublication(...args),
         viewPR: async () => ({
           ...pr,
           ...(failure === 'remote head' ? { headRefOid: 'f'.repeat(40) } : {}),
@@ -631,11 +644,12 @@ for (const disposition of ['request-changes', 'blocked'])
     }
     const deps = {
       gh: {
+        readPublication: (...args) => publicationApi.readPublication(...args),
         viewPR: async () => pr,
         viewIssue: async () => issue,
         postVerdict: async (r, n, v) => {
           calls.push(v)
-          return 'review'
+          return publicationApi.postVerdict(r, n, v)
         },
         setPhaseLabel: async () => {},
         removeLabels: async () => {},
@@ -792,7 +806,7 @@ test('loop rejects redirected private Git metadata before importing or reviewing
   )
 })
 
-for (const disposition of ['request-changes', 'blocked'])
+for (const disposition of ['request-changes'])
   test(`unchanged delivered ${disposition} reviews are reused until inputs change or force`, async () => {
     git(repoPath, ['checkout', '-b', 'proposed'])
     await commit({ worktree: repoPath })
@@ -811,12 +825,13 @@ for (const disposition of ['request-changes', 'blocked'])
     }
     const deps = {
       gh: {
+        readPublication: (...args) => publicationApi.readPublication(...args),
         viewPR: async () => pr,
         viewIssue: async () => currentIssue,
         postVerdict: async (r, n, posted) => {
           publications++
           pr.reviews.push({ body: posted.body })
-          return 'review'
+          return publicationApi.postVerdict(r, n, posted)
         },
         setPhaseLabel: async () => {},
         removeLabels: async () => {},
@@ -882,6 +897,60 @@ for (const mutation of ['mode', 'symlink'])
     )
   })
 
+for (const reason of [
+  'blocked',
+  'changed evaluator',
+  'different remote author',
+  'failed reevaluation',
+])
+  test(`direct review reevaluates ${reason} with authenticated cycle accounting`, async () => {
+    git(repoPath, ['checkout', '-b', 'proposed'])
+    await commit({ worktree: repoPath })
+    const pr = {
+      number: 9,
+      headRefOid: git(repoPath, ['rev-parse', 'HEAD']),
+      baseRefName: 'main',
+      baseRefOid: cfg.policy.target.baseSha,
+      headRefName: 'agent/issue-1',
+      closingIssuesReferences: [{ number: 1 }],
+      comments: [{ body: '<!-- ateam-runner:verdict sha=abc cycle=900 -->' }],
+      reviews: [],
+    }
+    let evaluations = 0,
+      wrongAuthor = false
+    const deps = {
+      gh: {
+        ...publicationApi,
+        viewPR: async () => pr,
+        viewIssue: async () => issue,
+        setPhaseLabel: async () => {},
+        removeLabels: async () => {},
+        readPublication: async (...args) => {
+          const remote = await publicationApi.readPublication(...args)
+          return wrongAuthor ? { ...remote, user: { id: 99 } } : remote
+        },
+      },
+      review: async () => {
+        evaluations++
+        return { ...verdict, verdict: reason === 'blocked' ? 'blocked' : 'approve' }
+      },
+      runVerification: pass,
+    }
+    const run = () => reviewPullRequest({ repo: 'o/r', repoPath, pr, cfg, labels: {}, deps })
+    const first = await run()
+    assert.equal(first.cycle, 1)
+    if (reason === 'changed evaluator') cfg = { ...cfg, reviewerModel: 'another-model' }
+    if (reason === 'different remote author' || reason === 'failed reevaluation') wrongAuthor = true
+    if (reason === 'failed reevaluation')
+      deps.runVerification = async () => ({ code: 7, stdout: '', stderr: 'failed check' })
+    const second = await run()
+    assert.notEqual(second.skipped, true)
+    assert.equal(evaluations, 2)
+    if (reason === 'failed reevaluation') assert.equal(second.verdict, 'blocked')
+    else assert.equal(second.cycle, 1)
+    assert.ok(second.ignoredEvidence.length)
+  })
+
 for (const scenario of ['failed publication', 'stale local base'])
   test(`direct PR record reuse handles ${scenario}`, async () => {
     git(repoPath, ['checkout', '-b', 'proposed'])
@@ -900,14 +969,15 @@ for (const scenario of ['failed publication', 'stale local base'])
     }
     const deps = {
       gh: {
+        readPublication: (...args) => publicationApi.readPublication(...args),
         viewPR: async () => pr,
         viewIssue: async () => issue,
-        postVerdict: async () => {
+        postVerdict: async (r, n, v) => {
           attempts++
           if (scenario === 'failed publication' && attempts === 1)
             throw new Error('remote publication failed')
           approvals++
-          return 'review'
+          return publicationApi.postVerdict(r, n, v)
         },
         setPhaseLabel: async () => {},
         removeLabels: async () => {},
@@ -929,17 +999,24 @@ for (const scenario of ['failed publication', 'stale local base'])
       assert.match(second.reason, /base/)
       assert.equal(approvals, 1)
     } else {
-      assert.equal(second.verdict, 'approve')
-      assert.equal(attempts, 2)
-      assert.equal(approvals, 1)
+      assert.equal(second.verdict, 'blocked')
+      assert.match(second.reason, /action uncertain/)
+      assert.equal(attempts, 1)
+      assert.equal(approvals, 0)
     }
   })
 
-for (const disposition of ['approve', 'request-changes', 'blocked'])
+for (const disposition of ['approve', 'request-changes'])
   test(`direct review reuses a current delivered loop ${disposition} record for the same PR`, async () => {
     const a = adapter(repoPath)
     a.onImplemented = async () => ({ prNumber: 9 })
-    a.onVerdict = async () => 'review'
+    a.onVerdict = async (i, ctx, v) =>
+      publicationApi.postVerdict('o/r', ctx.prNumber, {
+        event: v.verdict === 'approve' ? 'approve' : 'request-changes',
+        body: 'synthetic review',
+        headSha: ctx.head,
+        evidenceDigest: ctx.reviewDigest,
+      })
     const implemented = await runIssue({
       adapter: a,
       issue,
@@ -976,7 +1053,11 @@ for (const disposition of ['approve', 'request-changes', 'blocked'])
       cfg,
       labels: {},
       deps: {
-        gh: { viewIssue: async () => issue, viewPR: async () => pr },
+        gh: {
+          readPublication: (...args) => publicationApi.readPublication(...args),
+          viewIssue: async () => issue,
+          viewPR: async () => pr,
+        },
         review: async () => {
           evaluations++
           throw new Error('unexpected duplicate review')
@@ -987,3 +1068,226 @@ for (const disposition of ['approve', 'request-changes', 'blocked'])
     assert.equal(result.skipped, true)
     assert.equal(evaluations, 0)
   })
+
+test('uncertain direct publication remains explicit and cannot duplicate a review on restart', async () => {
+  await commit({ worktree: repoPath })
+  const head = git(repoPath, ['rev-parse', 'HEAD'])
+  git(repoPath, ['branch', '-f', 'delivery-base', cfg.policy.target.baseSha])
+  cfg.policy.target.base = 'delivery-base'
+  const pr = {
+    number: 9,
+    headRefOid: head,
+    baseRefOid: cfg.policy.target.baseSha,
+    baseRefName: 'delivery-base',
+    headRefName: 'agent/issue-1',
+    body: 'Closes #1',
+    comments: [],
+    reviews: [],
+  }
+  let models = 0,
+    publications = 0
+  const deps = {
+    review: async () => {
+      models++
+      return verdict
+    },
+    runVerification: pass,
+    gh: {
+      viewIssue: async () => ({ ...issue, number: 1, body: issue.body }),
+      viewPR: async () => pr,
+      postVerdict: async () => {
+        publications++
+        throw new Error('network failed after request')
+      },
+    },
+  }
+  const run = () => reviewPullRequest({ repo: 'o/r', repoPath, pr, cfg, labels: {}, deps })
+  const first = await run()
+  assert.match(first.reason, /action uncertain/)
+  const second = await run()
+  assert.match(second.reason, /action uncertain/)
+  assert.equal(models, 1)
+  assert.equal(publications, 1)
+})
+
+test('repository allowance accounts distinct overlapping attempts without double-counting history', async () => {
+  const a = adapter(repoPath),
+    b = adapter(repoPath)
+  let readyB, releaseB
+  const enteredB = new Promise((resolve) => {
+    readyB = resolve
+  })
+  const finishedA = new Promise((resolve) => {
+    releaseB = resolve
+  })
+  a.onClaimed = () => enteredB
+  b.onClaimed = async () => {
+    readyB()
+    await finishedA
+  }
+  const deps = {
+    execute: async (args) => ({ ...(await commit(args)), costUsd: 1 }),
+    review: async () => ({ ...verdict, costUsd: 0.1 }),
+    runVerification: pass,
+  }
+  const first = runIssue({ adapter: a, issue, cfg, deps })
+  const second = runIssue({ adapter: b, issue: { ...issue, key: '2', number: 2 }, cfg, deps })
+  const ra = await first
+  releaseB()
+  const rb = await second
+  assert.equal(ra.outcome, 'approved', ra.reason)
+  assert.equal(rb.outcome, 'approved', rb.reason)
+  assert.equal(ra.costUsd, 1.1)
+  assert.equal(rb.costUsd, 1.1)
+  const { readEvents, replayIssue } = await import('../src/core/history.mjs')
+  assert.equal(replayIssue(readEvents('o/r', '1')).lifetime.costUsd, 1.1)
+  assert.equal(replayIssue(readEvents('o/r', '2')).lifetime.costUsd, 1.1)
+})
+
+test('both role costs exhaust the aggregate allowance before another executor cycle', async () => {
+  const { resolveLimits } = await import('../src/core/budget.mjs')
+  cfg.policy.limits = resolveLimits({
+    runBudgetUsd: 3,
+    executorBudgetUsd: 2,
+    reviewerBudgetUsd: 2,
+    maxCycles: 3,
+  })
+  const grants = []
+  const result = await runIssue({
+    adapter: adapter(repoPath),
+    issue,
+    cfg,
+    deps: {
+      execute: async (args) => {
+        grants.push(['executor', args.budgetUsd])
+        return { ...(await commit(args)), costUsd: 2 }
+      },
+      review: async (args) => {
+        grants.push(['reviewer', args.budgetUsd])
+        return {
+          ...verdict,
+          verdict: 'request-changes',
+          unmetAc: [{ criterion: 'value is good', why: 'fixture rejection' }],
+          costUsd: 1,
+        }
+      },
+      runVerification: pass,
+    },
+  })
+  assert.deepEqual(grants, [
+    ['executor', 2],
+    ['reviewer', 1],
+  ])
+  assert.equal(result.failureCategory, 'budget-exhausted')
+  assert.equal(result.costUsd, 3)
+  assert.equal(result.budget.remainingUsd, 0)
+  const { readEvents } = await import('../src/core/history.mjs')
+  assert.ok(readEvents('o/r', '1').some((event) => event.failureCategory === 'reviewer-rejection'))
+})
+
+for (const keepReceipt of [false, true])
+  test(`incomplete direct delivery prefix blocks duplicate work with receipt=${keepReceipt}`, async () => {
+    git(repoPath, ['checkout', '-b', 'proposed'])
+    await commit({ worktree: repoPath })
+    const pr = {
+      number: 9,
+      headRefOid: git(repoPath, ['rev-parse', 'HEAD']),
+      baseRefOid: cfg.policy.target.baseSha,
+      baseRefName: 'main',
+      headRefName: 'agent/issue-1',
+      body: 'Closes #1',
+      comments: [],
+      reviews: [],
+    }
+    let reviews = 0,
+      publications = 0
+    const deps = {
+      review: async () => {
+        reviews++
+        return verdict
+      },
+      runVerification: pass,
+      gh: {
+        ...publicationApi,
+        viewIssue: async () => issue,
+        viewPR: async () => pr,
+        setPhaseLabel: async () => {},
+        removeLabels: async () => {},
+        postVerdict: async (...args) => {
+          publications++
+          return publicationApi.postVerdict(...args)
+        },
+      },
+    }
+    const run = (force) =>
+      reviewPullRequest({ repo: 'o/r', repoPath, pr, cfg, labels: {}, deps, force })
+    const first = await run(false)
+    assert.equal(first.verdict, 'approve')
+    const { readEvents } = await import('../src/core/history.mjs')
+    const publication = readEvents('o/r', '1').find(
+      (event) => event.type === 'action.result' && event.kind === 'post-verdict',
+    )
+    const history = join(process.env.ATEAM_RUNNER_HOME, 'history')
+    for (const relative of readdirSync(history, { recursive: true }).filter((file) =>
+      file.endsWith('.json'),
+    )) {
+      const path = join(history, relative),
+        event = JSON.parse(readFileSync(path, 'utf8'))
+      if (event.attemptId === publication.attemptId && event.sequence > publication.sequence)
+        rmSync(path)
+    }
+    if (!keepReceipt) {
+      rmSync(first.reviewPath.replace('review-evidence-', 'review-receipt-'))
+      rmSync(first.deliveryPath)
+    }
+    for (const force of [false, true]) {
+      const resumed = await run(force)
+      assert.equal(resumed.failureCategory, 'delivery-incomplete')
+      assert.match(resumed.reason, /reconciliation/)
+    }
+    assert.equal(reviews, 1)
+    assert.equal(publications, 1)
+  })
+
+test('resume retains ledger costs durable before the next attempt checkpoint', async () => {
+  let executions = 0
+  const execute = async (args) => {
+    writeFileSync(join(args.worktree, 'revision.txt'), String(++executions))
+    const result = await commit(args)
+    return { ...result, costUsd: executions === 1 ? 2 : 3 }
+  }
+  const a = adapter(repoPath),
+    deps = { execute, review: async () => ({ ...verdict, costUsd: 4 }), runVerification: pass }
+  const first = await runIssue({
+    adapter: a,
+    issue,
+    cfg,
+    deps: {
+      ...deps,
+      checkpoint: async (name) => {
+        if (name === 'after-executor') throw Object.assign(Error('stop'), { code: 'interrupted' })
+      },
+    },
+  })
+  const history = join(process.env.ATEAM_RUNNER_HOME, 'history')
+  for (const relative of readdirSync(history, { recursive: true }).filter((file) =>
+    file.endsWith('.json'),
+  )) {
+    const path = join(history, relative),
+      event = JSON.parse(readFileSync(path, 'utf8'))
+    if (
+      event.attemptId === first.ctx.attemptId &&
+      ['attempt.executed', 'attempt.finished'].includes(event.type)
+    )
+      rmSync(path)
+  }
+  const resumed = await runIssue({ adapter: a, issue, cfg, deps })
+  assert.equal(resumed.outcome, 'approved', resumed.reason)
+  assert.equal(resumed.ctx.attemptId, first.ctx.attemptId)
+  assert.equal(resumed.costUsd, 9)
+  const { openBudget } = await import('../src/core/budget.mjs')
+  assert.equal(
+    openBudget({ repo: 'o/r', policy: cfg.policy }).attemptStatus(resumed.ctx.attemptId).spentUsd,
+    9,
+  )
+})

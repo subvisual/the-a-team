@@ -70,6 +70,10 @@ Handoff:
 
 ## Mode 2 — Batch Ticket Output
 
+The following is a human-readable decomposition illustration. For the pipeline
+artifact, use [issues.md](issues.md): its stable IDs, explicit dependencies,
+requirement trace and acceptance headings are exercised by the real runner.
+
 ### Ticket 1
 
 - Title: [Chore] Migrate analytics dashboard queries to the new query layer

@@ -43,7 +43,7 @@ function fakeGithub(t, response = {}) {
   writeFileSync(
     join(root, 'gh'),
     `#!${process.execPath}
-const fs=require('fs');const args=process.argv.slice(2);const input=fs.readFileSync(0,'utf8');fs.appendFileSync(${JSON.stringify(calls)},JSON.stringify({args,input})+'\\n');const response=${JSON.stringify(response)};if(args[0]==='api'){if(response.error){process.stderr.write(response.error);process.exitCode=1}else{const request=JSON.parse(input);console.log(JSON.stringify({commit_id:response.head || request.commit_id,state:response.state || (request.event==='APPROVE'?'APPROVED':'CHANGES_REQUESTED')}))}}`,
+const fs=require('fs');const args=process.argv.slice(2);const input=fs.readFileSync(0,'utf8');fs.appendFileSync(${JSON.stringify(calls)},JSON.stringify({args,input})+'\\n');const response=${JSON.stringify(response)};if(args[1]==='user'){console.log(JSON.stringify({id:17}))}else if(args[0]==='api'){if(response.error && args[1].endsWith('/reviews')){process.stderr.write(response.error);process.exitCode=1}else{const request=JSON.parse(input);console.log(JSON.stringify({id:41,user:{id:response.authorId || 17},body:request.body,commit_id:response.head || request.commit_id,state:response.state || (request.event==='APPROVE'?'APPROVED':'CHANGES_REQUESTED'),pull_request_url:'https://api.github.com/repos/o/r/pulls/7',issue_url:'https://api.github.com/repos/o/r/issues/7'}))}}`,
     { mode: 0o755 },
   )
   const oldPath = process.env.PATH
@@ -60,12 +60,19 @@ test('GitHub review submission pins and verifies the exact evaluated commit', as
   const calls = fakeGithub(t),
     headSha = 'a'.repeat(40)
   assert.equal(
-    await postVerdict('o/r', 7, { event: 'approve', body: 'verified', headSha }),
+    (
+      await postVerdict('o/r', 7, {
+        event: 'approve',
+        body: 'verified',
+        headSha,
+        evidenceDigest: 'd'.repeat(64),
+      })
+    ).via,
     'review',
   )
   assert.equal(calls()[0].args[0], 'api')
-  assert.equal(JSON.parse(calls()[0].input).commit_id, headSha)
-  assert.equal(JSON.parse(calls()[0].input).event, 'APPROVE')
+  assert.equal(JSON.parse(calls()[1].input).commit_id, headSha)
+  assert.equal(JSON.parse(calls()[1].input).event, 'APPROVE')
 })
 
 test('publication fails closed for missing commit and mismatched GitHub response', async (t) => {
@@ -76,27 +83,57 @@ test('publication fails closed for missing commit and mismatched GitHub response
   )
   assert.equal(calls().length, 0)
   await assert.rejects(
-    postVerdict('o/r', 7, { event: 'approve', body: 'verified', headSha: 'a'.repeat(40) }),
+    postVerdict('o/r', 7, {
+      event: 'approve',
+      body: 'verified',
+      headSha: 'a'.repeat(40),
+      evidenceDigest: 'd'.repeat(64),
+    }),
     /commit|revision/i,
   )
-  assert.equal(calls().length, 1)
+  assert.equal(calls().length, 2)
 })
 
 test('own-PR fallback names the evaluated commit in its comment', async (t) => {
   const calls = fakeGithub(t, { error: 'Can not approve your own pull request' }),
     headSha = 'a'.repeat(40)
   assert.equal(
-    await postVerdict('o/r', 7, { event: 'approve', body: 'verified', headSha }),
+    (
+      await postVerdict('o/r', 7, {
+        event: 'approve',
+        body: 'verified',
+        headSha,
+        evidenceDigest: 'd'.repeat(64),
+      })
+    ).via,
     'comment',
   )
-  assert.match(calls()[1].input, new RegExp(headSha))
+  assert.match(calls()[2].input, new RegExp(headSha))
 })
 
 test('unexpected publication failures do not turn into successful comments', async (t) => {
   const calls = fakeGithub(t, { error: 'network unavailable' })
   await assert.rejects(
-    postVerdict('o/r', 7, { event: 'approve', body: 'verified', headSha: 'a'.repeat(40) }),
+    postVerdict('o/r', 7, {
+      event: 'approve',
+      body: 'verified',
+      headSha: 'a'.repeat(40),
+      evidenceDigest: 'd'.repeat(64),
+    }),
     /network unavailable/,
   )
-  assert.equal(calls().length, 1)
+  assert.equal(calls().length, 2)
+})
+
+test('publication refuses a server response attributed to a different actor', async (t) => {
+  fakeGithub(t, { authorId: 99 })
+  await assert.rejects(
+    postVerdict('o/r', 7, {
+      event: 'approve',
+      body: 'verified',
+      headSha: 'a'.repeat(40),
+      evidenceDigest: 'd'.repeat(64),
+    }),
+    /actor/,
+  )
 })

@@ -117,7 +117,7 @@ export function executorPrompt({
     policy?.authorization?.protectedPaths?.length
       ? `- Protected-file exceptions authorized for this invocation only: ${policy.authorization.protectedPaths.join(', ')}. All other protected files remain off limits.`
       : '- Do not edit protected files, including CI configuration.',
-    `- Commit your work. Include the line \`Implements issue: ${issue.title}\` in the commit message — the runner reads it back to know this issue is done.`,
+    `- Commit your work. Include the line \`Implements issue: ${issue.title}\` in the commit message for human traceability. Completion requires the supervisor’s immutable approval and ancestry records.`,
     '- Do NOT push and do NOT touch GitHub. The runner owns both.',
     '- Run the full test suite before you finish. If it is red, you are not done.',
     '',
@@ -152,6 +152,7 @@ export async function execute({
   revision,
   model,
   budgetUsd,
+  timeoutMs,
   runDir,
   policy,
   scratchDir,
@@ -174,10 +175,22 @@ export async function execute({
     tools: EXECUTOR_TOOLS,
     model,
     maxBudgetUsd: budgetUsd,
+    timeoutMs: timeoutMs ?? policy?.limits?.sessionTimeoutMs,
     jsonSchema: EXECUTOR_SCHEMA,
     role: revision ? `executor-cycle${revision.cycle}` : 'executor',
     runDir,
   })
 
-  return normalizeExecutor(result)
+  try {
+    return normalizeExecutor(result)
+  } catch (error) {
+    error.costUsd = result.costUsd
+    error.durationMs = result.durationMs
+    error.failureCategory = result.timedOut
+      ? 'timeout'
+      : result.ok === false
+        ? 'infrastructure-interruption'
+        : 'invalid-result'
+    throw error
+  }
 }

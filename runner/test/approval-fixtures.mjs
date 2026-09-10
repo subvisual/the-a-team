@@ -3,6 +3,38 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { DEFAULTS } from '../src/config.mjs'
 import { digest } from '../src/policy.mjs'
+import { publishedVerdictBody } from '../src/core/provenance.mjs'
+
+export function publicationFixture() {
+  const records = new Map()
+  let nextId = 1
+  return {
+    async postVerdict(repo, prNumber, args) {
+      const id = nextId++,
+        body = publishedVerdictBody(args)
+      records.set(id, {
+        id,
+        user: { id: 17 },
+        body,
+        commit_id: args.headSha,
+        state: args.event === 'approve' ? 'APPROVED' : 'CHANGES_REQUESTED',
+        pull_request_url: `https://api.github.com/repos/${repo}/pulls/${prNumber}`,
+      })
+      return {
+        via: 'review',
+        id,
+        authorId: 17,
+        bodyDigest: digest(body),
+        headSha: args.headSha,
+        event: args.event,
+        evidenceDigest: args.evidenceDigest,
+      }
+    },
+    async readPublication(repo, prNumber, publication) {
+      return records.get(publication.id)
+    },
+  }
+}
 export const git = (cwd, args) =>
   execFileSync('git', args, {
     cwd,

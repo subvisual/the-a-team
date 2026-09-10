@@ -124,7 +124,7 @@ export async function runClaude({
 
   log.info('claude.spawn', { role, model, cwd, resume: resume || undefined, budget: maxBudgetUsd })
   const started = Date.now()
-  const { code, stdout, stderr } = await runSandboxed(command, args, {
+  const { code, stdout, stderr, timedOut } = await runSandboxed(command, args, {
     cwd,
     scratchDir,
     policy,
@@ -153,7 +153,8 @@ export async function runClaude({
     sessionId: payload?.session_id ?? null,
     structured: payload?.structured_output ?? null,
     text: payload?.result ?? '',
-    costUsd: payload?.total_cost_usd ?? 0,
+    costUsd: payload?.total_cost_usd,
+    timedOut: timedOut === true,
     terminalReason: payload?.terminal_reason ?? null,
     errors: payload?.errors ?? (stderr.trim() ? [stderr.trim().split('\n')[0]] : []),
     durationMs: Date.now() - started,
@@ -162,7 +163,7 @@ export async function runClaude({
   log.info('claude.done', {
     role,
     ok: out.ok,
-    cost: out.costUsd.toFixed?.(4),
+    cost: out.costUsd?.toFixed?.(4),
     ms: out.durationMs,
     session: out.sessionId,
     reason: out.terminalReason,

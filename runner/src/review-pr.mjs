@@ -1,13 +1,17 @@
+import { claim, inspectClaim } from './core/claim.mjs'
+import { randomUUID } from 'node:crypto'
+import { appendEvent, readEvents, replayIssue, runAction, stableActionId } from './core/history.mjs'
+import { openBudget } from './core/budget.mjs'
 import {
   requirePolicy,
   evaluateRevision,
   assertApprovalCurrent,
-  findDeliveredApprovalRecord,
-  findDeliveredNonapprovalRecord,
+  validateApprovalRecord,
   recordNonapprovalDelivery,
   recordDelivery,
   criteriaDigest,
 } from './core/approval.mjs'
+import { authenticatedReviews, recordReviewPublication } from './core/provenance.mjs'
 import { assertSandboxAvailable } from './sandbox.mjs'
 import * as gh from './gh.mjs'
 import { revParse } from './git.mjs'
@@ -16,21 +20,12 @@ import { normaliseIssue } from './adapters/github.mjs'
 import { review, verdictBody } from './core/review.mjs'
 import { log } from './log.mjs'
 
-export function reviewedShas(pr) {
-  const bodies = [
-    ...(pr.comments || []).map((c) => c.body),
-    ...(pr.reviews || []).map((r) => r.body),
-  ]
-  return new Set(gh.parseVerdictMarkers(bodies).map((m) => m.sha))
+export function reviewedShas(pr, authenticated = []) {
+  return new Set(authenticated.map((record) => record.headSha))
 }
 
-export function cycleCount(pr) {
-  const bodies = [
-    ...(pr.comments || []).map((c) => c.body),
-    ...(pr.reviews || []).map((r) => r.body),
-  ]
-  const markers = gh.parseVerdictMarkers(bodies)
-  return markers.length ? Math.max(...markers.map((m) => m.cycle)) : 0
+export function cycleCount(pr, authenticated = []) {
+  return authenticated.length ? Math.max(...authenticated.map((record) => record.cycle)) : 0
 }
 
 // The issue a PR answers to comes from GitHub's own link, never from the PR
@@ -50,6 +45,31 @@ export function linkedIssueNumber(pr, branchPrefix) {
  * Keyed on head sha: a new push is a new sha, so re-review falls out of the
  * key rather than needing an event subscription (RUNNER.md decision 7).
  */
+function assertReviewHistory(repo, issue) {
+  const history = replayIssue(readEvents(repo, issue.key), issue)
+  const incompleteReview = history.currentAttempts.find(
+    (attempt) =>
+      attempt.entrypoint === 'review' &&
+      (!attempt.outcome ||
+        (attempt.outcome === 'failed' &&
+          attempt.events.some(
+            (event) => event.type === 'action.result' && event.kind === 'post-verdict',
+          ))),
+  )
+  if (incompleteReview)
+    throw Object.assign(
+      new Error(
+        `review delivery incomplete for attempt ${incompleteReview.attemptId}; delivery reconciliation is required before another review`,
+      ),
+      { failureCategory: 'delivery-incomplete' },
+    )
+  if (history.unresolvedActions.length)
+    throw Object.assign(
+      new Error('action uncertain: reconcile interrupted supervisor actions before another review'),
+      { failureCategory: 'action-uncertain' },
+    )
+}
+
 export async function reviewPullRequest({
   repo,
   repoPath,
@@ -59,6 +79,7 @@ export async function reviewPullRequest({
   force = false,
   deps = {},
 }) {
+  repo = repo.toLowerCase()
   const github = deps.gh || gh
   const head = pr.headRefOid
   let policy
@@ -71,6 +92,12 @@ export async function reviewPullRequest({
   const issueNumber = linkedIssueNumber(pr, cfg.branchPrefix)
   if (!issueNumber) return { skipped: true, reason: 'no linked issue', pr: pr.number }
   let issue
+  let ignoredEvidence = []
+  let budget
+  let token
+  let attemptId
+  let started
+  let startingCost = 0
   try {
     issue = normaliseIssue(await github.viewIssue(repo, issueNumber))
     if (!issue.acceptanceCriteria.length)
@@ -86,33 +113,69 @@ export async function reviewPullRequest({
     const deliveryContext = { repo, issue, head, baseSha, policy, prNumber: pr.number }
     if ((await revParse(repoPath, policy.target.base)) !== baseSha)
       throw new Error('resolved policy base changed before review')
-    const delivered =
-      !force &&
-      (findDeliveredApprovalRecord(repo, `pr-${pr.number}`, deliveryContext) ||
-        findDeliveredApprovalRecord(repo, issue.key, deliveryContext))
-    if (delivered) {
-      if (pr.baseRefOid !== baseSha)
-        throw new Error('current remote base is required before reusing an approval')
-      await assertApprovalCurrent(delivered, { repo, issue, head, baseSha, policy, repoPath })
+    const authentication = await authenticatedReviews({
+      ...deliveryContext,
+      pr,
+      model: cfg.reviewerModel,
+      criteriaDigest: criteriaDigest(issue),
+      gh: github,
+      validateApproval: (record) => validateApprovalRecord(record, deliveryContext).valid,
+    })
+    ignoredEvidence = authentication.ignored
+    assertReviewHistory(repo, issue)
+    const delivered = !force && authentication.completed.sort((a, b) => b.cycle - a.cycle)[0]
+    if (delivered && pr.baseRefOid === baseSha)
       return {
         skipped: true,
-        reason: 'current delivered approval record already exists',
+        reason: 'authenticated completed review already exists',
         pr: pr.number,
-      }
-    }
-    const negative =
-      !force &&
-      (findDeliveredNonapprovalRecord(repo, `pr-${pr.number}`, deliveryContext) ||
-        findDeliveredNonapprovalRecord(repo, issue.key, deliveryContext))
-    if (negative && pr.baseRefOid === baseSha)
-      return {
-        skipped: true,
-        reason: 'current delivered negative review already exists',
-        pr: pr.number,
-        previousVerdict: negative.verdict.verdict,
+        previousVerdict: delivered.verdict.verdict,
+        ignoredEvidence: authentication.ignored,
       }
     if (!deps.review) await assertSandboxAvailable(policy)
-    const cycle = cycleCount(pr) + 1
+    token = claim(repo, issue.key, { entrypoint: 'review', prNumber: pr.number })
+    if (!token) {
+      const state = inspectClaim(repo, issue.key)
+      return {
+        skipped: true,
+        pr: pr.number,
+        reason:
+          state.status === 'recovery-uncertain'
+            ? 'claim recovery is uncertain; reconcile the retained recovery guard'
+            : 'already claimed',
+        failureCategory: state.status,
+      }
+    }
+    // Another supervisor may have completed between the initial read and claim.
+    const currentAuthentication = await authenticatedReviews({
+      ...deliveryContext,
+      pr,
+      model: cfg.reviewerModel,
+      criteriaDigest: criteriaDigest(issue),
+      gh: github,
+      validateApproval: (record) => validateApprovalRecord(record, deliveryContext).valid,
+    })
+    assertReviewHistory(repo, issue)
+    if (!force && currentAuthentication.completed.length && pr.baseRefOid === baseSha)
+      return {
+        skipped: true,
+        pr: pr.number,
+        reason: 'authenticated completed review already exists',
+        ignoredEvidence: currentAuthentication.ignored,
+      }
+    budget = openBudget({ repo, policy })
+    attemptId = randomUUID()
+    startingCost = budget.attemptStatus(attemptId).spentUsd
+    started = Date.now()
+    appendEvent(repo, issue, {
+      type: 'attempt.started',
+      attemptId,
+      entrypoint: 'review',
+      headSha: head,
+      baseSha,
+      prNumber: pr.number,
+    })
+    const cycle = cycleCount(pr, authentication.completed) + 1
     const dir = ensureDir(runDirFor(repo, `pr-${pr.number}`, stamp()))
     if ((await revParse(repoPath, policy.target.base)) !== baseSha)
       throw new Error('resolved policy base changed before review')
@@ -129,6 +192,8 @@ export async function reviewPullRequest({
       cycle,
       model: cfg.reviewerModel,
       budgetUsd: cfg.reviewerBudgetUsd,
+      budget,
+      attemptId,
       deps,
     })
     const { verdict } = evaluation
@@ -154,11 +219,37 @@ export async function reviewPullRequest({
         repoPath,
       })
     const body = verdictBody({ ...verdict, cycle, marker: gh.verdictMarker(head, cycle) })
-    const via = await github.postVerdict(repo, pr.number, {
-      event: verdict.verdict === 'approve' ? 'approve' : 'request-changes',
-      body,
-      headSha: head,
-    })
+    const action = (kind, input, perform) =>
+      runAction(
+        {
+          repo,
+          issue,
+          attemptId,
+          kind,
+          input,
+          actionId: stableActionId({ attemptId, kind, cycle }),
+        },
+        perform,
+      )
+    const publication = await action(
+      'post-verdict',
+      { prNumber: pr.number, headSha: head, evidenceDigest: evaluation.reviewDigest },
+      () =>
+        github.postVerdict(repo, pr.number, {
+          event: verdict.verdict === 'approve' ? 'approve' : 'request-changes',
+          body,
+          headSha: head,
+          evidenceDigest: evaluation.reviewDigest,
+        }),
+    )
+    const via = publication?.via || publication
+    if (publication && typeof publication === 'object')
+      recordReviewPublication({
+        reviewPath: evaluation.reviewPath,
+        publication,
+        repo,
+        prNumber: pr.number,
+      })
     const deliveryPath =
       verdict.verdict === 'approve'
         ? recordDelivery({
@@ -190,18 +281,55 @@ export async function reviewPullRequest({
       labels.approved,
       labels.failed,
     ]
-    await github.setPhaseLabel(repo, issueNumber, phase, all)
-    await github.removeLabels(repo, issueNumber, [labels.ready])
+    await action('set-phase-label', { issueNumber, phase, all }, () =>
+      github.setPhaseLabel(repo, issueNumber, phase, all),
+    )
+    await action('remove-ready-label', { issueNumber, label: labels.ready }, () =>
+      github.removeLabels(repo, issueNumber, [labels.ready]),
+    )
+    appendEvent(repo, issue, {
+      type: 'attempt.finished',
+      attemptId,
+      outcome: verdict.verdict,
+      headSha: head,
+      baseSha,
+      costUsd: budget.attemptStatus(attemptId).spentUsd - startingCost,
+      durationMs: Date.now() - started,
+      budget: budget.snapshot(),
+      evidence: { reviewPath: evaluation.reviewPath, deliveryPath },
+      failureCategory:
+        verdict.verdict === 'request-changes'
+          ? 'reviewer-rejection'
+          : verdict.verdict === 'blocked'
+            ? 'reviewer-blocked'
+            : null,
+    })
     return {
       pr: pr.number,
       issue: issueNumber,
       verdict: verdict.verdict,
       cycle,
       costUsd: verdict.costUsd,
+      budget: budget.snapshot(),
       approvalPath: evaluation.approvalPath,
+      reviewPath: evaluation.reviewPath,
+      ignoredEvidence: authentication.ignored,
       deliveryPath,
     }
   } catch (error) {
+    if (attemptId)
+      appendEvent(repo, issue, {
+        type: 'attempt.finished',
+        attemptId,
+        outcome: 'failed',
+        failureCategory: error.failureCategory || error.code || 'infrastructure-interruption',
+        headSha: head,
+        baseSha,
+        costUsd: budget.attemptStatus(attemptId).spentUsd - startingCost,
+        durationMs: Date.now() - started,
+        budget: budget.snapshot(),
+        reason: error.message,
+      })
     log.warn('review.refused', { repo, pr: pr.number, reason: error.message })
     return {
       pr: pr.number,
@@ -209,6 +337,11 @@ export async function reviewPullRequest({
       verdict: 'blocked',
       reason: error.message,
       verificationPath: error.verificationPath,
+      failureCategory: error.failureCategory,
+      budget: error.budget || budget?.snapshot(),
+      ignoredEvidence,
     }
+  } finally {
+    token?.release()
   }
 }

@@ -231,3 +231,32 @@ test('preflight refuses a config symlink outside the target before reading its b
     /config.*escapes target/i,
   )
 })
+
+test('resolved limits are immutable and invalid limits or recovery authorization fail preflight', async (t) => {
+  const { resolvePolicy } = await import('../src/policy.mjs')
+  const f = fixture(t),
+    repoPath = f.repo('budget-target')
+  const cfg = {
+    harnessRoot: f.harness,
+    runBudgetUsd: 7,
+    runTimeoutMs: 5000,
+    sessionTimeoutMs: 2000,
+  }
+  const policy = await resolvePolicy({
+    repoPath,
+    cfg,
+    authorization: { id: 'operator', recoveryWindow: 'authorized-2' },
+  })
+  assert.equal(policy.limits.runBudgetUsd, 7)
+  assert.equal(policy.limits.runTimeoutMs, 5000)
+  assert.ok(Object.isFrozen(policy.limits))
+  assert.equal(policy.authorization.recoveryWindow, 'authorized-2')
+  await assert.rejects(
+    resolvePolicy({ repoPath, cfg: { ...cfg, runBudgetUsd: -1 } }),
+    /runBudgetUsd/,
+  )
+  await assert.rejects(
+    resolvePolicy({ repoPath, cfg, authorization: { recoveryWindow: 'bad' } }),
+    /authorization ID/,
+  )
+})

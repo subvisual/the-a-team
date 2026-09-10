@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { dirname } from 'node:path'
+import { LIMIT_DEFAULTS } from './core/budget.mjs'
 import { configPath, ensureDir } from './paths.mjs'
 
 export const LABELS = {
@@ -12,15 +13,13 @@ export const LABELS = {
 }
 
 export const DEFAULTS = {
+  ...LIMIT_DEFAULTS,
   repos: [],
   pollSeconds: 30,
-  maxCycles: 3,
   concurrency: 1,
   branchPrefix: 'agent/issue-',
   executorModel: 'opus',
   reviewerModel: 'opus',
-  executorBudgetUsd: 10,
-  reviewerBudgetUsd: 5,
   labels: LABELS,
 }
 

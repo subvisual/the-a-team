@@ -1,14 +1,19 @@
-import { existsSync, statSync } from 'node:fs'
+import { existsSync, statSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { loadConfig, writeConfig, repoEntry, DEFAULTS, LABELS } from './config.mjs'
 import { clonePath } from './paths.mjs'
-import { defaultBranchLocal } from './git.mjs'
 import { resolvePolicy, readInvocationAuthorization } from './policy.mjs'
 import * as gh from './gh.mjs'
 import { log, setQuiet } from './log.mjs'
 import { runIssue } from './core/loop.mjs'
 import { createGithubAdapter, normaliseIssue } from './adapters/github.mjs'
-import { createLocalAdapter } from './adapters/local.mjs'
+import {
+  createLocalAdapter,
+  parseIssuesFile,
+  validateIssues,
+  migrateIssuesFile,
+  resolveLocalBase,
+} from './adapters/local.mjs'
 import { reviewPullRequest } from './review-pr.mjs'
 import { watch } from './watch.mjs'
 import { repoStatus, renderStatus } from './status.mjs'
@@ -18,19 +23,23 @@ const USAGE = `ateam-runner — issue to PR to independent verdict
 
   init                                     write a starter config
   run    --repo O/R --issue N              take one GitHub issue end to end
-  run    --source local --issues PATH      take issues.md end to end (no network)
+  run    --source local --issues PATH      take issues.md end to end (no remote Git/GitHub)
+  migrate-issues --issues PATH             persist stable IDs in a legacy issues.md
   review --repo O/R --pr N                 review one open PR in a fresh session
   watch  [--repo O/R ...]                  poll for ready issues and unreviewed PRs
   status [--repo O/R]                      re-derive run state from GitHub
 
 Common flags
   --path DIR              existing target clone (otherwise configured/cache path)
-  --base BRANCH           base branch (default: the repo's default branch)
+  --base BRANCH_OR_SHA    exact local base (default: the repo's default branch)
   --model NAME            executor model (default: ${DEFAULTS.executorModel})
   --reviewer-model NAME   reviewer model (default: ${DEFAULTS.reviewerModel})
   --max-cycles N          implement/review cycles before giving up (default: ${DEFAULTS.maxCycles})
   --budget USD            per-executor-session cap (default: ${DEFAULTS.executorBudgetUsd})
   --reviewer-budget USD   per-reviewer-session cap (default: ${DEFAULTS.reviewerBudgetUsd})
+  --run-budget USD        aggregate repository allowance across attempts (default: 45)
+  --run-timeout-ms N      wall time for the retained allowance window (default: 7200000)
+  --session-timeout-ms N  wall time for one process tree (default: 1200000)
   --test-cmd CMD          test command, if the repo's is not discoverable
   --branch-prefix P       branch name prefix (default: ${DEFAULTS.branchPrefix})
   --poll SECONDS          watch interval (default: ${DEFAULTS.pollSeconds})
@@ -62,6 +71,9 @@ const VALUE_FLAGS = new Set([
   'max-cycles',
   'budget',
   'reviewer-budget',
+  'run-budget',
+  'run-timeout-ms',
+  'session-timeout-ms',
   'test-cmd',
   'branch-prefix',
   'poll',
@@ -72,7 +84,7 @@ const VALUE_FLAGS = new Set([
   'authorization-file',
   'scope-path',
 ])
-const COMMANDS = new Set(['init', 'run', 'review', 'watch', 'status', 'help'])
+const COMMANDS = new Set(['init', 'run', 'review', 'watch', 'status', 'migrate-issues', 'help'])
 
 function usageError(message, code = 'invalid-arguments') {
   return Object.assign(new Error(message), { code, exitCode: 2 })
@@ -108,6 +120,9 @@ export function cfgFrom(args) {
   if (args.reviewerModel) cfg.reviewerModel = args.reviewerModel
   if (args.budget) cfg.executorBudgetUsd = Number(args.budget)
   if (args.reviewerBudget) cfg.reviewerBudgetUsd = Number(args.reviewerBudget)
+  if (args.runBudget !== undefined) cfg.runBudgetUsd = Number(args.runBudget)
+  if (args.runTimeoutMs !== undefined) cfg.runTimeoutMs = Number(args.runTimeoutMs)
+  if (args.sessionTimeoutMs !== undefined) cfg.sessionTimeoutMs = Number(args.sessionTimeoutMs)
   if (args.testCmd) cfg.testCommand = args.testCmd
   if (args.branchPrefix) cfg.branchPrefix = args.branchPrefix
   cfg.requestedPaths = args.requestedPaths
@@ -177,7 +192,7 @@ function validateCommand(command, args) {
       'unsupported-combination',
     )
   }
-  if (args.dryRun && !['init', 'run', 'review', 'watch'].includes(command))
+  if (args.dryRun && !['init', 'run', 'review', 'watch', 'migrate-issues'].includes(command))
     throw usageError(`--dry-run is not supported for ${command}`, 'unsupported-combination')
   if (args.once && command !== 'watch')
     throw usageError('--once is only supported for watch', 'unsupported-combination')
@@ -185,8 +200,16 @@ function validateCommand(command, args) {
     throw usageError('--pr and --force are only supported for review', 'unsupported-combination')
   if (args.issue && command !== 'run')
     throw usageError('--issue is only supported for run', 'unsupported-combination')
-  if (args.issues && (command !== 'run' || args.source !== 'local'))
-    throw usageError('--issues is only supported for local run', 'unsupported-combination')
+  if (args.issues && command !== 'migrate-issues' && (command !== 'run' || args.source !== 'local'))
+    throw usageError(
+      '--issues is only supported for local run or migrate-issues',
+      'unsupported-combination',
+    )
+  if (command === 'migrate-issues') {
+    if (!args.issues) throw usageError('migrate-issues needs --issues PATH')
+    if (args.repos.length)
+      throw usageError('migrate-issues does not accept --repo', 'unsupported-combination')
+  }
   if (args.source && (command !== 'run' || !['local', 'github'].includes(args.source)))
     throw usageError(
       '--source must be local or github and is only supported for run',
@@ -215,21 +238,26 @@ function validateCommand(command, args) {
     ['poll', 'poll'],
     ['budget', 'budget'],
     ['reviewerBudget', 'reviewer-budget'],
+    ['runBudget', 'run-budget'],
+    ['runTimeoutMs', 'run-timeout-ms'],
+    ['sessionTimeoutMs', 'session-timeout-ms'],
   ]) {
     if (
       args[key] !== undefined &&
       (!Number.isFinite(Number(args[key])) ||
         Number(args[key]) <= 0 ||
-        (['maxCycles', 'poll'].includes(key) && !Number.isInteger(Number(args[key]))))
+        (['maxCycles', 'poll', 'runTimeoutMs', 'sessionTimeoutMs'].includes(key) &&
+          !Number.isInteger(Number(args[key]))))
     ) {
       throw usageError(
-        `--${flag} must be a positive ${['maxCycles', 'poll'].includes(key) ? 'integer' : 'number'}`,
+        `--${flag} must be a positive ${['maxCycles', 'poll', 'runTimeoutMs', 'sessionTimeoutMs'].includes(key) ? 'integer' : 'number'}`,
       )
     }
   }
 }
 
 function statusFor(result) {
+  if (result?.migration) return result.changed ? 'success' : 'skipped'
   if (result?.dryRun) {
     if (
       result.prerequisites.length ||
@@ -260,6 +288,16 @@ function statusFor(result) {
 }
 
 async function executeCommand(command, args, cfg, labels) {
+  if (command === 'migrate-issues') {
+    const path = resolve(args.issues)
+    const migration = migrateIssuesFile(path, { dryRun: !!args.dryRun })
+    return {
+      result: { migration: true, dryRun: !!args.dryRun, path, ...migration },
+      human: args.dryRun
+        ? `Migration preview for ${path}:\n${migration.text}`
+        : `${migration.changed ? 'Migrated' : 'Already migrated'} ${path} (${migration.issues.length} issues)\n`,
+    }
+  }
   if (args.dryRun) {
     const result = await planCommand(command, args, cfg, labels)
     return { result, human: renderPlan(result) }
@@ -277,12 +315,12 @@ async function executeCommand(command, args, cfg, labels) {
     const issuesFile = resolve(args.issues)
     if (!existsSync(issuesFile) || !statSync(issuesFile).isFile())
       throw new Error(`issues file not found: ${issuesFile}`)
+    validateIssues(parseIssuesFile(readFileSync(issuesFile, 'utf8')))
     const repoPath = resolve(args.path || process.cwd())
-    const base = await defaultBranchLocal(repoPath)
-    let policy = await resolvePolicy({
+    let policy = await resolveLocalBase({
       repoPath,
       base: args.base,
-      cfg: { ...cfg, base },
+      cfg,
       authorization: cfg.authorization,
     })
     const adapter = createLocalAdapter({
@@ -290,22 +328,22 @@ async function executeCommand(command, args, cfg, labels) {
       repoPath: policy.target.root,
       base: policy.target.base,
       testCommand: policy.verification.commands.join(' && '),
+      cfg: { ...cfg, policy },
     })
     if (args.issue && !adapter.issues.some((issue) => issue.key === args.issue))
       throw usageError(`issue not found in ${issuesFile}: ${args.issue}`)
     const results = []
     for (const issue of await adapter.listCandidates()) {
       if (args.issue && issue.key !== args.issue) continue
-      // Local approval advances the adapter's base. Resolve the next immutable
-      // revision before beginning the next issue; preserve project bindings.
-      if (results.length)
-        policy = await resolvePolicy({
-          repoPath,
-          base: adapter.base,
-          cfg,
-          authorization: cfg.authorization,
-          continuationBase: adapter.base,
-        })
+      // Resume can select approved work before the first new issue. Resolve
+      // every selected immutable base while preserving the project bindings.
+      policy = await resolveLocalBase({
+        repoPath,
+        base: adapter.base,
+        cfg,
+        authorization: cfg.authorization,
+        continuationBase: adapter.base,
+      })
       results.push(await runIssue({ adapter, issue, cfg: { ...cfg, policy } }))
     }
     return {
