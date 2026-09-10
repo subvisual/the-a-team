@@ -52,7 +52,7 @@ scales or contrast.
   - Appends to `research-plan.md`'s `## Assumptions` / `## Open questions`
     (the contract's standing exception), tagged `· [design phase]` with
     confidence.
-- **Done-signal**: set `phases.design.status = "complete"` — nothing else in
+- **Done-signal**: successful transition CLI `complete` result — nothing else in
   the manifest. The orchestrator flips it to `approved` at the gate.
 - **Manifest-optional**: absent → prompt from invocation args, skip manifest
   writes, and the in-conversation review replaces the orchestrator gate.
@@ -148,8 +148,8 @@ in your report is a broken promise to the absent human.
 Commit per craft with breadcrumb messages (`docs(design-system): tokens —
 Balanced/16, brand 240° from briefing seed`, `docs(<slug>): design — screens
 & flows from wireflow, 2 palette variants`). Artifact commits stage both
-layers; never sweep artifacts into a chore commit. Manifest present: set
-**only** `phases.design.status = "complete"`.
+layers; never sweep artifacts into a chore commit. Manifest present: call
+the completion command below.
 
 ### 7. Gate report (what the tripwire reads)
 
@@ -191,5 +191,32 @@ a lint bypass. The one hard stop is a missing North Star (movement 0).
   actually mounted (URLs listed); fidelity honored.
 - Every derived call is in `## Derived calls & flags` AND
   `research-plan.md` — not just one.
-- Manifest (if present): own status `complete`, nothing else touched.
+- Manifest (if present): completion command returned success; no direct manifest assignments.
 - The gate report's blocking-flags list is complete and honest.
+
+## Deterministic completion
+
+When a feature manifest exists, the orchestrator calls `feature-cli.mjs start`
+before invoking this skill. After writing the artifacts and collecting the
+report, read `node <harness>/runner/src/feature-cli.mjs show --feature <feature-dir>`
+and call the following with that manifest revision and one stable event ID for
+this completion attempt. Reuse the same ID only to replay the identical operation
+after interruption; changed inputs require a new ID.
+
+```sh
+node <harness>/runner/src/feature-cli.mjs complete --feature <feature-dir> --expected-revision <revision> --event-id <completion-id> --input '{"phase":"design","artifacts":["design.md"],"blocking_flags":[]}'
+```
+
+Replace `blocking_flags` with the actual concrete flags from the report. Success
+is the done signal; `blocked` retains the reason and requires its resolution.
+The command validates actual stage obligations and binds artifact revisions.
+Do not edit phase status, approval, attempts, milestones, or state by hand.
+Standalone artifact work without a manifest does not create one.
+
+The completion command automatically binds `design.md`, the entire existing
+`lofi/` output tree (screens, styles, variants, assets and rendered output), and
+the actual token source selected by A-Team Config's `design system path`. When
+there is no configured target source, it binds the existing durable
+`docs/product/design-system/` tree. The gate approves those exact bytes; changing
+a screen or accepted token afterward makes design stale and blocks spec until
+revalidation. Mutable context and research-plan prose are not design bindings.

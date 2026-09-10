@@ -16,6 +16,7 @@ const KEYS = {
   'verification commands': 'verificationCommands',
   'design system path': 'designSystemPath',
   'current context': 'currentContext',
+  'context budget tokens': 'contextBudgetTokens',
   'product context': 'productContext',
   'package manager': 'packageManager',
   'github issues': 'githubIssues',
@@ -153,11 +154,12 @@ export function readProjectConfig(repoPath) {
     if (!key) throw new Error(`unsupported A-Team Config key: ${match[1]}`)
     if (Object.hasOwn(out, key)) throw new Error(`duplicate A-Team Config key: ${key}`)
     const value = match[2].replace(/^`(.*)`$/, '$1')
-    out[key] = Object.hasOwn(LIMIT_DEFAULTS, key)
-      ? Number(value)
-      : value.startsWith('[')
-        ? JSON.parse(value)
-        : value
+    out[key] =
+      Object.hasOwn(LIMIT_DEFAULTS, key) || key === 'contextBudgetTokens'
+        ? Number(value)
+        : value.startsWith('[')
+          ? JSON.parse(value)
+          : value
   }
   for (const key of Object.keys(out))
     if (!ALLOWED.has(key)) throw new Error(`unsupported A-Team Config key: ${key}`)
@@ -258,7 +260,13 @@ export async function resolvePolicy({
     productContext: merged.productContext || 'docs/product/',
     designSystemPath: merged.designSystemPath || null,
     packageManager: merged.packageManager || null,
+    contextBudgetTokens: merged.contextBudgetTokens ?? null,
   }
+  if (
+    bindings.contextBudgetTokens !== null &&
+    (!Number.isFinite(bindings.contextBudgetTokens) || bindings.contextBudgetTokens <= 0)
+  )
+    throw new Error('context budget tokens must be positive and finite')
   relativePaths(
     root,
     Object.values(bindings).filter((x, i) => i < 3 && x),

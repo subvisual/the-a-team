@@ -5,8 +5,9 @@ description: Use when driving a feature prompt to a production-ready PR through 
 
 # feature — A-Team orchestrator
 
-Drives one feature from a prompt to a production-ready PR. You are a **state
-machine on the main thread**. You do not spawn persistent role-agents; you invoke
+Drives the authorized outcome: discovery, a prototype, an implementation PR,
+or a bounded refinement of an existing product. You run the existing phase
+skills on the main thread through the deterministic transition CLI. You do not spawn persistent role-agents; you invoke
 role-specific phase skills in sequence, gating at definition, design, and pr
 (dispatched per `gate_policy`; the final pr review always blocks).
 
@@ -45,9 +46,24 @@ it directly to seed `docs/product/` before any feature exists. When you later ru
 
 ## The one rule
 
-**The manifest is the source of truth.** Every step reads `feature.json`, acts,
-then writes `feature.json` back. Never hold state only in your head — if the
-session dies, the next run must reconstruct everything from the manifest.
+**The manifest is the source of truth.** Read it with `feature-cli.mjs show`;
+all writes use the validated CLI below. Never assign state, status, approvals,
+retry counters, run limits or milestones in JSON by hand. Atomic compare-and-swap
+writes and durable event IDs make interrupted operations replayable. `show`
+checks actual artifact hashes and conservatively migrates legacy manifests;
+legacy `done`, `approved`, or provisional flags do not supply missing evidence.
+
+```sh
+node <harness>/runner/src/feature-cli.mjs show --feature <feature-dir>
+node <harness>/runner/src/feature-cli.mjs <operation> --feature <feature-dir> --expected-revision <revision> --event-id <stable-operation-id> --input '<JSON>'
+```
+
+Read the entire JSON result. `status: success` and exit 0 permit continuing;
+`blocked` includes a persisted concrete reason; `error` includes invalid input or
+a revision conflict. Reload on a conflict. Retrying an interrupted identical
+command uses its original ID and revision; changed inputs use a new ID. Never
+retry a recorded blocked event hoping for a different result. Resolve its cause,
+reload, and submit a new event. No CLI operation executes agents, Git, or releases.
 
 **Every manifest write is immediately committed**, so a hard reset or crash can
 never lose committed state. Commit messages: manifest-only changes use
@@ -129,36 +145,36 @@ the user (resume it, or pick a different slug) — never silently overwrite.
      different slug) — never silently overwrite.
    - `git -C <target> checkout -b feature/<slug> <base_branch>` (create the branch
      **before** writing artifacts, so they land on the feature branch).
-   - Create `<target>/docs/features/<slug>/` and `<target>/docs/product/`. Write
-     `feature.json` from the template with `state: "discovery"`, all phases
-     `pending`, `attempts: 0`, filling `slug`, `prompt`, `repo`, `base_branch`,
-     `branch`.
+   - Create `<target>/docs/features/<slug>/` and `<target>/docs/product/`.
+     Call `feature-cli.mjs init` at expected revision `0` with a stable init event
+     and input containing `slug`, `prompt`, `repo`, `base_branch`, `branch`, and
+     the known `run_brief` fields. The template documents the versioned schema;
+     the CLI creates the manifest and refuses to replace an existing feature.
    - `git -C <target> add docs/features/<slug> && git -C <target> commit -m "chore(<slug>): init feature manifest"`.
      (`docs/product/` is empty at this point and git cannot stage an empty
      directory — expected; never add placeholder files to the durable layer to
      force it in.)
    **Resume:**
-   - Read `<target>/docs/features/<slug>/feature.json`. Do not reset anything.
+   - Call `feature-cli.mjs show --feature <feature-dir>`. Review stale/unknown
+     evidence and outstanding provisional decisions; retain all historical records.
    - Ensure HEAD is on the feature branch: `git -C <target> checkout feature/<slug>`.
 4. Enter the phase loop.
 
 ## Phase loop
 
-Read `manifest.state`, then dispatch by the current phase's `status`. Apply these
-rules in order (they resolve every resume case unambiguously):
+Read `manifest.state` from `show`. The transition functions derive the next
+state atomically with completion/approval; there is no separate state bump.
 
-- `status == "failed"` → **terminal.** Do not re-run. Surface `last_error` and the
-  failed phase to the human and stop. Only proceed after the human fixes the cause
-  and resets the phase `status` to `pending` (and, for dev, the offending issue's
-  `status`/`attempts`).
-- `status == "approved"` → the gate already passed; advance `state` to the next
-  phase and continue. (Handles a crash between "approve" and the state bump.)
-- `status == "complete"` **and phase is gated** (`definition`/`design`) → do **not**
-  re-run; go straight to that phase's gate.
-- `status == "complete"` **and phase is ungated** → advance `state`.
-- `status == "in_progress"` → an interrupted run; re-invoke the phase skill (skills
-  are idempotent).
-- `status == "pending"` → run the phase.
+- `failed` is terminal until the cause is fixed and a deliberate `revise` command
+  records the recovery reason. Preserve completed issue receipts.
+- `stale` requires rerunning or revalidating that phase before its gate can pass.
+  `start` checks predecessor decisions and clears only its live bindings.
+- `complete` at definition/design/pr goes to that phase's gate; other completion
+  already selected the next state. `approved` retains its decision history.
+- `in_progress` resumes the idempotent phase skill. `pending` starts it.
+- `stopped` means the requested stopping point was reached. Report each of the
+  six milestones separately; it never means accepted, integrated or released.
+- `refinement_review` waits for the named reviews in the saved refinement plan.
 
 | state | action | gate (HITL) | on success → |
 |-------|--------|------|--------------|
@@ -168,7 +184,7 @@ rules in order (they resolve every resume case unambiguously):
 | `spec` | `ateam-spec` | — | `issues` |
 | `issues` | `ticket-writer` (batch decomposition) | — | `dev` |
 | `dev` | `ateam-runner` (`--source local`) | — | `pr` |
-| `pr` | integrate + open PR | ✅ final review | `done` |
+| `pr` | assemble feature branch + open PR | ✅ final review | `stopped` |
 
 `discovery` has **no orchestrator gate**. It is a 🔥 grill: the human is present
 throughout and the skill ends with its own read-back of the JTBD set. Adding a
@@ -179,16 +195,18 @@ the human has just read. Do not add one.
 
 1. (You only reach here for `status` `pending` or `in_progress` — the dispatch
    rules above handle `complete`/`approved`.)
-2. Set `phases.<phase>.status = "in_progress"`, save + commit manifest. (Do **not**
-   touch `attempts` here — `attempts` counts failure-retries only, see Failure.)
+2. Call `feature-cli.mjs start` with `{"phase":"<phase>","task":{...}}`, then
+   commit the resulting manifest. The command selects actual current context
+   before dispatch; bootstrap/revalidate a missing or stale index through
+   project-context first. A start does not increment retries.
 3. **Invoke the reserved skill via the Skill tool by name** (`ateam-discovery` /
    `ateam-definition` / `ateam-design` / `ateam-spec`). Pass, in the invocation
    args, **three** absolute paths — the feature directory, the product
    directory, and the harness `intake/` directory (this skill lives in the
    harness repo; `intake/` sits at its root). The skill reads prior artifacts +
    the manifest and writes its output per `CONTRACT.md`.
-4. On return, re-read the manifest. The skill should have set its own
-   `status = "complete"` and written its artifact.
+4. On return, call `show`. The skill should have called its `complete` command
+   successfully, recording its artifacts, stage obligations and blocking flags.
    - Artifact missing OR status not `complete` → treat as **failure** (see below).
    - **Exception — escalation (any phase).** If the skill halted for want of a
      human, it leaves `status = "in_progress"` and says what it is waiting on
@@ -211,24 +229,20 @@ during discovery's independence handoff (never by an agent), default `"block"`:
 
 - **`block`** (default) — the safety valve. Present the artifact inline and
   wait for approve / revise / abort (below).
-- **`notify-and-continue`** — do not wait: set
-  `phases.<phase>.status = "approved"` with `"provisional": true`, emit a
-  checkpoint summary (what was produced, the riskiest calls, where assumptions
-  landed in `research-plan.md`), commit, continue. The returning human reviews
-  provisional phases at the next blocking moment (or on `resume`): accepting
-  clears the flag; requesting changes triggers the revise flow below, and
-  downstream phases re-run from there.
-- **`run-to-pr`** — lunch mode: same provisional mechanics at every gate; the
-  **final `pr` review always blocks** regardless of policy.
+- **`notify-and-continue`** and **`run-to-pr`** — call `approve` with
+  `{"phase":"<phase>","provisional":true}` only when `configure` previously
+  stored an explicit human authorization naming that gate. The provisional
+  record retains its authorization and exact reviewed artifact hashes. Emit
+  the checkpoint and carry this decision forward for the returning human.
+  The final PR gate always requires an explicit human decision.
 
 **Tripwire — bad signal closes the valve.** A gate may pass provisionally
 **only when the phase's report lists no blocking flags** (per CONTRACT.md:
 unlisted-job signals, `TBD`s inside Must scope, failed self-checks,
-qualitative criteria that need a human run). When you process a phase's
-return, copy its blocking-flags list into `phases.<phase>.blocking_flags`
-(empty list when none) before dispatching the gate — the gate evaluates the
-manifest, not the ephemeral report, so a crash-resumed run at
-`status == "complete"` still trips correctly. A tripped
+qualitative criteria whose human run is required at this stage). Pass the actual blocking-flags list in the phase's `complete` command
+(empty when none). The CLI validates actual `acceptance.json`, its immutable
+history and current artifact snapshots at the claimed stage. Unresolved current
+obligations block with their IDs/reasons. Future obligations remain pending. A tripped
 gate **blocks and waits regardless of policy**, stating exactly what tripped
 it. The human's chosen policy governs the happy path; it never overrides bad
 signal.
@@ -248,17 +262,27 @@ against the jobs they trace to.
 
 Blocking-gate responses:
 
-- **approve** → set `phases.<phase>.status = "approved"`, advance `state`, save +
-  commit, continue.
-- **revise** → re-invoke the phase skill with the human's notes appended to its
-  args. Loop the gate. Revisions **do not** touch `attempts` (they are not failures).
-  Revising an already-passed (provisional) phase additionally resets every
-  downstream phase to `pending` — they re-derive from the revised artifact.
-- **abort** → set `state = "aborted"`, save + commit, stop. Leave all artifacts. No cleanup.
-  **Never delete an aborted feature branch**: the durable `docs/product/`
-  updates (jobs, context, plans) live on it until merged — deleting the branch
-  deletes North Star history (accepted trade-off of branching before writes;
-  decision 2026-07-24).
+- **approve** → call `approve` with `phase` and `decision: {kind:"human",
+  actor:"<human>", authorized:true, reference:"<actual decision reference>"}`.
+  This approves that artifact/test plan; it does not record product acceptance.
+- **revise** → call `revise` with `phase` and the human's concrete `reason`,
+  then start and re-invoke the skill with those notes. Matching artifact bindings
+  and dependent phases become stale; unrelated milestone receipts stay current.
+  Decision/event history is retained, and revision does not count as failure.
+- **abort** → call `abort` with the concrete reason, commit and stop. Leave all
+  artifacts and branches; no cleanup or branch deletion follows an abort.
+
+Definition approval binds the PRD and complete briefs tree, including page and
+wireflow boards and rendered verification artifacts. Design approval binds its
+summary, existing lofi tree and configured accepted token source (or durable
+design-system fallback); naming only design.md cannot omit these reviewed outputs.
+Spec owns and binds spec.md, with its design/definition dependencies retained.
+
+Definition approval authorizes the definition and its test plan. A prototype
+may be created while its planned human study remains pending. Design-stage
+checks execute only what is available and due at design; later human acceptance
+uses its own milestone and evidence. No blanket human-study flag blocks earlier
+work whose required stage has not arrived.
 
 Gates block within the session. Because the manifest persists (and status is
 checked on resume), a killed session resumes at the same gate.
@@ -274,7 +298,9 @@ Two steps, one phase:
 2. **GitHub projection (conditional)** — mirror the decomposition into the
    target's GitHub repo. Skipped by default; see the subsection below.
 
-When both steps are done, set status `complete`, commit, advance to `dev`.
+Call `start` for issues before decomposition. When both steps are done, call
+`complete` with `{"phase":"issues","artifacts":["issues.md"],"blocking_flags":[]}`.
+Only its successful actual-file validation permits advancing to dev. Commit.
 
 **Path mapping (step 1):** the input is `docs/features/<slug>/prd.md` (+
 `spec.md`) and the output is `docs/features/<slug>/issues.md`. Pass both
@@ -406,9 +432,11 @@ deliberate, not a limitation to work around.
   2 means blocked/invalid usage, and 1 means failure. A parsed JSON document alone
   is not completion. Streaming watch is unsupported with JSON or dry-run; use
   `--once` for those modes.
-- The orchestrator **owns** `phases.dev.issues` (`{ "<key>": {status, attempts} }`)
-  and records each outcome from the runner's `--json` report. The runner writes
-  no manifest.
+- The runner writes no manifest. Call `start` for dev before dispatch. Record
+  each returned outcome through `record-issue` with `issueId`, `status`
+  (`complete`, `failed`, `needs-detail`), and `evidence` (`reference`, committed
+  `revision`, local receipt `artifacts`). Include the resolved `execution_policy`.
+  `complete` requires the verified runner approval receipt described below.
 - Record the returned approval/evidence reference with each approved issue and
   the resolved policy digest in `execution_policy`. Approval must bind valid
   process results, independent review and supervisor checks to committed head.
@@ -422,27 +450,34 @@ deliberate, not a limitation to work around.
   early stop when the reviewer's objections stop converging) are part of that
   single attempt — do not count them separately.
 - On failure, re-invoke scoped to the failed issue with `--issue <key>`, feeding
-  the error back. Never re-run an issue the report marks `approved`. Bump only
-  the failed issue's `attempts`.
+  the error back. Never re-run an issue the report marks `approved`. Only
+  `record-issue` increments that failed issue's attempts.
 
 **A `needs-detail` outcome is not a failure to retry.** It means the issue
 carried no checkable acceptance criteria, so no reviewer could verify it and the
 runner refused rather than guessing at requirements. Fix the issue text — that
 is a decomposition gap to surface at the next gate, not an implementation error.
 
-**Closing the projected GitHub issue** (only when step 3 actually ran): as each
-issue reaches `complete`, close its mapped GitHub issue, referencing the branch.
-Read the number from `issues.md` — never re-derive it by searching GitHub by
-title. If the number is absent, the projection was skipped; do nothing and say
-so once in the phase report rather than per issue.
+**Projected GitHub issue completion:** keep projected issues open while work
+exists only on an issue/feature branch or an open PR. After observing integration
+into the intended target branch, an authorized projection update may close the
+exact mapped issue with its merge receipt. Read the number from `issues.md`;
+missing mappings mean projection was skipped. Local runner approval and PR
+creation cannot justify closing issues or claiming target integration.
 
 Retry a failed issue up to **2×** (per-issue `attempts`); never skip a failed
-issue silently. Issue still failing after 2 retries → escalate: set that issue's
-`status = "failed"` **and** `phases.dev.status = "failed"`, set `last_error`, save +
-commit, halt (see Failure). Completed issues' branches are **preserved** (not
+issue silently. Issue still failing after 2 retries → record its failed issue outcome and call
+`fail` for dev with the concrete reason, commit, and halt (see Failure). Completed issues' branches are **preserved** (not
 discarded) for the human to integrate after resolving the failure.
 
-### `pr` phase — serialized integration
+After all scoped issues have current runner approval, call dev `complete` with
+its actual code/receipt artifact paths, then record `implementation` separately
+with its revision-bound evidence. Completion never infers any other milestone.
+
+### `pr` phase — serialized branch assembly
+
+Call `start` for pr. This assembles local feature work and does not authorize
+merging into the intended target or deploying.
 
 1. Merge completed+reviewed issues into `feature/<slug>` **one at a time, in
    dependency order** (dependencies before dependents), with plain
@@ -489,19 +524,26 @@ discarded) for the human to integrate after resolving the failure.
    `design.md` + the issue list — and link `research-plan.md` as the run's
    honest disclosure. If the GitHub projection ran, reference the milestone;
    if it was **skipped**, say so and why, so nobody assumes issues exist.
-6. Present the PR link for final human review. Set `state = "done"`, save + commit.
+6. Save a local PR receipt containing its URL and reviewed revision. Call pr
+   `complete` with the report and receipt paths, then present the PR for its
+   blocking `approve` gate. The requested PR stopping point becomes `stopped`
+   after approval. Record `verification` with actual combined-revision results.
+   PR creation or approval records no target integration, release, human
+   acceptance or product validation. No automatic merge or deployment follows.
 
 ## Failure handling
 
 A phase "fails" when its skill errors, produces no artifact, or leaves an
 incorrect status. `attempts` counts **failure-retries only** (starts at 0).
 
-- On failure: if `phases.<phase>.attempts >= 2` → escalate (below). Otherwise bump
-  `phases.<phase>.attempts`, save, and re-invoke feeding the error back. (Dev phase:
-  same rule at **issue granularity** on `phases.dev.issues.<id>.attempts`.)
-- Escalate: set the failed unit's `status = "failed"`,
-  `manifest.last_error = "<what/why>"`, save + commit, **stop and surface to the
-  human**. Do not proceed. Do not silent-skip.
+- On a failed phase invocation, call `fail` with `phase` and concrete `reason`;
+  this persists the failed state and increments its failure counter. Under the
+  existing two-retry allowance, record a `revise` reason and restart the phase
+  after fixing the cause. At two retries, stop and surface the error.
+- Dev retries are counted only by failed `record-issue` results. Never change
+  counters by hand or count the runner's internal review cycles twice.
+- A blocked stage obligation or missing human answer is not an execution
+  failure. Preserve the concrete reason and resume after its resolution.
 - **An environment-killed subagent is not a phase failure.** If a subagent dies
   on an infrastructure error (session limit, API outage) rather than failing
   the work itself: verify its workspace is clean, resume or re-dispatch it, and
@@ -547,18 +589,40 @@ If the target `CLAUDE.md` lacks `## A-Team Config`:
 
 ## Manifest
 
-See `manifest-template.json` in this skill directory. Status vocabulary:
-`pending → in_progress → complete → approved | failed | aborted`.
-Phase skills only ever set `complete`. You (the orchestrator) own `approved`,
-`failed` escalation, `aborted`, all `state` transitions, `attempts`, and each
-gated phase's `blocking_flags` (copied from its report at return-processing;
-like `"provisional"`, it is written when relevant, not templated).
+See `manifest-template.json` for schema version 2. The CLI owns validation,
+revision increments, event identities, phase statuses, approval bindings,
+selective staleness, retries and all state transitions. Discovery passes the
+human's existing instructions to `configure`; changes to scope/policy require
+a concrete existing authorization reference, never invented approval.
 
-`gate_policy` and `run_brief` are written **once by `ateam-discovery`** from
-the human's answers at the independence handoff (default `gate_policy:
-"block"` when unset). You read them — gates dispatch on `gate_policy`; phases
-may read `run_brief` (design reads fidelity, dev reads purpose). Never change
-either without an explicit human instruction in the conversation.
+The six independent keys under `milestones` are `implementation`, `verification`,
+`human_acceptance`, `integration`, `release`, and `product_validation`. Record
+each through `record-milestone` with `milestone` and `evidence` containing
+`reference`, `revision`, and local `artifacts`. Human acceptance additionally
+requires a human `decision`. Integration requires `merged:true` and `target`
+equal to the manifest's intended `base_branch`; an issue branch or open PR is
+not that evidence. A milestone records one observed fact; outstanding obligations
+remain visible and other milestones do not advance automatically.
+
+### Refinement from current context
+
+For a bounded existing-product delta, reuse the existing feature artifacts and
+canonical acceptance ledger. Call `configure-refinement` with the structured
+`change` described in `runner/REFINEMENT.md`. The command runs the actual
+`planRefinement` validator, retains context/source revisions, and invalidates
+only affected bindings. A ready plan permits scoped dev without marking earlier
+phases approved. Required discovery reopens discovery; security/domain/design/
+architecture/migration reviews block implementation until revision-bound receipts
+are supplied and the route is recomputed. Every dev start revalidates the route.
+After implementation and verification have their own current milestone records,
+call `finish-refinement` with `completion` in the schema documented by
+`runner/REFINEMENT.md`. The command reruns scope/current-head checks and the
+existing supervisor approval validator against actual stored evidence; a supplied
+`passed` flag cannot finish the run. Only a freshly verified result is recorded.
+Finishing this requested delta does not record human acceptance, integration,
+release or product validation. No replacement orchestrator, permanent agent,
+automatic merge or deployment is introduced. Keep review/verification results
+linked to the change. Explicit start `task.paths` are target-relative.
 
 ## Concurrency
 

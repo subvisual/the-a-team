@@ -31,7 +31,7 @@ an entry in the phase report — never an invented answer, never a stall.
 - **Writes**: `spec.md` in the feature directory — nothing else, ever. Plus
   the standing exception: appends to `research-plan.md`'s `## Assumptions` /
   `## Open questions`, tagged `· [spec phase]` with confidence.
-- **Done-signal**: set `phases.spec.status = "complete"`. No gate; the
+- **Done-signal**: successful transition CLI `complete` result. No gate; the
   orchestrator advances automatically.
 - **Manifest-optional**: absent → inputs from invocation args, skip manifest
   writes. Same output either way.
@@ -89,6 +89,22 @@ Closing sections:
   resolutions: everything the mapping could not settle, mirrored into the
   phase report.
 
+## Preserve acceptance obligations
+
+Read `acceptance.json` with the PRD. The canonical schema is defined in
+`../prd-writer/SKILL.md` under **Acceptance obligation ledger**. Include one
+`acceptance-obligations` fenced JSON array in `spec.md`, copying every canonical
+obligation definition with its `requirementId` and `requirementVersion` exactly.
+Carry product, design, and engineering obligations through the spec, including
+human studies and rendered reviews that development cannot complete. Keep
+performance benchmark workload, units, threshold, method, scope, and version.
+
+The spec describes implementation detail without weakening the source criterion.
+Do not change IDs, requirement versions, acceptance stages, owners, or benchmark
+values while decomposing. A needed change is a visible definition gap routed to
+prd-writer for an authorized versioned decision; then refresh the snapshot. The
+spec writes its own snapshot only, never the canonical ledger or evidence.
+
 ## Workflow
 
 1. **Ground**: read `design.md` (screens, chosen variant, derived calls),
@@ -107,7 +123,7 @@ Closing sections:
    with confidence (the applied default, any conservative state/interaction
    call).
 6. **Commit** (`docs(<slug>): spec — N screens, M components, K to install`)
-   and set **only** `phases.spec.status = "complete"` when a manifest exists.
+   and call the completion command below when a manifest exists.
 7. **Phase report**: produced · library resolution and why · flags
    (`custom:` components, token gaps, TBD resolutions, states inherited from
    a TBD-draft) — distinct list, honest; the orchestrator's tripwire reads
@@ -134,6 +150,8 @@ without any token vocabulary would be prose, not a contract.
 ## Self-check before returning
 
 - Every screen in `design.md`'s `## Screens & flows` has a spec section.
+- The spec snapshot retains all canonical acceptance obligations without changed
+  methods, stages, owners, or benchmark definitions; unresolved work stays visible.
 - Every component resolves to a library name, a declared composite, or a
   flagged `custom:` — nothing unresolved and unflagged.
 - All four states present (or explicitly `n/a`-with-reason) per component.
@@ -141,5 +159,24 @@ without any token vocabulary would be prose, not a contract.
   literals — hits are either token names or defects; fix or flag.
 - `## Components to install` matches the union of shadcn resolutions.
 - `[spec phase]` assumptions landed in research-plan.md.
-- Manifest (if present): own status `complete`, nothing else touched.
+- Manifest (if present): completion command returned success; no direct manifest assignments.
 - The phase report's flag list matches `## Design-system gaps` exactly.
+
+## Deterministic completion
+
+When a feature manifest exists, the orchestrator calls `feature-cli.mjs start`
+before invoking this skill. After writing the artifacts and collecting the
+report, read `node <harness>/runner/src/feature-cli.mjs show --feature <feature-dir>`
+and call the following with that manifest revision and one stable event ID for
+this completion attempt. Reuse the same ID only to replay the identical operation
+after interruption; changed inputs require a new ID.
+
+```sh
+node <harness>/runner/src/feature-cli.mjs complete --feature <feature-dir> --expected-revision <revision> --event-id <completion-id> --input '{"phase":"spec","artifacts":["spec.md"],"blocking_flags":[]}'
+```
+
+Replace `blocking_flags` with the actual concrete flags from the report. Success
+is the done signal; `blocked` retains the reason and requires its resolution.
+The command validates actual stage obligations and binds artifact revisions.
+Do not edit phase status, approval, attempts, milestones, or state by hand.
+Standalone artifact work without a manifest does not create one.

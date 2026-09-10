@@ -144,3 +144,12 @@ Rules that bind every writer of this file:
   *settled* briefing facts; uncertainty belongs in `research-plan.md` with a
   confidence level, and machine-readable config in the target's
   `## A-Team Config`. A fact restated in two files will disagree with itself.
+
+
+## Machine-readable current authority
+
+Add exactly one fenced `ateam-context` JSON index to the configured current-context
+file. Follow [the versioned schema](../../../../runner/CONTEXT.md). The surrounding
+narrative, original evidence and previous source history remain intact. This is an
+index of existing product/design/engineering authorities, not a second set of
+requirements. Current observations and accepted intent must remain distinguishable.

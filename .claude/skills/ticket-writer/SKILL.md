@@ -42,6 +42,46 @@ independent reviewer downstream would have nothing to judge the diff against. An
 issue that reaches the dev phase without them costs a round trip and surfaces as
 a decomposition gap at the next gate.
 
+## Acceptance coverage is a required issues-phase gate
+
+Read `acceptance.json` before decomposition. Its canonical schema and revision
+rules are in `../prd-writer/SKILL.md` under **Acceptance obligation ledger**.
+`**Requirements:** R-...` metadata links a ticket to requirements; it does not
+prove that all their obligations are covered or accepted.
+
+After the ticket sections, add a separate top-level `# Acceptance coverage`
+section containing exactly one `acceptance-obligations` fenced JSON array. Carry
+every canonical obligation definition exactly, with `requirementId` and
+`requirementVersion`, and add one explicit `disposition`:
+
+- `{ "kind": "ticket", "ticketId": "ISS-..." }` maps implementable or validation
+  work to a real parsed ticket whose `**Requirements:**` includes that requirement.
+- `{ "kind": "outstanding" }` retains work outside the code ticket batch. Its
+  pending/blocked/deferred status, accountable owner, evidence, required stage,
+  and any authorized deferral remain visible in the canonical ledger.
+
+Example: a requirement needs automated behavior, a rendered review, and a
+comparative human study. Code-only tickets may cover the automated obligation;
+the other two must survive as explicit outstanding entries. Do not turn them
+into code checks, mark the requirement accepted, or invent a study/owner.
+A later-stage obligation remains pending until its own evidence or authorized
+deferral is recorded. Deferrals require actor, explicit authorization reference,
+rationale, consequence, and next decision stage; the writer cannot grant them.
+
+From the A-Team checkout, run the actual read-only gate before reporting the
+issues phase complete:
+
+```sh
+node runner/src/obligations-cli.mjs issues --feature /absolute/target/docs/features/<slug>
+```
+
+Exit `2` blocks advancement: repair every missing/changed obligation field,
+unknown ticket mapping, invalid deferral, or version/history error. Exit `0`
+permits the issues stage only. Return the JSON report's `pending`, `blocked`,
+`deferred`, `unresolvedOwners`, and requirement `accepted` values in the handoff.
+Automated tickets passing later still do not certify rendered or human acceptance.
+The ordinary ticket parser and Gherkin gate remain mandatory and unchanged.
+
 ## Modes
 
 - **Mode 1 — single ticket**: one concrete request in, one
@@ -110,7 +150,8 @@ a decomposition gap at the next gate.
    copy them verbatim (two levels, no duplication). The finished block must
    drop into an `## Acceptance Criteria` / `### Acceptance criteria` section
    without editing.
-7. **Quality pass, all modes**: every criterion specific, observable,
+7. **Quality pass, all modes**: in pipeline batch mode, run the acceptance
+   coverage gate above and report its outstanding obligations. Every criterion specific, observable,
    testable — strip "fast", "properly", "works correctly" for observable
    behavior. Each ticket agent-ready: someone (or something) with zero
    conversation context could pick it up and start.

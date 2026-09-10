@@ -37,7 +37,7 @@ the human's answers, not on eager loading.
   — on evidence-heavy runs — `research/<YYYY-MM-DD>-<slug>.md`. Plus, manifest
   present: `gate_policy` + `run_brief` (the one write beyond your own phase
   status).
-- **Done-signal**: `phases.discovery.status = "complete"`. No orchestrator
+- **Done-signal**: successful transition CLI `complete` result. No orchestrator
   gate — your read-back is the gate.
 - **Manifest-optional**: absent → prompt from args, skip all manifest writes.
   Standalone is never a weaker-review path.
@@ -52,12 +52,10 @@ say "this doesn't make sense" or "this should change," with reasons. Skip when
 the prompt already carries a clear problem statement. Cap it: a few exchanges,
 not a session.
 
-**Scope guardrail (board):** the A-Team is for **ambitious 0→1 work** — not
-small tickets or vague chores. If the prompt is ticket-sized (one concrete
-change, no new user-facing capability, definable in a single work item), say
-so plainly and route out — `ticket-writer` or the building skills — instead of
-running the pipeline. Minting durable jobs for a chore pollutes the North
-Star.
+**Scope guardrail:** first consult current context. A bounded change to an
+existing product uses the validated refinement route in `/feature`; reuse its
+existing jobs and accepted artifacts. Reopen discovery only when the change
+introduces a new job, audience, or load-bearing assumption.
 
 ### 2. Run brief (alongside the challenge — but never skipped with it)
 
@@ -66,7 +64,7 @@ Capture how the human wants the A-Team to run. **The questions live in
 here. This movement owns only how to conduct them.
 
 **Runs even when movement 1 is skipped.** The challenge beat is skippable; the
-run brief is not — `run_brief` is a required manifest write. A skipped
+run brief is not — `run_brief` is required transition input. A skipped
 challenge means going straight to the run brief, never past it.
 
 **Same grill discipline as everything else: one question at a time, each with
@@ -275,8 +273,9 @@ Then write everything:
 `context.md`, `jtbd/` files (active + parked), the ADRs, the plans, any
 `research/` run.
 Durable rules bind every write: ids forever, supersede never delete, `input/`
-verbatim staging only. Manifest present: write `gate_policy` + `run_brief`,
-set `phases.discovery.status = "complete"`. Commit with messages naming what
+verbatim staging only. Manifest present: call `feature-cli.mjs configure` with
+the captured run brief, gate policy and existing human authorization; then call
+the completion command below. Commit with messages naming what
 changed and why (`docs(jtbd): 01–02 minted, 03 parked — reporting is a
 different job`).
 
@@ -334,5 +333,56 @@ grants *you* nothing here. If you are the one without an answer, you escalate.
   fact is restated across `context.md` / `research-plan.md` / `A-Team Config`
   — nor **within** `context.md` (a ledger Know that duplicates a
   `## Technical context` or `## Design context` entry is the same bug).
-- Manifest (if present): `gate_policy` + `run_brief` written, own status
-  `complete`, nothing else touched.
+- Manifest (if present): configure and completion commands returned success;
+  the authorization reference records what the human actually requested.
+
+
+## Current context before discovery
+
+Resolve the configured current-context entrypoint with
+`node <harness>/runner/src/context-cli.mjs select --root <target> --task '<task JSON>'`.
+For first bootstrap or legacy context, invoke project-context to add/revalidate
+its current index without dropping historical evidence. Surface stale discovery
+claims that conflict with current implementation or commands; code does not
+rewrite product intent. Subsequent tasks select relevant evidence and global
+invariants instead of rereading every raw input batch. Record new evidence through
+its owning skill and refresh only affected facts after integration.
+
+## Deterministic completion
+
+When a feature manifest exists, the orchestrator calls `feature-cli.mjs start`
+before invoking this skill. After writing the artifacts and collecting the
+report, read `node <harness>/runner/src/feature-cli.mjs show --feature <feature-dir>`
+and call the following with that manifest revision and one stable event ID for
+this completion attempt. Reuse the same ID only to replay the identical operation
+after interruption; changed inputs require a new ID.
+
+```sh
+node <harness>/runner/src/feature-cli.mjs complete --feature <feature-dir> --expected-revision <revision> --event-id <completion-id> --input '{"phase":"discovery","artifacts":["../../product/jtbd"],"blocking_flags":[]}'
+```
+
+Replace `blocking_flags` with the actual concrete flags from the report. Success
+is the done signal; `blocked` retains the reason and requires its resolution.
+The command validates actual stage obligations and binds artifact revisions.
+Do not edit phase status, approval, attempts, milestones, or state by hand.
+Standalone artifact work without a manifest does not create one.
+
+The configured run brief includes `mode` (`discovery-only`, `prototype`,
+`implementation-pr`, or `refinement`), `outcome`, `assumptions`, `deliverables`,
+`required_verification`, `limits`, and `stopping_point` alongside the existing
+purpose/fidelity/timebox fields. Record the existing request rather than inventing
+answers. Discovery-only stops at discovery; a coded prototype defaults to dev (design may be the explicit lofi stop); a PR
+run stops after the PR gate. Required future studies remain pending.
+
+Use `feature-cli.mjs configure --feature <feature-dir> --expected-revision
+<revision> --event-id <configuration-id> --input '<configuration JSON>'`. The
+JSON contains `run_brief`, `gate_policy`, and `authorization`: `{ "kind": "human",
+"actor": "<requesting human>", "authorized": true, "reference": "<actual request
+reference>", "scope": ["definition", "design"] }`. Scope names only the gates
+the human authorized provisionally. Missing authorization keeps the block default.
+
+The discovery binding covers its durable JTBD output. List context, ADRs and
+plans in the phase report, but do not bind evolving current-context summaries or
+appendable research plans as immutable discovery outputs. Later context refresh
+and assumption relay must not reopen unchanged jobs. Changed jobs still stale
+downstream gates; current-context selection independently detects stale facts.
