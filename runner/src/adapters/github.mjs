@@ -5,7 +5,11 @@ import { verdictBody } from '../core/review.mjs'
 import { log } from '../log.mjs'
 
 export const PHASE_LABELS = (labels) => [
-  labels.running, labels.needsDetail, labels.changesRequested, labels.approved, labels.failed,
+  labels.running,
+  labels.needsDetail,
+  labels.changesRequested,
+  labels.approved,
+  labels.failed,
 ]
 
 export const LABEL_DEFINITIONS = (labels) => [
@@ -40,11 +44,15 @@ export function createGithubAdapter({ repo, repoPath, base, labels, testCommand 
 
     async listCandidates() {
       const raw = await gh.listIssues(repo, { label: labels.ready })
-      return raw
-        .map(normaliseIssue)
-        // A phase label means the runner already reached a terminal state here.
-        .filter((i) => !i.labels.some((l) => l !== labels.ready && PHASE_LABELS(labels).includes(l)))
-        .sort((a, b) => a.number - b.number)
+      return (
+        raw
+          .map(normaliseIssue)
+          // A phase label means the runner already reached a terminal state here.
+          .filter(
+            (i) => !i.labels.some((l) => l !== labels.ready && PHASE_LABELS(labels).includes(l)),
+          )
+          .sort((a, b) => a.number - b.number)
+      )
     },
 
     async openBlockers(issue) {
@@ -59,22 +67,26 @@ export function createGithubAdapter({ repo, repoPath, base, labels, testCommand 
     async onNeedsDetail(issue, reason) {
       await gh.setPhaseLabel(repo, issue.number, labels.needsDetail, PHASE_LABELS(labels))
       await gh.removeLabels(repo, issue.number, [labels.ready])
-      await gh.commentIssue(repo, issue.number, [
-        '## Not picked up — no checkable acceptance criteria',
-        '',
-        reason,
-        '',
-        'The runner refuses issues it cannot verify: an independent reviewer has to be able to check the diff',
-        'against a concrete list, and prose does not give it one. Add a section like:',
-        '',
-        '```markdown',
-        '## Acceptance criteria',
-        '',
-        '- [ ] Given <state>, when <action>, then <observable outcome>',
-        '```',
-        '',
-        `Then re-apply \`${labels.ready}\`.`,
-      ].join('\n'))
+      await gh.commentIssue(
+        repo,
+        issue.number,
+        [
+          '## Not picked up — no checkable acceptance criteria',
+          '',
+          reason,
+          '',
+          'The runner refuses issues it cannot verify: an independent reviewer has to be able to check the diff',
+          'against a concrete list, and prose does not give it one. Add a section like:',
+          '',
+          '```markdown',
+          '## Acceptance criteria',
+          '',
+          '- [ ] Given <state>, when <action>, then <observable outcome>',
+          '```',
+          '',
+          `Then re-apply \`${labels.ready}\`.`,
+        ].join('\n'),
+      )
     },
 
     async onClaimed(issue, { branch }) {
@@ -83,7 +95,7 @@ export function createGithubAdapter({ repo, repoPath, base, labels, testCommand 
     },
 
     async onImplemented(issue, { branch, worktree, prNumber, summary }) {
-      await push(worktree, branch)
+      await push(repoPath, branch)
       if (prNumber) return { prNumber }
       const body = [
         `Closes #${issue.number}`,
@@ -106,17 +118,32 @@ export function createGithubAdapter({ repo, repoPath, base, labels, testCommand 
       return { prNumber: pr.number, prUrl: pr.url }
     },
 
+    async currentApprovalInputs(issue, ctx) {
+      if (!ctx.prNumber) throw new Error('approval requires a published PR identity')
+      const latestIssue = normaliseIssue(await gh.viewIssue(repo, issue.number))
+      const latestPR = await gh.viewPR(repo, ctx.prNumber)
+      if (latestPR.baseRefName !== base || latestPR.headRefName !== ctx.branch)
+        throw new Error('PR branch or base changed before approval')
+      return { issue: latestIssue, head: latestPR.headRefOid, baseSha: latestPR.baseRefOid }
+    },
+
     async onVerdict(issue, ctx, verdict) {
       if (!ctx.prNumber) return
-      const body = verdictBody({ ...verdict, cycle: ctx.cycle, marker: gh.verdictMarker(ctx.head, ctx.cycle) })
+      const body = verdictBody({
+        ...verdict,
+        cycle: ctx.cycle,
+        marker: gh.verdictMarker(ctx.head, ctx.cycle),
+      })
       const via = await gh.postVerdict(repo, ctx.prNumber, {
         event: verdict.verdict === 'approve' ? 'approve' : 'request-changes',
         body,
+        headSha: ctx.head,
       })
       log.info('verdict.posted', { repo, pr: ctx.prNumber, via, verdict: verdict.verdict })
       if (verdict.verdict !== 'approve') {
         await gh.setPhaseLabel(repo, issue.number, labels.changesRequested, PHASE_LABELS(labels))
       }
+      return via
     },
 
     async onApproved(issue) {
@@ -128,14 +155,18 @@ export function createGithubAdapter({ repo, repoPath, base, labels, testCommand 
       await gh.setPhaseLabel(repo, issue.number, labels.failed, PHASE_LABELS(labels))
       await gh.removeLabels(repo, issue.number, [labels.ready])
       const where = ctx?.prUrl ? `\n\nPartial work: ${ctx.prUrl}` : ''
-      await gh.commentIssue(repo, issue.number, [
-        '## Runner gave up',
-        '',
-        reason,
-        where,
-        '',
-        `Nothing was merged and nothing was silently skipped. Remove \`${labels.failed}\` and re-apply \`${labels.ready}\` to retry.`,
-      ].join('\n'))
+      await gh.commentIssue(
+        repo,
+        issue.number,
+        [
+          '## Runner gave up',
+          '',
+          reason,
+          where,
+          '',
+          `Nothing was merged and nothing was silently skipped. Remove \`${labels.failed}\` and re-apply \`${labels.ready}\` to retry.`,
+        ].join('\n'),
+      )
     },
 
     async ensureLabels() {

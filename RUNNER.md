@@ -21,11 +21,15 @@ the issue; a human owns the merge.
 ## Use
 
 ```
-cd runner && npm test               # 49 tests, no network
+cd runner && npm test               # synthetic agents/GitHub; loopback proxy
+npm run test:boundary               # real macOS process isolation
 node bin/ateam-runner.mjs --help
 ```
 
-Requires Node 20+ and an authenticated `gh`. Zero npm dependencies.
+Requires Node 20+, Git and Claude Code. Execution requires the tested macOS
+Seatbelt backend; GitHub commands also require an authenticated supervisor `gh`.
+Zero npm dependencies. Follow [execution setup](runner/EXECUTION.md) before use.
+Prepare an existing target clone and pass `--path` (or configure its path).
 
 ```
 ateam-runner init                              # write ~/.ateam-runner/config.json
@@ -37,6 +41,9 @@ ateam-runner status --repo org/foo             # state, re-derived from GitHub
 
 Label an issue `agent:ready` and the daemon takes it. `--once` runs a single
 watch tick; `--dry-run` lists what would run and changes nothing.
+`watch --json` and `watch --dry-run` require `--once`. Every finite `--json`
+command emits one versioned envelope; logs go to stderr. See the
+[CLI contract](runner/CLI.md) for result shapes, migration and exit codes.
 
 ## Shape
 
@@ -65,7 +72,7 @@ Callers:
 
 ```
 dev phase:   ateam-runner run   --source local  --issues docs/features/<slug>/issues.md
-daemon:      ateam-runner watch --source github --repo org/foo
+daemon:      ateam-runner watch --repo org/foo --path /existing/clone
 ```
 
 `PLAN.md`'s PR strategy (one `feature/<slug>` branch, serialized integration, one
@@ -90,11 +97,11 @@ PR) stays orchestrator-owned and untouched.
 | 13 | Stop on two consecutive **disjoint** objection sets | The oscillation signature, caught without asking the reviewer to self-classify its own objections |
 | 14 | Never auto-merge | Approve = verdict + `agent:approved`. A human merges |
 | 14b | Verdicts land as a **marked PR comment**, with a real review attempted first | GitHub refuses approve / request-changes on your own PR, and the runner uses the operator's own auth. A hidden marker (`sha`, `cycle`) makes both carriers equivalent to state derivation |
-| 15 | GitHub is the state; local dir holds only the disposable | A laptop daemon is killed constantly; crash-resumption must be free |
+| 15 | GitHub carries workflow state; local immutable records carry approval evidence | Labels and comments alone cannot establish verification of the current revision |
 | 16 | Ordering is the label; `Blocked by #N` as a guard; concurrency 1 | Serial FIFO means each issue's base is the previous one's merged result. Raising the cap later is config, not redesign |
-| 17 | Reviewer runs the suite itself | CI status says green/red; it does not say whether the tests test the AC |
+| 17 | Reviewer assesses criteria; supervisor independently runs declared checks | An approval requires both a valid review and successful checks on the exact committed head |
 | 18 | Lives in `the-a-team` for the POC | Extract to its own repo + brew tap once one issue goes label → PR → verdict unassisted |
-| 19 | Spawned sessions are **hermetic**: `--setting-sources '' --strict-mcp-config --disable-slash-commands` | Measured 4× cheaper ($0.159 → $0.039 on an identical trivial prompt) and it keeps the operator's personal plugins, hooks and MCP servers out of an unattended run. The target repo's own `CLAUDE.md` still loads — that is context the executor should have |
+| 19 | Spawned sessions use native role policies, minimal environment and isolated settings | Hooks and settings suppress unintended context; Seatbelt enforces child filesystem and network access |
 
 ## Claim
 
@@ -134,18 +141,19 @@ specification to satisfy rather than instructions to follow; the branch; the
 base; the repo's test command; and the paths of `docs/product/` artifacts it may
 read if relevant.
 
-Done means: every acceptance criterion satisfied, suite green in the worktree,
-work committed to `agent/issue-<n>`, branch pushed. Returns typed JSON.
+The executor reports a strictly validated result and commits its work. It cannot
+push. The supervisor checks scope, imports the commit, and owns publication.
+An executor completion report alone is not approval.
 
 Refuses — `agent:needs-detail`, comment saying what is missing, claim released —
 when the issue carries no checkable acceptance criteria.
 
 ## Reviewer
 
-Spawned as its own process with a tool allowlist carrying **no `Edit`/`Write`**
-and no push credential. `--json-schema` for a typed verdict rather than prose to
-parse. Optionally a different `--model` than the executor — cheap, real
-decorrelation.
+Spawned as its own process with read-only source in a fresh detached private Git
+checkout of the exact head. Its separate writable scratch supports temporary
+test/build output. Native policy applies to Bash and descendants as well as
+tools. Schema-constrained output is also validated at runtime.
 
 Inputs: the issue body (the contract) and the diff (the artefact). Never the PR
 body, never the executor's transcript, never its notes.
@@ -154,8 +162,10 @@ Runs the suite and pastes real output. Judges only against the acceptance
 criteria — anything it wants that is not in the AC is out of scope by
 definition, which is also the anti-oscillation lever.
 
-Cycle 1 is a fresh session. Cycles 2-3 `--resume` that same session, so it is
-judging "did they do what I asked" against a fixed list.
+Cycle 1 is a fresh session. Cycles 2-3 `--resume` that same session in stable
+reviewer-only scratch, with a new source checkout and explicit current paths.
+The reviewer checks its previous objections and guards already satisfied
+criteria against regressions, without adding requirements.
 
 ## Safety
 
@@ -164,49 +174,52 @@ can be appended *after* the label, so the label alone is not a sufficient
 checkpoint. The executor runs non-interactively; there is nobody to say no
 mid-run.
 
-In v1:
+The [execution contract](runner/EXECUTION.md) defines the actual guarantees and
+supported environment. Preflight freezes target identity, harness revision,
+bindings, scope and verification commands. It refuses harness targets and
+canonical path escapes before mutation. Explicit invocation exceptions name
+individual CI files and are retained in evidence.
 
-1. **Filesystem confined** to the worktree. No `--add-dir`. Home-directory
-   credentials are out of scope.
-2. **Tools scoped per role** via a daemon-owned `--settings` file each — not
-   `--bare`, which would also drop the hooks below.
-3. **`PreToolUse` path denylist**: `.github/workflows/`, CI config,
-   `.git/config`, settings files. An agent that needs CI changed should
-   escalate, not do it.
-4. **Issue body snapshotted at claim**, closing the post-label injection window.
-5. **Framed as data** in the executor prompt.
-6. **Refuses to start** against a repo whose base branch is unprotected, unless
-   an explicit override flag is passed.
+Seatbelt restricts executor writes to authorized source/private Git and scratch;
+reviewer and supervisor-check source is read-only. An explicit minimal child
+environment excludes publishing credentials. Model networking uses an exact
+authority proxy; supervisor checks are offline. The backend fails closed when
+unavailable. Tool settings and path hooks are defense in depth.
 
-Documented as required before pointing this at anything real, but not enforced:
-a **fine-grained PAT** scoped to the allowlisted repos rather than personal `gh`
-auth, and **branch protection** on the base branch — the real backstop behind
-which everything else is defence in depth.
+The issue is snapshotted and framed as untrusted data. Strict result gates and
+independent checks on committed source prevent approval from malformed output,
+dirty worktree corrections or reviewer claims unsupported by supervisor checks.
+A documentation-only exemption must be explicit, applicable and recorded.
+
+GitHub credentials and branch publication stay with the supervisor. Existing
+branch-protection preflight refuses known unprotected bases unless explicitly
+overridden; an unknown protection state is still reported as unknown. Narrow
+PAT provisioning and stronger unknown-state handling remain separate work.
 
 `--max-budget-usd` caps spend per spawned session.
 
 ## State
 
-GitHub is authoritative. A restart re-derives everything:
+GitHub supplies workflow state. Approval additionally requires a current local
+record binding repository, criteria, policy, base/head and verification evidence:
 
 | state | derived from |
 |-------|--------------|
 | issue claimed | `agent:running` + `agent/issue-<n>` exists |
 | PR under review | open PR with head ref `agent/issue-*` |
-| shas already reviewed | each review's `commit_id` |
-| cycle count | number of agent-authored reviews on the PR |
-| terminal outcome | `agent:approved` / `agent:failed` |
+| review markers | comments/reviews carrying the existing head/cycle marker |
+| current approval | valid local approval record matching current inputs |
+| claimed terminal label | `agent:approved` / `agent:failed`; a stale approval is reported invalid |
 
 Not derivable: the reviewer's session id for the cycle-2 `--resume`. It lives in
 the local dir with the transcripts, and losing it is a graceful degrade — cycle 2
 starts fresh, worse but correct.
 
-Local dir per run (`~/.ateam-runner/runs/<repo>/<issue>/<stamp>/`): the prompt
-each role was given, its argv, the full result JSON, and stderr. The conversation
-itself stays where Claude Code already keeps it — the run records the
-`session_id`, so `claude --resume <id>` replays it. **Nothing is attached to the
-PR**: transcripts are long and can echo repo content into a place with different
-visibility. The PR gets the verdict; the paths go in the log.
+Local run records (`~/.ateam-runner/runs/<repo>/<issue>/<stamp>/`) retain prompts,
+argv, results, stderr, independent check output and versioned approval evidence.
+Agent session storage lives in isolated role scratch; it does not use operator
+Claude state. Keep approval records and their referenced output. Transcripts
+are not attached to the PR; the PR gets the verdict and evidence identity.
 
 Observability: structured log lines plus a `status` subcommand that queries
 GitHub and prints the table above. No UI in v1.
@@ -224,7 +237,7 @@ GitHub and prints the table above. No UI in v1.
 | 7 | `prd-to-issues` swap — issues phase runs `ticket-writer` batch decomposition | ✅ |
 | 8 | Docs + bootstrap — `feature/SKILL.md` checks for the runner and says where it lives | ✅ |
 
-**Verified: the local path, end to end.** Against a scratch repo, one issue went
+**Historical proof before native isolation and supervisor verification:** Against a scratch repo, one issue went
 issues.md → worktree → implementation → independent review → approved in 73s for
 $0.31 (sonnet both roles, one cycle, no unmet criteria). The reviewer ran the
 suite itself and reported green; the diff was two files and no scope creep; the
@@ -236,7 +249,8 @@ verdict against a real repo, because that needs a repo to point at and creating
 issues and PRs somewhere real is the operator's call. That run is the POC gate,
 and it is what the extraction in `PLAN.md`'s deferred list waits on.
 
-Unit tests: 50, no network.
+Current verification uses synthetic agents/GitHub and real native boundary probes;
+it does not repeat that authenticated proof or establish production readiness.
 
 ## Changes to existing files
 

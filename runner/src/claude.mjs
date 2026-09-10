@@ -1,8 +1,9 @@
-import { writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { writeFileSync, existsSync, realpathSync } from 'node:fs'
+import { join, delimiter, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { dirname } from 'node:path'
-import { run } from './sh.mjs'
+import { runSandboxed } from './sandbox.mjs'
+import { canonicalPath, within } from './policy.mjs'
 import { log } from './log.mjs'
 import { ensureDir } from './paths.mjs'
 import { DENIED_PATHS } from './deny.mjs'
@@ -24,29 +25,36 @@ export function cleanModelText(value) {
 }
 export const DENY_HOOK = join(HERE, 'hooks', 'deny-paths.mjs')
 
-function settingsBlob() {
+const shellQuote = (value) => `'${String(value).replace(/'/g, `'"'"'`)}'`
+
+function settingsBlob(policy) {
+  const allowed = policy.authorization?.protectedPaths || []
   return JSON.stringify({
     hooks: {
       PreToolUse: [
         {
           matcher: 'Edit|Write|MultiEdit|NotebookEdit|Bash',
-          hooks: [{ type: 'command', command: `node ${JSON.stringify(DENY_HOOK)}` }],
+          hooks: [
+            {
+              type: 'command',
+              command: `${shellQuote(realpathSync(process.execPath))} ${shellQuote(DENY_HOOK)} ${shellQuote(JSON.stringify(allowed))}`,
+            },
+          ],
         },
       ],
     },
     permissions: {
-      deny: DENIED_PATHS.flatMap((p) => [`Edit(./${p}**)`, `Write(./${p}**)`]),
+      deny: DENIED_PATHS.filter(
+        (p) => !allowed.some((a) => a === p || (p.endsWith('/') && a.startsWith(p))),
+      ).flatMap((p) => [`Edit(./${p}**)`, `Write(./${p}**)`]),
     },
   })
 }
 
 /**
- * Spawn one hermetic Claude session.
- *
- * Hermetic means: none of the operator's settings sources, no MCP servers, no
- * skills. Measured 4x cheaper than an inherited environment, and it keeps a
- * spawned run from picking up personal configuration. The target repo's own
- * CLAUDE.md still loads — that is context the executor should have.
+ * Spawn one Claude session behind the required native process boundary.
+ * Settings/hooks are defense in depth; filesystem, environment and network
+ * restrictions apply to the process and its descendants independently.
  */
 export async function runClaude({
   cwd,
@@ -59,17 +67,45 @@ export async function runClaude({
   role = 'agent',
   runDir,
   timeoutMs,
+  policy,
+  scratchDir,
+  modelEnv = process.env,
 }) {
+  if (!policy || !scratchDir)
+    throw new Error(
+      'resolved policy and separate scratch directory are required before Claude launch',
+    )
+  if (!/^(executor|reviewer)(-|$)/.test(role)) throw new Error(`unsupported sandbox role: ${role}`)
+  if (runDir && within(canonicalPath(scratchDir), canonicalPath(runDir)))
+    throw new Error('evidence directory must be outside agent scratch')
+  const requested = policy.sandbox?.claudeExecutable || 'claude'
+  const executable = isAbsolute(requested)
+    ? requested
+    : (process.env.PATH || '')
+        .split(delimiter)
+        .map((p) => join(p, requested))
+        .find(existsSync)
+  if (!executable || !existsSync(executable))
+    throw new Error(
+      'Claude executable is unavailable; install it or configure sandbox.claudeExecutable',
+    )
+  const command = realpathSync(executable)
   const args = [
     '-p',
-    '--output-format', 'json',
-    '--setting-sources', '',
+    '--output-format',
+    'json',
+    '--setting-sources',
+    '',
     '--strict-mcp-config',
-    '--mcp-config', '{"mcpServers":{}}',
+    '--mcp-config',
+    '{"mcpServers":{}}',
     '--disable-slash-commands',
-    '--settings', settingsBlob(),
-    '--permission-mode', 'bypassPermissions',
-    '--model', model,
+    '--settings',
+    settingsBlob(policy),
+    '--permission-mode',
+    'bypassPermissions',
+    '--model',
+    model,
   ]
   if (Array.isArray(tools)) args.push('--tools', tools.join(','))
   if (maxBudgetUsd) args.push('--max-budget-usd', String(maxBudgetUsd))
@@ -80,15 +116,31 @@ export async function runClaude({
   if (runDir) {
     ensureDir(runDir)
     writeFileSync(join(runDir, `${role}.prompt.md`), prompt)
-    writeFileSync(join(runDir, `${role}.argv.json`), `${JSON.stringify(args.slice(0, -1), null, 2)}\n`)
+    writeFileSync(
+      join(runDir, `${role}.argv.json`),
+      `${JSON.stringify(args.slice(0, -1), null, 2)}\n`,
+    )
   }
 
   log.info('claude.spawn', { role, model, cwd, resume: resume || undefined, budget: maxBudgetUsd })
   const started = Date.now()
-  const { code, stdout, stderr } = await run('claude', args, { cwd, check: false, timeoutMs })
+  const { code, stdout, stderr } = await runSandboxed(command, args, {
+    cwd,
+    scratchDir,
+    policy,
+    role: role.startsWith('executor') ? 'executor' : 'reviewer',
+    env: modelEnv,
+    model: true,
+    check: false,
+    timeoutMs,
+  })
 
   let payload = null
-  try { payload = JSON.parse(stdout) } catch { /* non-JSON output handled below */ }
+  try {
+    payload = JSON.parse(stdout)
+  } catch {
+    /* non-JSON output handled below */
+  }
 
   if (runDir) {
     writeFileSync(join(runDir, `${role}.result.json`), stdout || '')
@@ -108,8 +160,12 @@ export async function runClaude({
   }
 
   log.info('claude.done', {
-    role, ok: out.ok, cost: out.costUsd.toFixed?.(4), ms: out.durationMs,
-    session: out.sessionId, reason: out.terminalReason,
+    role,
+    ok: out.ok,
+    cost: out.costUsd.toFixed?.(4),
+    ms: out.durationMs,
+    session: out.sessionId,
+    reason: out.terminalReason,
   })
   return out
 }

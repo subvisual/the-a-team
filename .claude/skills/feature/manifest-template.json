@@ -6,6 +6,7 @@
   "branch": "feature/<slug>",
   "state": "discovery",
   "gate_policy": "block",
+  "execution_policy": null,
   "run_brief": {
     "purpose": null,
     "fidelity": null,

@@ -18,8 +18,8 @@ function emit(level, event, fields = {}) {
     parts.push(`${k}=${fmt(v)}`)
   }
   const line = parts.join(' ')
-  if (level === 'ERROR' || level === 'WARN') console.error(line)
-  else console.log(line)
+  // stdout belongs to the command result, including nested model/adaptor logs.
+  console.error(line)
 }
 
 export const log = {

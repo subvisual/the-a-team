@@ -13,11 +13,11 @@ export class CommandError extends Error {
 }
 
 // Run a command to completion, capturing output. `input` is written to stdin.
-export function run(cmd, args, { cwd, input, env, check = true, onStdout, timeoutMs } = {}) {
+export function run(cmd, args, { cwd, input, env, replaceEnv = false, check = true, onStdout, timeoutMs } = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(cmd, args, {
       cwd,
-      env: env ? { ...process.env, ...env } : process.env,
+      env: replaceEnv ? (env || {}) : env ? { ...process.env, ...env } : process.env,
       stdio: ['pipe', 'pipe', 'pipe'],
     })
     let stdout = ''
@@ -32,10 +32,11 @@ export function run(cmd, args, { cwd, input, env, check = true, onStdout, timeou
       timer = setTimeout(() => { timedOut = true; child.kill('SIGTERM') }, timeoutMs)
     }
     child.on('error', (err) => { if (timer) clearTimeout(timer); reject(err) })
-    child.on('close', (code) => {
+    child.on('close', (code, signal) => {
       if (timer) clearTimeout(timer)
       if (timedOut) stderr += `\nateam-runner: timed out after ${timeoutMs}ms`
-      const result = { code, stdout, stderr }
+      if (signal) stderr += `\nateam-runner: process terminated by ${signal}`
+      const result = { code, signal, stdout, stderr }
       if (check && code !== 0) reject(new CommandError(cmd, args, code, stdout, stderr))
       else resolve(result)
     })

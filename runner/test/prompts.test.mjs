@@ -27,8 +27,15 @@ test('the executor is told the runner owns pushing', () => {
 
 test('a revision round names exactly what was unmet', () => {
   const p = executorPrompt({
-    issue, branch: 'b', base: 'main', worktree: '/tmp/wt',
-    revision: { cycle: 2, unmet: [{ criterion: 'it is tested', why: 'no test covers it' }], notes: 'see above' },
+    issue,
+    branch: 'b',
+    base: 'main',
+    worktree: '/tmp/wt',
+    revision: {
+      cycle: 2,
+      unmet: [{ criterion: 'it is tested', why: 'no test covers it' }],
+      notes: 'see above',
+    },
   })
   assert.match(p, /Revision round/)
   assert.match(p, /it is tested\*\* — no test covers it/)
@@ -36,7 +43,13 @@ test('a revision round names exactly what was unmet', () => {
 })
 
 test('the reviewer prompt scopes judgement to the criteria', () => {
-  const p = reviewerPrompt({ issue, base: 'aaa', head: 'bbb', worktree: '/tmp/wt', testCommand: 'npm test' })
+  const p = reviewerPrompt({
+    issue,
+    base: 'aaa',
+    head: 'bbb',
+    worktree: '/tmp/wt',
+    testCommand: 'npm test',
+  })
   assert.match(p, /judge against exactly these/i)
   assert.match(p, /out of scope/)
   assert.match(p, /git diff aaa\.\.\.bbb/)
@@ -52,6 +65,33 @@ test('a resumed reviewer checks its own list rather than re-reviewing', () => {
   const p = revisionPrompt({ head: 'ccc' })
   assert.match(p, /previously marked unmet/)
   assert.match(p, /do not raise new requirements/i)
+})
+
+test('resumed review names the fresh checkout and carries the declared verification context', () => {
+  const p = revisionPrompt({
+    head: 'ccc',
+    base: 'aaa',
+    worktree: '/fresh/review-source',
+    testCommand: 'declared-check',
+    scratchDir: '/reviewer/scratch',
+  })
+  assert.match(p, /\/fresh\/review-source/)
+  assert.match(p, /declared-check/)
+  assert.match(p, /\/reviewer\/scratch/)
+})
+
+test('both roles receive the applicable supervisor documentation exemption explicitly', () => {
+  const policy = {
+    verification: { commands: [], exemption: { reason: 'Approved prose-only correction' } },
+    authorization: { id: 'human-docs-request' },
+  }
+  for (const p of [
+    executorPrompt({ issue, branch: 'b', base: 'main', worktree: '/tmp/wt', policy }),
+    reviewerPrompt({ issue, base: 'a', head: 'b', worktree: '/tmp/wt', policy }),
+  ]) {
+    assert.match(p, /Approved prose-only correction/)
+    assert.match(p, /failed check.*failure/i)
+  }
 })
 
 test('the verdict body carries the marker and the unmet criteria', () => {

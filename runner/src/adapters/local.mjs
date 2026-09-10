@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { acceptanceCriteria } from '../issue.mjs'
 import { run } from '../sh.mjs'
+import { revParse } from '../git.mjs'
 import { log } from '../log.mjs'
 
 export function slugify(title) {
@@ -31,7 +32,11 @@ export function parseIssuesFile(text) {
       current = { title: h2[1].replace(/^\[|\]$/g, '').trim(), lines: [] }
       continue
     }
-    if (line.match(/^#\s+(?!#)/)) { if (current) sections.push(current); current = null; continue }
+    if (line.match(/^#\s+(?!#)/)) {
+      if (current) sections.push(current)
+      current = null
+      continue
+    }
     if (current) current.lines.push(line)
   }
   if (current) sections.push(current)
@@ -57,7 +62,10 @@ export function parseIssuesFile(text) {
 }
 
 async function implementedTitles(repoPath) {
-  const { stdout } = await run('git', ['log', '--all', '--pretty=%B'], { cwd: repoPath, check: false })
+  const { stdout } = await run('git', ['log', '--all', '--pretty=%B'], {
+    cwd: repoPath,
+    check: false,
+  })
   return stdout
 }
 
@@ -100,6 +108,18 @@ export function createLocalAdapter({ issuesFile, repoPath, base, testCommand }) 
       return { branch }
     },
 
+    async currentApprovalInputs(issue, ctx) {
+      const latest = parseIssuesFile(readFileSync(issuesFile, 'utf8')).find(
+        (candidate) => candidate.key === issue.key && candidate.title === issue.title,
+      )
+      if (!latest) throw new Error('issue criteria changed or issue disappeared before approval')
+      return {
+        issue: latest,
+        head: await revParse(repoPath, ctx.branch),
+        baseSha: await revParse(repoPath, this.base),
+      }
+    },
+
     async onVerdict(issue, ctx, verdict) {
       log.info('local.verdict', { issue: issue.key, cycle: ctx.cycle, verdict: verdict.verdict })
     },
@@ -110,13 +130,24 @@ export function createLocalAdapter({ issuesFile, repoPath, base, testCommand }) 
       // (RUNNER.md decision 16). The orchestrator integrates the chain.
       this.base = ctx.branch
       report.push({
-        issue: issue.key, title: issue.title, outcome: 'approved',
-        branch: ctx.branch, head: ctx.head, cycles: ctx.cycle, notes: verdict?.notes,
+        issue: issue.key,
+        title: issue.title,
+        outcome: 'approved',
+        branch: ctx.branch,
+        head: ctx.head,
+        cycles: ctx.cycle,
+        notes: verdict?.notes,
       })
     },
 
     async onFailed(issue, ctx, reason) {
-      report.push({ issue: issue.key, title: issue.title, outcome: 'failed', branch: ctx?.branch, reason })
+      report.push({
+        issue: issue.key,
+        title: issue.title,
+        outcome: 'failed',
+        branch: ctx?.branch,
+        reason,
+      })
     },
   }
 }
