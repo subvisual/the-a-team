@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { runIssue, OUTCOME } from '../src/core/loop.mjs'
 import { DEFAULTS } from '../src/config.mjs'
-import { config, impl, verdict, pass } from './approval-fixtures.mjs'
+import { config, impl, verdict, pass, adequacyFor } from './approval-fixtures.mjs'
 
 let root
 let repoPath
@@ -96,10 +96,19 @@ const committingExecutor =
 
 const reviewer = (verdicts) => {
   let i = 0
-  return async () => {
+  return async ({ issue: reviewedIssue, adequacyAuthority }) => {
     const v = verdicts[Math.min(i, verdicts.length - 1)]
     i += 1
-    return { ...verdict, notes: '', ...v }
+    return {
+      ...verdict,
+      notes: '',
+      testAdequacy: adequacyFor(
+        reviewedIssue.acceptanceCriteria,
+        reviewedIssue,
+        adequacyAuthority,
+      ),
+      ...v,
+    }
   }
 }
 
@@ -319,9 +328,16 @@ test('interruption after review reuses durable evaluation before publishing', as
   let reviews = 0
   const deps = {
     execute: committingExecutor(),
-    review: async () => {
+    review: async ({ issue: reviewedIssue, adequacyAuthority }) => {
       reviews++
-      return { ...verdict }
+      return {
+        ...verdict,
+        testAdequacy: adequacyFor(
+          reviewedIssue.acceptanceCriteria,
+          reviewedIssue,
+          adequacyAuthority,
+        ),
+      }
     },
     runVerification: pass,
   }
@@ -372,15 +388,27 @@ test('interruption in a later cycle never reuses the previous cycle review', asy
     executions++
     return commitNext(args)
   }
-  const review = async () => {
+  const review = async ({ issue: reviewedIssue, adequacyAuthority }) => {
     reviews++
     return reviews === 1
       ? {
           ...verdict,
+          testAdequacy: adequacyFor(
+            reviewedIssue.acceptanceCriteria,
+            reviewedIssue,
+            adequacyAuthority,
+          ),
           verdict: 'request-changes',
           unmetAc: [{ criterion: 'it works', why: 'revise' }],
         }
-      : { ...verdict }
+      : {
+          ...verdict,
+          testAdequacy: adequacyFor(
+            reviewedIssue.acceptanceCriteria,
+            reviewedIssue,
+            adequacyAuthority,
+          ),
+        }
   }
   const adapter = adapterSpy(),
     limited = { ...cfg, maxCycles: 2 }

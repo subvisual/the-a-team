@@ -29,6 +29,22 @@ for (const [name, fn, structured] of [
       test_output: 'ok',
       tests_ran: true,
       tests_passed: true,
+      test_adequacy: [
+        {
+          criterion: issue.acceptanceCriteria[0],
+          expected_values: { status: 'independent', evidence: 'literal expected value' },
+          public_behavior: { status: 'exercised', evidence: 'public entry point' },
+          substituted_boundaries: { status: 'none', evidence: 'no substituted boundary' },
+          requirement_source: { id: 'fixture', revision: 'version-1' },
+          baseline_expectations: {
+            status: 'preserved',
+            requirement_version: 1,
+            authorization: '',
+          },
+          judgment: 'adequate',
+          why: 'detects the defect',
+        },
+      ],
     },
   ],
 ]) {

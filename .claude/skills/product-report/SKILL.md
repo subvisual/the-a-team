@@ -168,3 +168,15 @@ a release receipt and “integrated” requires the intended target merge receip
 PR creation/review and locally assembling issue branches supply neither.
 A legacy `done` or provisional flag must remain unknown/stale until revalidated.
 This reporting skill observes milestones and never writes or certifies them.
+
+### Combined application evidence
+
+For the verification milestone, cite the current combined revision and the
+supervisor record from `runner/COMBINED-VERIFICATION.md`: approved issue ancestry,
+actual suite/typecheck/build/browser/integration results or justified
+inapplicability, environment and output references. List substituted and
+unexecuted systems beside their unresolved obligations. Retain prior failed
+attempts and explicit unresolved baseline dispositions even when a rerun passed.
+Recheck the branch before reporting current verification; a moved SHA makes the
+old evidence stale. Passing a layer fixture cannot establish a protected route
+or connected browser-to-API workflow that was never exercised.

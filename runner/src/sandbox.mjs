@@ -61,7 +61,7 @@ export function sandboxEnvironment(scratchDir, supplied = {}, model = false, too
   return env
 }
 
-export function sandboxProfile({ cwd, scratchDir, policy, role, command, proxyPort }) {
+export function sandboxProfile({ cwd, scratchDir, policy, role, command, proxyPort, serverPort }) {
   const root = canonicalPath(cwd),
     scratch = canonicalPath(scratchDir)
   if (within(root, scratch) || within(scratch, root))
@@ -161,6 +161,19 @@ export function sandboxProfile({ cwd, scratchDir, policy, role, command, proxyPo
   lines.push(
     `(deny file-read* file-write* (regex ${quote(`^${root.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/(.*/)?(\\.env(\\.[^/]*)?|\\.npmrc|\\.netrc|id_rsa|id_ed25519)$`)}))`,
   )
+  if (serverPort !== undefined) {
+    if (
+      role !== 'verification-server' ||
+      !Number.isInteger(serverPort) ||
+      serverPort < 1024 ||
+      serverPort > 65535
+    )
+      throw new Error(
+        'loopback listener requires a supervisor verification server and one unprivileged port',
+      )
+    lines.push(`(allow network-inbound (local ip "localhost:${serverPort}"))`)
+    lines.push(`(allow network-outbound (remote ip "localhost:${serverPort}"))`)
+  }
   if (proxyPort) lines.push(`(allow network-outbound (remote ip "localhost:${proxyPort}"))`)
   return lines.join('\n')
 }
@@ -195,6 +208,9 @@ export async function runSandboxed(
     model = false,
     check = false,
     timeoutMs,
+    signal,
+    serverPort,
+    onSpawn,
   } = {},
 ) {
   if (!policy) throw new Error('resolved execution policy is required')
@@ -204,7 +220,10 @@ export async function runSandboxed(
     throw new Error('sandbox requires a private Git checkout, not linked supervisor metadata')
   await assertReadableSource(cwd, policy.readPaths)
   const toolchains = policy.sandbox.toolchainPaths || []
+  if (serverPort !== undefined && (model || role !== 'verification-server'))
+    throw new Error('model and ordinary review sessions cannot start verification listeners')
   const childEnv = sandboxEnvironment(scratchDir, env, model, toolchains)
+  if (serverPort !== undefined) childEnv.ATEAM_VERIFICATION_PORT = String(serverPort)
   for (const key of ['HOME', 'TMPDIR', 'XDG_CONFIG_HOME', 'XDG_CACHE_HOME', 'CLAUDE_CONFIG_DIR'])
     mkdirSync(childEnv[key], { recursive: true })
   const proxy = model
@@ -222,6 +241,7 @@ export async function runSandboxed(
       role,
       command,
       proxyPort: proxy?.port,
+      serverPort,
     })
     return await run(BACKEND, ['-p', profile, command, ...args], {
       cwd,
@@ -229,6 +249,8 @@ export async function runSandboxed(
       replaceEnv: true,
       check,
       timeoutMs,
+      signal,
+      onSpawn,
     })
   } finally {
     await proxy?.close()

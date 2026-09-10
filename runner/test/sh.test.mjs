@@ -71,3 +71,44 @@ test(
     }
   },
 )
+
+test('supervisor cancellation stops an observed server group and retains its output', async () => {
+  const controller = new AbortController()
+  const result = await run(
+    process.execPath,
+    ['-e', "console.log('ready');setInterval(()=>{},1000)"],
+    {
+      check: false,
+      timeoutMs: 3000,
+      killGraceMs: 50,
+      signal: controller.signal,
+      onStdout: (output) => {
+        if (output.includes('ready')) controller.abort()
+      },
+    },
+  )
+  assert.equal(result.code, 130)
+  assert.equal(result.aborted, true)
+  assert.equal(result.timedOut, false)
+  assert.match(result.stdout, /ready/)
+})
+
+test('throwing startup callback terminates child before rejecting and retains the cause', async () => {
+  let pid
+  await assert.rejects(
+    run(process.execPath, ['-e', 'setTimeout(()=>{},1500)'], {
+      timeoutMs: 200,
+      killGraceMs: 50,
+      onSpawn: (value) => {
+        pid = value
+        throw Error('listener ownership unavailable')
+      },
+    }),
+    (error) => {
+      assert.match(error.message, /listener ownership unavailable/)
+      assert.equal(error.processResult.aborted, true)
+      return true
+    },
+  )
+  assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' })
+})

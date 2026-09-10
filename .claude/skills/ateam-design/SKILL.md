@@ -226,3 +226,26 @@ there is no configured target source, it binds the existing durable
 `docs/product/design-system/` tree. The gate approves those exact bytes; changing
 a screen or accepted token afterward makes design stale and blocks spec until
 revalidation. Mutable context and research-plan prose are not design bindings.
+
+## Rendered implementation obligations
+
+Preserve accepted design obligations as `rendered-review` entries in the
+acceptance ledger, mapped to the current-context design source's `obligationIds`.
+Before implementation, bind a declarative rendered plan through the project's
+`renderedReview` configuration. Cover the primary journey; empty, loading, error
+and populated states; long content; keyboard/focus; relevant narrow/wide
+viewports; actual scrolling and sticky behavior. Missing required coverage stays
+explicitly pending. Use an authorized ledger deferral for a deliberate disposition,
+never a generated green status. Default web target is WCAG 2.2 AA unless the
+project binds another target.
+
+Follow `runner/RENDERED-REVIEW.md` for the plan and evidence contract. Review the
+running implementation at the exact verified SHA against accepted tokens and
+layout intent: component/class correspondence alone cannot pass a computed token,
+clipping, focus, retry or layout discrepancy. Use bounded automation plus actual
+interaction. Record SHA, route, fixture, viewport, screenshot, observed result and
+obligation. Keep the existing independent reviewer seam and component library;
+this stage does not authorize a wholesale redesign. Retain bounded iteration
+history and the best evidenced candidate under its original SHA. Agent critique
+and automated accessibility checks never satisfy a human usability study or claim
+full accessibility conformance.

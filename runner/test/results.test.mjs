@@ -20,6 +20,22 @@ const reviewer = {
   test_output: 'green',
   unmet_ac: [],
   notes: 'done',
+  test_adequacy: [
+    {
+      criterion: 'works',
+      expected_values: { status: 'independent', evidence: 'literal expected value' },
+      public_behavior: { status: 'exercised', evidence: 'public entry point' },
+      substituted_boundaries: { status: 'none', evidence: 'no substituted boundary' },
+      requirement_source: { id: 'fixture', revision: 'version-1' },
+      baseline_expectations: {
+        status: 'preserved',
+        requirement_version: 1,
+        authorization: '',
+      },
+      judgment: 'adequate',
+      why: 'detects the defect',
+    },
+  ],
 }
 for (const role of ['executor', 'reviewer'])
   for (const [name, patch] of [
@@ -81,3 +97,27 @@ for (const [role, fn] of [
       /exit=7.*budget exhausted/,
     )
   })
+
+test('reviewer rejects unknown fields nested in raw adequacy evidence', async (t) => {
+  const worktree = currentContextFixture(t)
+  await assert.rejects(
+    () =>
+      review({
+        issue,
+        worktree,
+        base: 'a',
+        head: 'b',
+        deps: {
+          runClaude: async () => ({
+            ok: true,
+            exitCode: 0,
+            structured: {
+              ...reviewer,
+              test_adequacy: [{ ...reviewer.test_adequacy[0], invented: true }],
+            },
+          }),
+        },
+      }),
+    /unknown.*invented/i,
+  )
+})

@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { DEFAULTS } from '../src/config.mjs'
 import { digest } from '../src/policy.mjs'
 import { publishedVerdictBody } from '../src/core/provenance.mjs'
+import { issueContractSource } from '../src/core/adequacy-authority.mjs'
 
 export function publicationFixture() {
   const records = new Map()
@@ -104,6 +105,41 @@ export const impl = {
   costUsd: 0,
   sessionId: 'executor-session',
 }
+export const adequacyFor = (
+  criteria,
+  issueContract = { ...issue, acceptanceCriteria: criteria },
+  authority = null,
+) => {
+  const fallback = issueContractSource(issueContract)
+  const source = authority?.sources?.[0] || {
+    id: fallback.id,
+    revision: fallback.revision,
+    requirementVersions: [fallback.requirementVersion],
+  }
+  return criteria.map((criterion) => ({
+    criterion,
+    expectedValues: {
+      status: 'independent',
+      evidence: 'The fixture asserts a literal accepted value independent of the implementation.',
+    },
+    publicBehavior: {
+      status: 'exercised',
+      evidence: 'The fixture exercises the public behavior associated with this criterion.',
+    },
+    substitutedBoundaries: {
+      status: 'none',
+      evidence: 'No system boundary is substituted by this fixture.',
+    },
+    requirementSource: { id: source.id, revision: source.revision },
+    baselineExpectations: {
+      status: 'preserved',
+      requirementVersion: source.requirementVersions[0],
+      authorization: '',
+    },
+    judgment: 'adequate',
+    why: 'The check fails when the accepted behavior changes.',
+  }))
+}
 export const verdict = {
   ok: true,
   exitCode: 0,
@@ -114,6 +150,7 @@ export const verdict = {
   testOutput: 'green',
   testsRan: true,
   testsPassed: true,
+  testAdequacy: adequacyFor(issue.acceptanceCriteria),
   costUsd: 0,
   sessionId: 'reviewer-session',
 }

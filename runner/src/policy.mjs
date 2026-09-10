@@ -14,6 +14,9 @@ const KEYS = {
   'base branch': 'baseBranch',
   'test command': 'testCommand',
   'verification commands': 'verificationCommands',
+  'delivery verification': 'deliveryVerification',
+  'rendered review': 'renderedReview',
+  'accessibility target': 'accessibilityTarget',
   'design system path': 'designSystemPath',
   'current context': 'currentContext',
   'context budget tokens': 'contextBudgetTokens',
@@ -260,6 +263,7 @@ export async function resolvePolicy({
     productContext: merged.productContext || 'docs/product/',
     designSystemPath: merged.designSystemPath || null,
     packageManager: merged.packageManager || null,
+    accessibilityTarget: merged.accessibilityTarget || 'WCAG 2.2 AA',
     contextBudgetTokens: merged.contextBudgetTokens ?? null,
   }
   if (
@@ -321,7 +325,16 @@ export async function resolvePolicy({
     outputPaths,
     githubIssues: project.githubIssues === true || project.githubIssues === 'on',
     supervisor: { actions },
-    verification: { commands, exemption: authorization.documentationExemption || null },
+    verification: {
+      commands,
+      ...(merged.renderedReview !== undefined
+        ? { renderedReview: relativePaths(root, [merged.renderedReview])[0] }
+        : {}),
+      exemption: authorization.documentationExemption || null,
+      ...(merged.deliveryVerification !== undefined
+        ? { delivery: merged.deliveryVerification }
+        : {}),
+    },
     authorization: {
       id: authorization.id || null,
       protectedPaths: approved,

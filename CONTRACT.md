@@ -680,6 +680,20 @@ remain bound unless the authorized delta and relevant review explicitly change
 them. Scope auditing compares actual file changes against the recorded baseline,
 preserves inherited work and permits refresh only of affected artifacts.
 
+Runner review carries one concise obligation-to-check entry for every current
+acceptance criterion. The independent reviewer records whether expected values
+come from an accepted literal or worked example, whether the public behavior is
+exercised, which external boundaries are substituted, and the current requirement
+source ID/revision. It also records whether the baseline is preserved or changed
+by a versioned authorized decision. A passing implementation-mirroring check,
+an unexercised behavioral contract, an inappropriate substituted boundary, or an
+unauthorized weakening cannot approve. Runtime validation checks that this map is
+complete and binds every cited source, version, and authorization to the accepted
+base revision. A changed baseline requires a real definition change in complete,
+valid canonical ledger history; files added by the implementation cannot authorize
+that implementation. The reviewer remains responsible for the semantic judgment.
+Deterministic checks verify provenance and known contradictions, not test adequacy.
+
 `finish-refinement` reuses a delivered local runner approval for the current
 ticket and exact reviewed revision, validates current context and method-specific
 evidence, and records the result. It leaves human acceptance, integration, release
@@ -706,3 +720,26 @@ explicit: navigation sketches cannot verify validation or recovery; interactive
 prototypes use deterministic local scenarios and reset, without real backend
 requests. Record browser observations separately from production and human-study
 acceptance. See [runner/PROTOTYPES.md](runner/PROTOTYPES.md).
+
+### Independent rendered implementation review
+
+Applicable accepted design/spec obligations must be independently reviewed in
+running code on the exact verified revision, through the established reviewer
+seam. A-Team Config `renderedReview` binds the declarative browser plan; accepted
+base requirement/design authority and plan bytes cannot be weakened by executor
+head changes. The plan covers required journeys, states, fixtures and relevant
+viewports, including primary interaction, empty/loading/error/populated states,
+long content, keyboard/focus, actual scrolling and sticky behavior. Missing
+required evidence remains pending or has an explicit authorized ledger
+disposition. Clipped controls, keyboard traps, broken retry, or computed token
+and layout deviations record a route/fixture/SHA finding and cannot satisfy their
+obligation even when class-level checks are green.
+
+Retain screenshots and machine observations with SHA, route, fixture, viewport,
+result and obligation. Verify their hashes and revision before reuse. Refinement
+is bounded by the run's cycle limits and retains the best evidenced candidate
+under its actual SHA; an older pass is not a current pass. Web accessibility
+defaults to WCAG 2.2 AA unless project-bound. Use bounded automation and actual
+interaction, with limitations visible. Agent critique cannot satisfy a human
+usability study, and an automated pass cannot claim full accessibility
+conformance. See `runner/RENDERED-REVIEW.md` for the executable contract.

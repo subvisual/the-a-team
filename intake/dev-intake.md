@@ -36,6 +36,14 @@ ADRs under `docs/product/adr/`.
   that change the architecture even for a prototype?
 - What test bar applies to v0 code — the target's full suite, smoke only, or
   none? (A-Team Config carries the test command; this asks what must pass.)
+- For each behavioral obligation, what accepted literal or worked example fixes
+  the expected value, which public workflow must exercise it, and which external
+  boundaries may be substituted? If the answer exists in current authority,
+  carry its source ID/revision instead of asking the human again.
+- Does any proposed check weaken a baseline expectation? A changed expectation
+  needs a new positive requirement version and an explicit authorized decision
+  in accepted canonical history. An implementation cannot write its own authority
+  or make its output the oracle.
 
 ## Declared defaults
 
@@ -72,8 +80,11 @@ team decisions, not aspirations; each names when it does not apply.
 **Defaults answer "which", never "whether".** If no job needs a backend, the
 default backend is not a reason to have one. Shape follows the jobs.
 
+There is no team test-count target. A low-impact text or styling correction may
+use existing checks and rendered evidence when those cover the accepted result;
+do not add an assertion that merely mirrors the implementation.
+
 **A default is not a ratification.** Applying one still records a
 confidence-stamped assumption in `research-plan.md`, surfaced at the definition
 gate — and a decision on `architecture`'s ratification list still needs the
 human, cheap and defaulted though it may be.
-

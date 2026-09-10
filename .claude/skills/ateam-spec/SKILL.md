@@ -105,6 +105,14 @@ values while decomposing. A needed change is a visible definition gap routed to
 prd-writer for an authorized versioned decision; then refresh the snapshot. The
 spec writes its own snapshot only, never the canonical ledger or evidence.
 
+For every automated behavioral obligation, retain enough test intent for the
+independent reviewer to build a concise obligation-to-check map: accepted literal
+or worked expected values, the public workflow to exercise, and the external
+boundaries that may be substituted. Do not derive expected values from component
+implementation details. Status semantics that require redundant text, glyph and
+color must name all three. Low-impact text/styling can point to existing checks
+and rendered evidence; never introduce a test-count quota.
+
 ## Workflow
 
 1. **Ground**: read `design.md` (screens, chosen variant, derived calls),
@@ -196,3 +204,19 @@ Preserve the exact accepted `flow-contract` JSON fence from design.md in spec.md
 Run `prototype-cli.mjs validate --stage spec` as documented in
 `<harness>/runner/PROTOTYPES.md`. Component behavior refers to these node/page/edge
 IDs; navigation-only observations cannot satisfy validation or recovery criteria.
+
+## Running-code design verification
+
+Carry every applicable accepted design obligation into the implementation spec
+and its declarative rendered plan (`runner/RENDERED-REVIEW.md`). Pin the plan before
+implementation through A-Team Config `renderedReview`. Include the required
+obligation/state/viewport matrix, literal expected computed tokens and public
+interaction outcomes, primary journey, long content, keyboard/focus, scrolling,
+sticky positioning and failure/retry recovery. Required states without evidence
+remain pending; authorized ledger deferrals remain decisions rather than passes.
+The supervisor pins accepted base authority so an implementation cannot waive
+its own rendered checks. Rendered evidence must refer to running code at the
+verified SHA and retain screenshots plus machine observations; historical evidence
+cannot be relabeled current. WCAG 2.2 AA is the default web target, adjustable by
+project binding. Bounded automated checks and agent critique leave full
+accessibility conformance and human usability unverified.

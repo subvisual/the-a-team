@@ -123,7 +123,8 @@ const refreshed=cp.spawnSync(process.execPath,[tool,'revalidate','--root',proces
 fs.unlinkSync('context-update.json');
 for(const args of [['add','value.txt','docs/product/context.md','context-inspection.json'],['commit','-m','fix']]){const r=cp.spawnSync('/usr/bin/git',args,{encoding:'utf8'});if(r.status!==0)throw new Error(r.stderr)}}
 const check=cp.spawnSync('/bin/sh',['-c','test "$(cat value.txt)" = good'],{encoding:'utf8'});
-const structured=executor?{status:'done',summary:'fixed',blocked_reason:'',tests_command:'test value',tests_ran:true,tests_passed:check.status===0}:{verdict:'approve',unmet_ac:[],notes:'committed source checked',tests_ran:true,tests_passed:check.status===0,test_command:'test value',test_output:'green'};
+const authority=executor?null:JSON.parse(process.argv.at(-1).match(/^Supervisor-pinned test adequacy authority: (.+)$/m)[1]),source=authority?.sources[0];
+const structured=executor?{status:'done',summary:'fixed',blocked_reason:'',tests_command:'test value',tests_ran:true,tests_passed:check.status===0}:{verdict:'approve',unmet_ac:[],notes:'committed source checked',tests_ran:true,tests_passed:check.status===0,test_command:'test value',test_output:'green',test_adequacy:[{criterion:'value is good',expected_values:{status:'independent',evidence:'literal good value'},public_behavior:{status:'exercised',evidence:'repository value check'},substituted_boundaries:{status:'none',evidence:'no substituted boundary'},requirement_source:{id:source.id,revision:source.revision},baseline_expectations:{status:'preserved',requirement_version:source.requirementVersions[0],authorization:''},judgment:'adequate',why:'the command fails unless the accepted value is present'}]};
 console.log(JSON.stringify({is_error:false,structured_output:structured,session_id:executor?'synthetic-executor':'synthetic-reviewer',total_cost_usd:0}));`,
       { mode: 0o755 },
     )

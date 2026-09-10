@@ -11,6 +11,14 @@ written for this repo against CONTRACT.md rather than migrated.
 
 ## In the repo
 
+Verification evidence additions (#45–47): `ticket-writer` and `ateam-spec`
+preserve exact requirement provenance and require an independent per-criterion
+test-adequacy review. `ateam-design` supplies a revision-bound rendered plan;
+the supervisor observes the actual app and keeps automated accessibility limits
+explicit. `feature` and `product-report` require current combined-delivery
+evidence and preserve failures, substituted boundaries and separate human,
+integration, release and product-validation milestones.
+
 | Skill | What it does | Intent / pipeline position | Status |
 |---|---|---|---|
 | `feature` | Drives a feature prompt to a production-ready PR through discovery → definition → design → spec → issues → dev → pr. Gates at definition/design/pr dispatch per the human-chosen `gate_policy` (block default · notify-and-continue · run-to-pr, final PR review always blocks). Owns `feature.json` and all state transitions. The issues phase optionally projects the decomposition into GitHub (epics → milestones, requirements → issues, job ids → `jtbd:NN-slug` labels; numbers written back so re-runs reconcile) — consented once via `github issues` in A-Team Config, default off, never fired against the harness's own repo, never fatal. | The A-Team orchestrator (state machine on the main thread). | harness |

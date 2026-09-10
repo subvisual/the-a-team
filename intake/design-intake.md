@@ -89,6 +89,17 @@ one) always wins.
   phase's design-system mapping resolves against it; dev installs components
   on demand (`npx shadcn add`). *(Design team decision, 2026-08-11.)*
 
+
+- Web accessibility target — **WCAG 2.2 AA**, unless the project binds a different
+  target through `accessibilityTarget`. Record the chosen target and any known
+  user needs. Bounded automation plus keyboard/focus interaction supplies partial
+  evidence; full conformance and human usability require separate evidence.
+- Running-code review — preserve applicable accepted design/spec obligations,
+  declare required route/fixture/state/viewport coverage, and bind a rendered plan
+  before implementation (`runner/RENDERED-REVIEW.md`). Include primary journey,
+  empty/loading/error/populated states, long content, actual scrolling and sticky
+  behavior. Pending evidence and authorized dispositions stay visible.
+
 ## Where the answers land
 
 The briefing's synthesis is written by discovery into `context.md` under

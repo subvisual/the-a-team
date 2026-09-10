@@ -3,6 +3,7 @@ import { join, dirname, basename } from 'node:path'
 import { digest } from '../policy.mjs'
 import { home, slug } from '../paths.mjs'
 import { validateReviewer } from './results.mjs'
+import { buildTestAdequacyAuthority } from './adequacy-authority.mjs'
 
 const read = (path) => JSON.parse(readFileSync(path, 'utf8'))
 const write = (path, value) => {
@@ -26,8 +27,13 @@ export function writeReviewEvidence({
   model,
   runDir,
   approvalPath = null,
+  adequacyAuthority = null,
+  renderedAuthority = null,
+  renderedReview = null,
 }) {
-  validateReviewer(verdict)
+  const authority =
+    adequacyAuthority || buildTestAdequacyAuthority({ root: null, issue, selection: null })
+  validateReviewer(verdict, { issue, adequacyAuthority: authority })
   const record = {
     schemaVersion: 1,
     kind: 'review-evidence',
@@ -41,6 +47,16 @@ export function writeReviewEvidence({
     supervisorActions: policy.supervisor?.actions || [],
     evaluator: { model, sessionId: verdict.sessionId || null },
     verdict,
+    testAdequacyAuthority: authority,
+    renderedAuthority,
+    renderedReview: renderedReview
+      ? {
+          status: renderedReview.status,
+          recordPath: renderedReview.recordPath,
+          digest: digest(renderedReview.record),
+          summary: renderedReview.record,
+        }
+      : null,
     cycle,
     approvalRef: approvalPath,
     approvalDigest: approvalPath ? digest(read(approvalPath)) : null,
@@ -164,7 +180,7 @@ export async function authenticatedReviews(context) {
     try {
       const record = read(path),
         receipt = read(receiptPath(path))
-      validateReviewer(record.verdict)
+      validateReviewer(record.verdict, { issue })
       if (
         record.schemaVersion !== 1 ||
         record.kind !== 'review-evidence' ||

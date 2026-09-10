@@ -635,3 +635,16 @@ later stages, and component state declarations from spec onward. Follow
 `<harness>/runner/ARTIFACTS.md`. A permissive render, stale SVG or receipt alone
 cannot advance a phase. Repair invalid IDs or missing criteria in the owning
 source, then rerun completion; do not weaken the canonical obligation ledger.
+
+## Combined delivery checks
+
+Before recording `verification` or completing/approving `pr`, run the supervisor's
+`runner/src/combined-cli.mjs verify` against the current feature branch and the
+project's `deliveryVerification` binding. Follow `runner/COMBINED-VERIFICATION.md`.
+Include every current `issues.md` entry and its actual supervisor approval; all
+approved heads must be ancestors of the combined SHA. Record the returned path as
+`evidence.combinedVerification` with the same `evidence.revision`. The feature CLI
+rechecks that proof against the actual issue file, branch and policy. A moved
+branch or changed criteria requires fresh evidence. Keep failed and unexecuted
+checks, substitutions and baseline dispositions visible; a later pass retains
+prior failures. This milestone does not claim integration or human acceptance.
