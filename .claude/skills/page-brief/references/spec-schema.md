@@ -55,9 +55,9 @@ real finding (the job is unserved, or the pages are under-specified), not a rend
   ],
 
   "connects": [                       // OUTBOUND routing — cross-page AND cross-job. Makes it a graph.
-    { "trigger": "Abrir processo", "target": "P2 Credit process", "kind": "page",
+    { "trigger": "Abrir processo", "targetId": "P2", "target": "P2 Credit process", "kind": "page",
       "job": "JTBD-1", "note": "same job, deeper surface" },
-    { "trigger": "Adicionar produto", "target": "Routing (Journey 2)", "kind": "journey",
+    { "trigger": "Adicionar produto", "targetId": "J2", "target": "Routing (Journey 2)", "kind": "journey",
       "job": "JTBD-4", "note": "triggers ANOTHER job — spawns an opportunity" },
     { "trigger": "Abrir conversa", "target": "Channels thread", "kind": "external",
       "job": "JTBD-1", "note": "non-navigational handoff" }
@@ -83,8 +83,12 @@ real finding (the job is unserved, or the pages are under-specified), not a rend
 | **Connections** | `appears_in` · `connects`           |
 | **Validation**  | `acceptance`                        |
 
-Every block/field is **optional** and self-skipping — a degraded card with only responsibilities and a
-checklist still renders cleanly. Only `id` + `name` are truly required per page.
+In explicit `--permissive` draft mode, missing blocks remain self-skipping. Strict
+mode requires `id`, `name`, a nonempty job-tagged checklist, and both nonempty
+acceptance layers. Phase validation also checks canonical requirement/obligation
+IDs and cross-file journey/node/page references; see `<harness>/runner/ARTIFACTS.md`.
+Use `targetId` for exact internal IDs while keeping `target` as the display label;
+`appears_in.step` is the stable screen node ID in a pipeline handoff.
 
 ## Conventions the engine encodes for you
 - **Job vs journey is never ambiguous (Q12).** A job renders as a filled, job-coloured, fully-rounded
@@ -116,3 +120,6 @@ python scripts/page-brief.py board.json --out ./out --columns 1     # one deep c
 python scripts/page-brief.py board.json --out ./out --cards-only    # skip the two shared pages
 ```
 Outputs `board.svg`, `board.html`, and (if a rasterizer is available) `board.png`.
+
+Older worked examples with descriptive steps or unlisted jobs are drafting
+examples: select `--permissive`, then resolve stable IDs before pipeline use.

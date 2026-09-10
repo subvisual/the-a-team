@@ -51,7 +51,6 @@ function fixture(t) {
   mkdirSync(join(root, 'docs/product/jtbd'), { recursive: true })
   writeFileSync(join(root, 'docs/product/jtbd/01-save.md'), 'Save work')
   writeFixture(dir)
-  writeFileSync(join(dir, 'design.md'), '# Design\nSave button')
   let revision = 0,
     event = 0
   const run = (type, input = {}, override = {}) => {
@@ -519,8 +518,8 @@ test('new design output tree after approval requires review of its previously un
     f.run('complete', { phase, artifacts: [phase === 'definition' ? 'prd.md' : 'design.md'] })
     f.run('approve', { phase, decision })
   }
-  mkdirSync(join(f.dir, 'lofi'))
-  writeFileSync(join(f.dir, 'lofi/index.html'), '<button>New unreviewed screen</button>')
+  mkdirSync(join(f.dir, 'lofi/public'))
+  writeFileSync(join(f.dir, 'lofi/public/new.html'), '<button>New unreviewed screen</button>')
   assert.equal((await feature.loadFeature(f.dir)).phases.design.status, 'stale')
   assert.equal(f.run('start', { phase: 'spec' }).status, 'blocked')
 })

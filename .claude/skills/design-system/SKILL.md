@@ -284,6 +284,18 @@ export default {
 };
 ```
 
+`lofi-lint.mjs` treats the `fontSize` keys above as type roles and accepts
+color keys only when their effective configured leaf value is bound through a
+CSS custom property (for example, `oklch(var(--brand-500))`). It merges
+`theme.colors` with `theme.extend.colors` before granting names, so a literal
+override removes an earlier token binding. Fallbacks must also be token-only:
+`var(--surface, var(--fallback))` is valid, while `var(--surface, red)` is not.
+Keep target-specific nested role names intact: a `surface.raised` binding
+authorizes `bg-surface-raised`, while a literal value such as `red` authorizes
+nothing. This lets canonical
+`text-h1`/`text-body`/`text-caption` and semantic utilities pass without
+allowing raw Tailwind palette or CSS named colors.
+
 ## shadcn bridge — A-Team extension
 
 *Not upstream content. This section exists because shadcn/ui is the A-Team's

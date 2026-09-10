@@ -592,13 +592,15 @@ export function evaluateAcceptance(
       accepted:
         !historical &&
         list(requirement.obligations).length > 0 &&
-        list(requirement.obligations).every((item) => item.status === 'satisfied') &&
+        list(requirement.obligations).every((item) => item?.status === 'satisfied') &&
         !diagnostics.some(
           (item) =>
             item.severity === 'error' &&
             (!item.requirementId || item.requirementId === requirement.id),
         ),
-      obligationIds: list(requirement.obligations).map((item) => item.id),
+      obligationIds: list(requirement.obligations)
+        .filter(object)
+        .map((item) => item.id),
     })
   return {
     ok: !diagnostics.some((item) => item.severity === 'error'),

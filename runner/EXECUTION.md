@@ -230,6 +230,18 @@ orphan itself between ancestry snapshots and survive a timeout. A synthetic
 three-generation process reproduced this limitation. Keep #37 open until a
 supported lifecycle containment mechanism passes that regression. Run the local diagnostic explicitly with `node runner/test/fixtures/orphan-timeout-probe.mjs` from the repository root; it cleans up its own synthetic descendant and is excluded from the passing acceptance suite. A single non-reproduction does not establish containment.
 
+The maintainer selected native macOS on 10 September 2026 and explicitly left
+this criterion unresolved. A container/VM backend is outside the selected scope.
+Bounded native research found no supported drop-in fix: `NOTE_TRACK` returned
+`ENOTSUP`, and denying direct `setsid`/`setpgid` still allowed new groups/sessions
+through `posix_spawn` flags. These results match the separate paths in
+[XNU process-event handling](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_event.c#L1030-L1039)
+and [XNU spawn handling](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_exec.c#L4189-L4210).
+All eight synthetic children in that probe were reaped and independently found
+absent afterward. No VM, container runtime or host service was started. Keep this
+known limitation visible in evaluation results and any release-scope decision;
+passing other boundary tests does not resolve #37.
+
 Resolved policy includes `limits`: aggregate `runBudgetUsd` (45 by default),
 `executorBudgetUsd` (10), `reviewerBudgetUsd` (5), `runTimeoutMs` (7,200,000),
 `sessionTimeoutMs` (1,200,000), and `maxCycles` (3). Values must be positive,

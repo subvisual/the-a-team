@@ -88,3 +88,17 @@ Edges are directional (arrowhead at `to`). The router picks geometry automatical
 - **Keep node `text` to ~3–5 words.** Long text wraps and can crowd; put nuance in edge labels.
 - **Give locked cuts a `stop` node**, with the reason in the incoming edge label ("no — RGPD").
 - **Every journey lists its `jtbds`** so the coverage matrix is populated.
+
+## Pipeline identity and validation
+
+For phase handoff, `jtbds` contains exact IDs from the durable target job register,
+not display headlines. Each screen node carries `pageId` matching the page brief.
+Assign stable edge `id` values as well as node IDs; unknown endpoints block strict
+rendering. `--permissive` keeps partial drafts available with warnings but never
+establishes phase eligibility. The full cross-file gate and component schema are
+in `<harness>/runner/ARTIFACTS.md`.
+
+Interactive prototypes additionally give each edge an event `trigger`, action
+`label`, and explicit executable `condition` where it branches. Keep graph node
+and edge IDs unchanged. See `<harness>/runner/PROTOTYPES.md` for the small local
+scenario schema; navigation-only sketches may retain descriptive conditions.

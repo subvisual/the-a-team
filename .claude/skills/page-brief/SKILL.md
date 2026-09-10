@@ -263,3 +263,13 @@ Critique against the method — don't redraw unless asked.
 - `references/review-criteria.md` — the REVIEW rubric.
 - `references/figjam-rebuild.md` — native FigJam mechanics (load only for an editable board).
 - `references/examples/` — a worked example spec (illustration only, not method).
+
+## Strict versus draft rendering
+
+Rendering defaults to strict validation. Use explicit `--permissive` for partial
+cards; missing criteria and unknown jobs remain warnings on that draft and block
+phase advancement. `--validate-only` checks without rendering. For a handoff,
+each page needs both acceptance layers, a nonempty job-tagged checklist, and
+canonical requirement/obligation IDs. Internal links use exact `targetId`;
+`appears_in.step` is the actual screen node ID, not its display label. Follow
+`<harness>/runner/ARTIFACTS.md` for the full cross-file gate and Node prerequisite.

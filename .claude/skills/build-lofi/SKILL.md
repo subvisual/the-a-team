@@ -10,7 +10,8 @@ metadata:
 # build-lofi
 
 Generate a navigable greyscale Astro wireframe at `docs/features/<slug>/lofi/`
-from `design.md`'s `## Screens & flows` section. Wires `<a>` links per flow,
+from `design.md`'s stable `flow-contract` and readable Screens & flows section.
+Preserves graph navigation and selected local interaction fidelity,
 enforces no-color via a lint step, and supports two follow-up modes:
 
 - `build-lofi regen <screen>` — regenerate one screen idempotently.
@@ -31,19 +32,14 @@ system.
   behavior applies: ambiguity prompts, staleness confirmation, the debrief
   interview.
 
-## Input — `design.md ## Screens & flows`
+## Input — stable flow contract
 
-The single source for the engine (replaces upstream's `docs/design/ia.md`).
-Shape the conductor writes and this skill parses:
-
-- Screens: a nested list, `- Screen name — one-line purpose.` (children
-  indented two spaces).
-- Flows: one H4 per named journey, body a single arrow-string referencing
-  screen names **verbatim**: `Login → Workspace home → Meeting detail`.
-
-Validate before generating: every flow screen exists in the screen list with
-the exact same name. Broken references → **stop and report** (pipeline: fail
-loudly to the conductor; standalone: tell the user). Never guess a mapping.
+Read `design.md`'s top-level `flow-contract` JSON fence, compiled against the
+actual `briefs/wireflow/board.json` using `<harness>/runner/PROTOTYPES.md`.
+The contract carries the complete graph, stable node/page/edge IDs, conditions,
+transitions, scenario and interaction fidelity. `## Screens & flows` remains the
+human-readable description; arrow strings and display names are not identifiers.
+Unknown or stale graph references stop generation before writing output.
 
 ## Fidelity — `run_brief.fidelity` calibrates depth
 
@@ -57,15 +53,17 @@ loudly to the conductor; standalone: tell the user). Never guess a mapping.
 
 ### 1. Read and validate
 
-Parse `## Screens & flows` (screens, purposes, flows). Run the exact-name
-validation above.
+Compile authored `prototype.json` against the current wireflow and place the
+returned contract in design.md. Generation validates those sources before writing;
+run `prototype-cli.mjs validate` again after generation. Select interaction fidelity
+explicitly: `navigation` keeps graph links; `interactive` exercises local fixture
+validation, loading, failure and retry. This is independent of visual depth.
 
 ### 2. Staleness check
 
-If `lofi/.lofi-generated` exists and `design.md` has an mtime ≤ the
-sentinel's, the lofi is current. Standalone: offer to regenerate anyway
-(default no; suggest `regen <screen>`). Pipeline: skip regeneration, report
-"lofi current", and only rebuild screens the conductor names (REVISE loop).
+Validate the graph, design and generated contract hashes. A timestamp or sentinel
+alone cannot establish currency. Regenerate stale contract data before review;
+keep unrelated screens and accepted token files intact.
 
 ### 3. Flag ambiguities
 
@@ -98,11 +96,16 @@ For each screen, write `src/pages/<slug>.astro` (kebab-case of the name):
 - Body: greyscale wireframe elements matching the purpose (boxes for content,
   gray rectangles for images, lists with placeholder rows) — calibrated by
   fidelity.
-- Navigation: every flow containing this screen contributes a link to its
-  next screen; multiple destinations → labeled list.
-- Color discipline: **only** `white`/`black`/`gray-*`/`neutral-*` utilities
-  and token CSS variables. No raw hex/rgb/oklch literals — the hardened lint
-  fails the build on any leak. Primary actions get `.cta` — greyscale by
+- Navigation uses stable graph edges, including branch conditions and retry
+  loops. Run `prototype-cli.mjs generate` to create the shared `/flow` player and
+  mapping manifest. Navigation fidelity leaves validation/recovery unverified;
+  interactive fidelity uses the bounded local runtime and explicit scenario reset.
+- Color discipline: use `white`/`black`/`gray-*`/`neutral-*` utilities or
+  color roles whose Tailwind config value is bound to a CSS variable. The lint
+  reads the generated target's `theme.colors` and `theme.extend.colors`, so
+  declared roles such as `brand-500`, `success`, and target-specific nested
+  roles remain valid without opening the vocabulary to Tailwind palette names.
+  No raw or named CSS colors. Primary actions get `.cta` — greyscale by
   default, tinted only when a palette variant mounts (the fallback chain in
   `tokens.css`).
 
@@ -131,13 +134,18 @@ the gate reviews options by clicking, not by reading prose.
 ### 8. Touch the sentinel, lint, report
 
 Write the timestamp to `.lofi-generated`. Run `node lofi-lint.mjs` — any hit
-fails with file + line; fix the leak, never bypass. Report: path, screen
-count, ambiguities resolved (and how), variant URLs, dev command
+fails with file + line + rule (`lofi/no-raw-color`, `lofi/no-named-color`, or
+`lofi/no-color-utility`); fix the leak, never bypass. Typography roles come
+from the canonical scale plus the target's configured `fontSize` keys. For
+ambiguous arbitrary utilities, length/position values are allowed only in the
+corresponding utility family, while colors must resolve through `var(--token)`.
+Fractions on layout utilities remain legal. Report: path, screen count,
+ambiguities resolved (and how), variant URLs, dev command
 (`cd docs/features/<slug>/lofi && npm install && npm run dev`).
 
 ## Regen mode: `build-lofi regen <screen> [with <instruction>]`
 
-1. Verify the screen exists in `## Screens & flows`; error if not.
+1. Resolve the stable page/node ID in the current flow contract; error if unknown.
 2. Rewrite ONLY `src/pages/<slug>.astro` — not layouts, not other screens,
    not styles.
 3. Incorporate the instruction if given; otherwise regenerate from the
@@ -172,10 +180,13 @@ deliberately after a session. Never runs in pipeline mode.
 
 ## Common mistakes
 
-- **Color slipping in.** Only `white`/`black`/`gray-*`/`neutral-*` utilities;
-  no raw literals. The lint catches it; respect the failure.
-- **Adding state.** No `useState`, no fetches, no form submissions. Buttons
-  that "submit" navigate via `<a href>`.
+- **Color slipping in.** Use the greyscale baseline or a token-bound target
+  role; no raw literals, CSS color names, or undeclared palette utilities. The
+  lint catches nested forms such as `ring-offset-red-500`; respect the failure.
+- **Overstating fidelity.** Navigation sketches only follow graph links.
+  Interactive mode may use local form/state transitions and deterministic
+  fixtures, but never production persistence or real backend requests. Use the
+  shared runtime; do not create an application framework for a prototype.
 - **Mock data drift.** The same persona, the same three projects, on every
   screen. `JOURNEY.md` is the source.
 - **Skipping ambiguity handling.** Generic screen names produce vague
@@ -198,3 +209,11 @@ deliberately after a session. Never runs in pipeline mode.
 - Debrief without a session having happened. Ask: "was there a session, or
   are you starting one?" Don't fabricate notes.
 - Lint fails and you're tempted to bypass it. Don't. Fix the leakage.
+
+## Scenario evidence
+
+Follow `<harness>/runner/PROTOTYPES.md` for compile/generate/validate/assess commands.
+Keep the full graph and its IDs in design, generated flow data and spec. Build
+and inspect the actual prototype in a browser. Save scenario receipts and assess
+them: navigation-only validation/recovery stays unverified. Prototype observation
+never substitutes for production behavior or pending human studies.
