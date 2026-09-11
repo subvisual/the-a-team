@@ -11,7 +11,7 @@ discovery-plan skill so they cannot drift.
 Durable artifact: update-only, read-back before every write, kept live as
 later phases surface new assumptions.
 
-```markdown
+````markdown
 ---
 updated: <YYYY-MM-DD>
 evidence: [research/2026-07-24-onboarding]   # synthesis runs this plan stands on
@@ -33,10 +33,22 @@ the top, never buried mid-list.
 
 ## Assumptions
 
-Every assumption the agents (or humans) are building on, one line each:
-the assumption · confidence (strong / moderate / directional / hypothesis) ·
-what would disprove it · the cheapest probe. Later phases append here — the
-plan stays live as design and dev surface new assumptions.
+Keep one canonical `ateam-assumptions` JSON block here. Preserve existing prose
+and source pointers while indexing actual records; summaries cite stable ASM IDs
+instead of maintaining a second ledger. Every assumption retains its confidence,
+disproof and cheapest probe, plus risk, dependent decision, required stage,
+accountable owner, explicit uncertainty and source-backed evidence/disposition.
+Use unresolved actor/role values until known; do not invent ownership or demand.
+
+```ateam-assumptions
+{"schemaVersion":1,"revision":1,"assumptions":[]}
+```
+
+Populate records using `runner/ASSUMPTIONS.md` in the harness. Before each revision,
+preserve the previous parsed block in `assumptions-history/<revision>.json` beside
+this plan; retain source bytes, prior decisions and all assumption/evidence IDs.
+An evidence-producing prototype can precede its later validation stage. Pending
+evidence, authorized deferral, no-go and reshape remain explicit valid outcomes.
 
 ## Technical research
 
@@ -58,4 +70,4 @@ that parked decision is an open question and belongs above.
 Question → activity → owner (human or agent) → date. The work of closing the
 unknowns above; its outcomes land back in research/ runs and flip ledger
 entries to Know.
-```
+````

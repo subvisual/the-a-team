@@ -386,3 +386,15 @@ plans in the phase report, but do not bind evolving current-context summaries or
 appendable research plans as immutable discovery outputs. Later context refresh
 and assumption relay must not reopen unchanged jobs. Changed jobs still stale
 downstream gates; current-context selection independently detects stale facts.
+
+Keep load-bearing research in the existing research plan's single
+`ateam-assumptions` block, using the schema and revision/source rules in
+`runner/ASSUMPTIONS.md` in the harness. The run brief references those actual ASM
+IDs. Record risk, dependent decision, required stage, actual owner (or unresolved
+owner), confidence, disproof, cheapest probe and evidence/disposition. Do not
+manufacture a demand-side answer, source or owner. Discovery-only can end with
+visible later-stage uncertainty; an evidence-producing prototype can precede its
+study. A due assumption requires evidence or an existing authorized deferral.
+Supported no-go/reshape closes as a research decision through
+`record-research-decision`, preserving delivery milestones. Research revisions
+retain history without rebinding the entire live plan as a discovery artifact.

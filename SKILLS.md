@@ -11,6 +11,12 @@ written for this repo against CONTRACT.md rather than migrated.
 
 ## In the repo
 
+Operator setup (#49): use the read-only runner `doctor` and the synthetic
+`runner/ONBOARDING.md` walkthrough before a first authorized feature run. Skill
+discovery must retain the complete pinned bundle and its references. Restart
+uses retained event identities and evidence; diagnostics never install skills,
+start provider sessions or publish project work.
+
 Verification evidence additions (#45–47): `ticket-writer` and `ateam-spec`
 preserve exact requirement provenance and require an independent per-criterion
 test-adequacy review. `ateam-design` supplies a revision-bound rendered plan;

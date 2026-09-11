@@ -111,3 +111,13 @@ seed) · **Typography & density** (specimen category, scale-preset feel) ·
 these guide every design decision downstream). The design phase reads this
 section as its floor alongside the JTBD set; unanswered entries become
 derived calls or TBDs there, never mid-phase questions.
+
+## Consequential interaction choices
+
+Capture an unresolved task-sequence, information-architecture or user-control
+choice as a versioned assumption and state whether an `interaction-comparison`
+is its cheapest useful probe. Bind the same accepted job, scenario and existing
+design system to two or three structural approaches, with shared criteria and
+evidence methods. Record a reason to skip variants for routine corrections.
+A provisional direction does not resolve target-user usability; preserve that
+obligation and its accountable owner. See `runner/INTERACTION-ALTERNATIVES.md`.

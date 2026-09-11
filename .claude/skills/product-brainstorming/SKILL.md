@@ -187,6 +187,18 @@ confuse brainstorming with deciding.
 
 ## Anti-patterns to catch
 
+When uncertainty materially changes a dependent decision, carry a small set of
+structurally different solution hypotheses into the existing research plan, each
+linked to its cheapest discriminating probe and intended outcome. Use the
+`ateam-assumptions` records described in `runner/ASSUMPTIONS.md` in the harness:
+risk category, required decision stage, actual owner or unresolved owner,
+confidence, disproof, explicit uncertainty, and source-backed disposition.
+Hypotheses remain hypotheses; neither a brainstorming preference nor a synthetic
+example is demand evidence. Preserve contradictory and absent sources. No-go and
+reshape are supported decisions when grounded in the recorded evidence and
+existing authority. A routine refinement reuses current accepted context and
+records why new divergence is unnecessary; it does not trigger full rediscovery.
+
 - **Solutioning before framing** — "we should build X" before the problem is
   defined.
 - **Feature parity trap** — "competitor has X, so we need X" is copying.

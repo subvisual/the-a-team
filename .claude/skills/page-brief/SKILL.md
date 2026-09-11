@@ -273,3 +273,13 @@ each page needs both acceptance layers, a nonempty job-tagged checklist, and
 canonical requirement/obligation IDs. Internal links use exact `targetId`;
 `appears_in.step` is the actual screen node ID, not its display label. Follow
 `<harness>/runner/ARTIFACTS.md` for the full cross-file gate and Node prerequisite.
+
+## Risk-triggered interaction comparison
+
+When research declares an `interaction-comparison` probe, carry the shared active
+job, scenario, constraints, criteria and token conventions into each option’s
+brief. Compare task sequence, information architecture or user control; palette
+and scale alone do not answer the uncertainty. Link the exact comparison and
+selected flow from `runner/INTERACTION-ALTERNATIVES.md`, with benefits, costs and
+unrun usability obligations. Routine corrections keep the settled interaction
+with a reason; do not generate variants just to fill this section.

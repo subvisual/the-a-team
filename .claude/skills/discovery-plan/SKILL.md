@@ -110,7 +110,15 @@ it's done.
    (each tagged with what changes if answered; a still-open blocking unknown
    is stated loudly at the top). Ledger and brainstorm assumptions →
    research-plan **assumptions**, each with confidence, disproof, cheapest
-   probe. Never let an assumption hide inside polished prose.
+   probe. Add their stable versioned records to the plan's single
+   `ateam-assumptions` block, following `runner/ASSUMPTIONS.md` in the harness.
+   Preserve risk, dependent decision, required stage, actual owner or unresolved
+   owner, source hashes and explicit uncertainty. Retain the previous block in
+   `assumptions-history/<revision>.json` before updating. Never let an assumption
+   hide inside polished prose, infer demand from implementation, or relabel a
+   synthetic source as observed support. A prototype can produce evidence before
+   a later study is due; pending evidence then remains visible. Record an existing
+   authorized deferral, no-go or reshape with its rationale and consequences.
 5. **Technical research** (research-plan side). Services, stack, and every
    integration in play: options considered, cost (money, effort, risk),
    chosen or open. Unanswerable API questions become research activities.
@@ -119,7 +127,10 @@ it's done.
    deliverables that close research-plan questions. Group into initiatives
    with owners (human or agent) and dates; define the decision criteria that
    gate them.
-7. **Cross-check.** Every research activity has a home in an initiative or is
+7. **Cross-check.** Run the read-only `assumptions-cli.mjs` at the actual dependent
+   decision stage; missing evidence or authority remains a named blocker. Valid
+   no-go/reshape is a supported decision, not failed delivery. Every research
+   activity has a home in an initiative or is
    explicitly deferred; every resolution deliverable points at its question.
    The files must read as one plan split by audience — and when the project
    plan is in play (step 8), its "What comes next" must not contradict

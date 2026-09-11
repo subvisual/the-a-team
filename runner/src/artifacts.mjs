@@ -413,6 +413,8 @@ export async function validateFeatureArtifacts({ featureDir, root, stage = 'defi
     if (stage !== 'definition') {
       const { validateFeatureFlow } = await import('./prototype.mjs')
       reports.push(validateFeatureFlow({ featureDir: dir, root: target, stage }))
+      const { validateFeatureAlternatives } = await import('./alternatives.mjs')
+      reports.push(await validateFeatureAlternatives({ featureDir: dir, root: target }))
     }
   }
   const acceptance = await validateIssuesPhase({ featureDir: dir, stage })

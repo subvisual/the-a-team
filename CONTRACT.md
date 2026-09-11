@@ -635,6 +635,26 @@ These are command-layer states, never instructions to edit JSON. Changed bound
 artifacts produce `stale` state. Legacy `done`/provisional data is retained as
 history and migrated without inventing approval or acceptance.
 
+At run level, `paused` is a cooperative scheduling hold and `aborted` is terminal.
+Pause blocks new phase dispatch and gate advancement while retaining in-flight
+observations, artifacts, branches, event IDs and decisions. Resume derives the
+current stage from verified evidence; it launches nothing and replays no external
+action. Revision seeds the named phase dependency graph even without live artifact
+bindings, invalidating affected downstream phases while preserving independent
+milestone receipts. Native macOS detached-child containment (#37) remains unresolved;
+these commands do not suspend or terminate a process tree.
+
+`feature-cli.mjs status --feature <feature-dir> --format text|json|html` projects
+current manifest/evidence through the same revalidation as `show`. The local HTML
+snapshot and CLI include reason/next action, gate recommendation/decision/consequence,
+provisional versus accepted phase decisions, changed review inputs, run-brief
+assumptions and current obligations, independent milestones and safe existing
+artifact/runtime links. Runtime availability and live execution remain unverified
+unless separately observed. Exact runner-history identities must be recorded before
+dispatch to expose interrupted actions without guessing associations. Status reads
+the existing repository budget ledger; unknown accounting stays unknown and no
+allowance is opened or reset. See `runner/FEATURE-STATUS.md` for the command contract.
+
 ## Executable phase and acceptance gates
 
 `runner/src/feature-cli.mjs` owns manifest schema version 2. Each command reads
@@ -743,3 +763,42 @@ defaults to WCAG 2.2 AA unless project-bound. Use bounded automation and actual
 interaction, with limitations visible. Agent critique cannot satisfy a human
 usability study, and an automated pass cannot claim full accessibility
 conformance. See `runner/RENDERED-REVIEW.md` for the executable contract.
+
+## Stage-bound research decisions
+
+`docs/product/research-plan.md` remains the canonical research home. Its single
+`ateam-assumptions` block records stable assumption IDs and versions, risk
+category, load-bearing status, applicable features, dependent decision, required
+stage, accountable owner (or explicit unresolved owner), confidence, disproof,
+cheapest probe, uncertainty, and evidence/disposition. Run-brief assumptions
+reference those actual IDs. No customer facts, owners, evidence or authorization
+are inferred from code or filled in to satisfy a gate.
+
+Each evidence entry retains its source snapshot path and SHA-256, original
+reference, actor, method, origin and support/contradict/inconclusive result.
+Preserve every prior revision under `docs/product/assumptions-history/`; retain
+all assumption/evidence IDs. Changing a definition or reopening no-go/reshape
+requires the next assumption version and an explicit authorized change decision.
+Old evidence cannot be relabelled to the new version. Feature receipts protect
+already-consumed source/history identity; current source bytes are rechecked.
+
+Actual feature entry, completion and approval validate due load-bearing research.
+Missing evidence or an unresolved due owner names the blocker. Deferral requires
+existing authority, rationale, consequences and a future decision stage; it blocks
+again when that stage arrives. An evidence-producing prototype can precede its
+later study, preserving pending status. Synthetic, inferred and default sources
+do not establish observed validation. New later-stage uncertainty does not
+automatically invalidate earlier valid gates or re-run discovery for a routine
+refinement.
+
+Supported no-go/reshape is recorded through `record-research-decision` as a
+successful research outcome that stops dependent work, retaining all milestone
+receipts and event history. A later authorized research revision plus explicit
+`revise` can reopen affected work. Independently observed implementation, merge
+and release remain separate facts; human/product validation requires its own due
+research evidence. See [runner/ASSUMPTIONS.md](runner/ASSUMPTIONS.md).
+Human/product validation enforces all applicable deadlines already reached,
+including a deferral's effective deadline, during recording and reload. Later
+pending studies do not invalidate earlier valid milestones. Stop decisions require
+valid source/schema/decision/history records, while unrelated unfinished research
+stays visible instead of blocking the decision to stop that work.

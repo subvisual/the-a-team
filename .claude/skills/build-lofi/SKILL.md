@@ -123,6 +123,15 @@ counts, on every screen.
 
 ### 7. Mount variants (fidelity ≥ lofi)
 
+Visual variants are optional within the established project conventions. For a
+declared high-risk interaction comparison, follow
+`<harness>/runner/INTERACTION-ALTERNATIVES.md`: make two or three structurally
+different flows using the same job, scenario, constraints, tokens and evidence
+method. Preserve every option's flow IDs and receipts. Palette/scale changes
+alone cannot satisfy the comparison. A routine correction retains the existing
+interaction with a reason. Keep the selection provisional and target-user
+usability unrun until separate evidence resolves its acceptance obligation.
+
 Copy any `scale-variants/*.css` and `palette-variants/*.css` produced by
 `design-system` into `lofi/public/scale-variants/` and
 `lofi/public/palette-variants/`. The Layout loader mounts them at
