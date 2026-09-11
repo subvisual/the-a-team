@@ -802,3 +802,19 @@ including a deferral's effective deadline, during recording and reload. Later
 pending studies do not invalidate earlier valid milestones. Stop decisions require
 valid source/schema/decision/history records, while unrelated unfinished research
 stays visible instead of blocking the decision to stop that work.
+
+## Pilot protocol boundaries
+
+Pilot reporting uses `runner/PILOT-PROTOCOL.md`: all attempts remain in cost and
+human-effort totals, unknown/unrun evidence stays visible, and implementation,
+verification, human acceptance, integration, release and product validation remain
+independent. Ordinary-assisted comparisons require matched scope and accountable
+limitations; output counts are not productivity evidence. Post-pilot corrections
+retain source references/hashes and assumption versions in immutable snapshots,
+with a generalized followup and publication review. Live execution requires
+separate target authority, roles, obligations, comparison method and eligible
+release evidence; protocol completeness grants no authority.
+
+## Harness evaluation evidence
+
+Use the versioned synthetic corpus described in [runner/EVALUATION.md](runner/EVALUATION.md) alongside ordinary runner tests. Retain exact harness/skill/source/configuration/input/rubric identifiers, independent outcomes and traces, repeated agent trials where variance matters, and individual expert disagreements with calibration revisions. Deterministic checks are not human or model capability evidence. The unresolved #37 process-termination dependency remains unsupported and release ineligible; passing current native boundary controls cannot waive it.

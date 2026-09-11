@@ -710,3 +710,7 @@ effective deadline of any authorized deferral. Unrelated later studies remain
 pending without invalidating earlier milestones. Recording a valid stop decision
 does not require completing work being stopped; other pending research remains
 visible, while source, decision and history integrity must still validate.
+
+### Harness evaluation evidence
+
+For harness maintenance, use the versioned synthetic evaluation corpus in `runner/EVALUATION.md` alongside ordinary tests. Preserve outcome records independently from traces, exact source and skill-bundle hashes, and the declared model/configuration/input/rubric identifiers for any separately authorized trials. Never infer human acceptance or model capability from synthetic deterministic passes. Retain grader disagreements and revised rubrics rather than averaging them away. Issue #37 remains an unsupported, release-ineligible dependency until independently resolved; passing existing native controls cannot waive that limitation.

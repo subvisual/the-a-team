@@ -126,3 +126,15 @@ become audit-grade evidence nobody audited.
 ## Examples
 
 - Input: `examples/example-input.md` · Output: `examples/example-output.md`
+
+## Post-pilot learning checkpoint
+
+For an authorized pilot, follow `runner/PILOT-PROTOCOL.md`. Classify corrections
+as context, requirement, design, execution or evaluator errors; retain source
+reference/hash, changed assumption ID/version, and a generalized fixture/skill/
+contract followup. Use the new-snapshot checkpoint command so prior records remain
+unchanged. Link the snapshot from the project research trail and advance changed
+research assumptions through `runner/ASSUMPTIONS.md`, preserving their history.
+Keep client facts in their authorized source and record accountable review of
+generalized text before any harness publication. Synthetic examples and a
+calculator result do not establish customer validation or pilot authority.

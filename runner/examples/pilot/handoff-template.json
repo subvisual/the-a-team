@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "origin": "planned",
+  "projects": [
+    {
+      "id": "first",
+      "identity": null,
+      "stack": null,
+      "designSystem": null,
+      "authority": {
+        "authorized": false,
+        "actor": null,
+        "reference": null,
+        "scope": []
+      },
+      "roles": {
+        "operator": null,
+        "reviewer": null,
+        "productDecisionMaker": null,
+        "studyLead": null
+      },
+      "obligations": []
+    },
+    {
+      "id": "second",
+      "identity": null,
+      "stack": null,
+      "designSystem": null,
+      "authority": {
+        "authorized": false,
+        "actor": null,
+        "reference": null,
+        "scope": []
+      },
+      "roles": {
+        "operator": null,
+        "reviewer": null,
+        "productDecisionMaker": null,
+        "studyLead": null
+      },
+      "obligations": []
+    }
+  ],
+  "comparison": {
+    "method": "matched-scope-ordinary-assisted-work",
+    "actor": null,
+    "reference": null,
+    "resolved": false
+  },
+  "releaseEvidence": {
+    "eligible": false,
+    "reference": null,
+    "unresolvedDependencies": [
+      "#37"
+    ]
+  }
+}

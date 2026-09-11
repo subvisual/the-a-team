@@ -1,0 +1,406 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "id": "PILOT-SYNTHETIC-1",
+  "origin": "synthetic",
+  "diagnostics": [],
+  "increments": [
+    {
+      "id": "alpha-new-slice",
+      "projectId": "alpha",
+      "kind": "new-slice",
+      "attemptIds": [
+        "alpha-new-slice-failed",
+        "alpha-new-slice-final"
+      ],
+      "accepted": true,
+      "milestones": {
+        "implementation": {
+          "status": "recorded",
+          "reference": "fixture:alpha-new-slice:implementation"
+        },
+        "verification": {
+          "status": "recorded",
+          "reference": "fixture:alpha-new-slice:verification"
+        },
+        "human_acceptance": {
+          "status": "recorded",
+          "reference": "fixture:alpha-new-slice-final:review",
+          "attemptId": "alpha-new-slice-final",
+          "actor": "Synthetic reviewer"
+        },
+        "integration": {
+          "status": "recorded",
+          "reference": "fixture:merge-only"
+        },
+        "release": {
+          "status": "unrun"
+        },
+        "product_validation": {
+          "status": "unrun"
+        }
+      }
+    },
+    {
+      "id": "alpha-recovery",
+      "projectId": "alpha",
+      "kind": "recovery",
+      "attemptIds": [
+        "alpha-recovery-interrupted",
+        "alpha-recovery-final"
+      ],
+      "accepted": true,
+      "milestones": {
+        "implementation": {
+          "status": "recorded",
+          "reference": "fixture:alpha-recovery:implementation"
+        },
+        "verification": {
+          "status": "recorded",
+          "reference": "fixture:alpha-recovery:verification"
+        },
+        "human_acceptance": {
+          "status": "recorded",
+          "reference": "fixture:alpha-recovery-final:review",
+          "attemptId": "alpha-recovery-final",
+          "actor": "Synthetic reviewer"
+        },
+        "integration": {
+          "status": "unrun"
+        },
+        "release": {
+          "status": "unrun"
+        },
+        "product_validation": {
+          "status": "unrun"
+        }
+      }
+    },
+    {
+      "id": "alpha-design",
+      "projectId": "alpha",
+      "kind": "design",
+      "attemptIds": [
+        "alpha-design-final"
+      ],
+      "accepted": true,
+      "milestones": {
+        "implementation": {
+          "status": "recorded",
+          "reference": "fixture:alpha-design:implementation"
+        },
+        "verification": {
+          "status": "recorded",
+          "reference": "fixture:alpha-design:verification"
+        },
+        "human_acceptance": {
+          "status": "recorded",
+          "reference": "fixture:alpha-design-final:review",
+          "attemptId": "alpha-design-final",
+          "actor": "Synthetic reviewer"
+        },
+        "integration": {
+          "status": "unrun"
+        },
+        "release": {
+          "status": "unrun"
+        },
+        "product_validation": {
+          "status": "unrun"
+        }
+      }
+    },
+    {
+      "id": "alpha-feature-delta",
+      "projectId": "alpha",
+      "kind": "feature-delta",
+      "attemptIds": [
+        "alpha-feature-delta-final"
+      ],
+      "accepted": true,
+      "milestones": {
+        "implementation": {
+          "status": "recorded",
+          "reference": "fixture:alpha-feature-delta:implementation"
+        },
+        "verification": {
+          "status": "recorded",
+          "reference": "fixture:alpha-feature-delta:verification"
+        },
+        "human_acceptance": {
+          "status": "recorded",
+          "reference": "fixture:alpha-feature-delta-final:review",
+          "attemptId": "alpha-feature-delta-final",
+          "actor": "Synthetic reviewer"
+        },
+        "integration": {
+          "status": "unrun"
+        },
+        "release": {
+          "status": "unrun"
+        },
+        "product_validation": {
+          "status": "unrun"
+        }
+      }
+    },
+    {
+      "id": "beta-new-slice",
+      "projectId": "beta",
+      "kind": "new-slice",
+      "attemptIds": [
+        "beta-new-slice-final"
+      ],
+      "accepted": true,
+      "milestones": {
+        "implementation": {
+          "status": "recorded",
+          "reference": "fixture:beta-new-slice:implementation"
+        },
+        "verification": {
+          "status": "recorded",
+          "reference": "fixture:beta-new-slice:verification"
+        },
+        "human_acceptance": {
+          "status": "recorded",
+          "reference": "fixture:beta-new-slice-final:review",
+          "attemptId": "beta-new-slice-final",
+          "actor": "Synthetic reviewer"
+        },
+        "integration": {
+          "status": "unrun"
+        },
+        "release": {
+          "status": "unrun"
+        },
+        "product_validation": {
+          "status": "unrun"
+        }
+      }
+    },
+    {
+      "id": "beta-recovery",
+      "projectId": "beta",
+      "kind": "recovery",
+      "attemptIds": [
+        "beta-recovery-final"
+      ],
+      "accepted": true,
+      "milestones": {
+        "implementation": {
+          "status": "recorded",
+          "reference": "fixture:beta-recovery:implementation"
+        },
+        "verification": {
+          "status": "recorded",
+          "reference": "fixture:beta-recovery:verification"
+        },
+        "human_acceptance": {
+          "status": "recorded",
+          "reference": "fixture:beta-recovery-final:review",
+          "attemptId": "beta-recovery-final",
+          "actor": "Synthetic reviewer"
+        },
+        "integration": {
+          "status": "unrun"
+        },
+        "release": {
+          "status": "unrun"
+        },
+        "product_validation": {
+          "status": "unrun"
+        }
+      }
+    },
+    {
+      "id": "beta-design",
+      "projectId": "beta",
+      "kind": "design",
+      "attemptIds": [
+        "beta-design-final"
+      ],
+      "accepted": true,
+      "milestones": {
+        "implementation": {
+          "status": "recorded",
+          "reference": "fixture:beta-design:implementation"
+        },
+        "verification": {
+          "status": "recorded",
+          "reference": "fixture:beta-design:verification"
+        },
+        "human_acceptance": {
+          "status": "recorded",
+          "reference": "fixture:beta-design-final:review",
+          "attemptId": "beta-design-final",
+          "actor": "Synthetic reviewer"
+        },
+        "integration": {
+          "status": "unrun"
+        },
+        "release": {
+          "status": "unrun"
+        },
+        "product_validation": {
+          "status": "unrun"
+        }
+      }
+    },
+    {
+      "id": "beta-feature-delta",
+      "projectId": "beta",
+      "kind": "feature-delta",
+      "attemptIds": [
+        "beta-feature-delta-final"
+      ],
+      "accepted": false,
+      "milestones": {
+        "implementation": {
+          "status": "recorded",
+          "reference": "fixture:beta-feature-delta:implementation"
+        },
+        "verification": {
+          "status": "recorded",
+          "reference": "fixture:beta-feature-delta:verification"
+        },
+        "human_acceptance": {
+          "status": "unrun"
+        },
+        "integration": {
+          "status": "unrun"
+        },
+        "release": {
+          "status": "unrun"
+        },
+        "product_validation": {
+          "status": "unrun"
+        }
+      }
+    }
+  ],
+  "attempts": 10,
+  "acceptedIncrements": 7,
+  "metrics": {
+    "spendUsd": {
+      "knownTotal": 27,
+      "missingCount": 0,
+      "measuredCount": 10,
+      "total": 27
+    },
+    "humanMinutes": {
+      "knownTotal": 175,
+      "missingCount": 0,
+      "measuredCount": 10,
+      "total": 175
+    },
+    "activeReviewMinutes": {
+      "knownTotal": 66,
+      "missingCount": 0,
+      "measuredCount": 10,
+      "total": 66
+    },
+    "decisionsRequested": {
+      "knownTotal": 10,
+      "missingCount": 0,
+      "measuredCount": 10,
+      "total": 10
+    },
+    "contextCostUsd": {
+      "knownTotal": 2.7,
+      "missingCount": 0,
+      "measuredCount": 10,
+      "total": 2.7
+    },
+    "contextMinutes": {
+      "knownTotal": 27,
+      "missingCount": 0,
+      "measuredCount": 10,
+      "total": 27
+    }
+  },
+  "acceptedPerHumanHour": {
+    "value": 2.4,
+    "numerator": 7,
+    "denominatorMinutes": 175,
+    "attribution": "exact",
+    "definition": "Current human-accepted increments / all attributable human hours across the complete cohort, including failed and interrupted attempts"
+  },
+  "firstPassAcceptance": {
+    "numerator": 5,
+    "denominator": 8,
+    "value": 0.625,
+    "definition": "Increment accepted on its first attempt / increments with a recorded human review"
+  },
+  "milestones": {
+    "implementation": {
+      "recorded": 8,
+      "unrun": 0,
+      "unknown": 0
+    },
+    "verification": {
+      "recorded": 8,
+      "unrun": 0,
+      "unknown": 0
+    },
+    "human_acceptance": {
+      "recorded": 7,
+      "unrun": 1,
+      "unknown": 0
+    },
+    "integration": {
+      "recorded": 1,
+      "unrun": 7,
+      "unknown": 0
+    },
+    "release": {
+      "recorded": 0,
+      "unrun": 8,
+      "unknown": 0
+    },
+    "product_validation": {
+      "recorded": 0,
+      "unrun": 8,
+      "unknown": 0
+    }
+  },
+  "escapedDefects": {
+    "critical": 0,
+    "high": 1,
+    "medium": 0,
+    "low": 0,
+    "unknown": 0,
+    "missingInventories": 0
+  },
+  "recovery": {
+    "numerator": 2,
+    "denominator": 2,
+    "value": 1,
+    "unrun": 6,
+    "unknown": 0
+  },
+  "primaryJob": {
+    "numerator": 0,
+    "denominator": 0,
+    "value": null,
+    "unrun": 8,
+    "unknown": 0
+  },
+  "contextSufficiency": {
+    "sufficient": 8,
+    "insufficient": 1,
+    "unknown": 1
+  },
+  "comparison": {
+    "method": "matched-scope-ordinary-assisted-work",
+    "status": "unrun",
+    "multiplier": null,
+    "limitation": "A descriptive comparison does not establish a repeatable productivity multiplier or causal effect."
+  },
+  "limitations": [
+    "All measurements are synthetic; no effectiveness or adoption claim.",
+    "Target-user studies and release are unrun."
+  ],
+  "unrunObligations": [
+    "OBL-TARGET-USER-STUDY"
+  ]
+}

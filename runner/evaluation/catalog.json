@@ -1,0 +1,296 @@
+{
+  "schemaVersion": 1,
+  "id": "ateam-corpus-v1",
+  "version": 1,
+  "synthetic": true,
+  "releaseEligible": false,
+  "unresolvedDependencies": [
+    {
+      "issue": 37,
+      "status": "unsupported",
+      "reason": "Detached process termination remains unresolved; release and live-provider eligibility are blocked."
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "unsupported-request",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/cli.test.mjs",
+      "testName": "command-specific unsupported flags are rejected before init can write",
+      "expected": "Unsupported invocation is rejected before any write.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "contradictory-evidence",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/assumptions.test.mjs",
+      "testName": "conflicting evidence stays explicit and proceed must resolve every contradiction",
+      "expected": "Retain contradiction and refuse proceed until every contradiction is resolved.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "no-go",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/assumptions.test.mjs",
+      "testName": "no-go is a valid recorded outcome and prevents dependent commitment",
+      "expected": "No-go remains an explicit valid decision and blocks dependent commitment.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "branching-retry",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/flow.test.mjs",
+      "testName": "interactive public flow retains failed input, retries the same payload and resets the scenario",
+      "expected": "Failed input survives retry; dependent submit remains blocked until persistence succeeds.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "long-content",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "browser",
+      "testFile": "test/evaluation/browser.mjs",
+      "testName": "long content retains actual target layout and complete failure evidence",
+      "expected": "Long target content stays readable with controls inside the viewport.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "keyboard-use",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "browser",
+      "testFile": "test/evaluation/browser.mjs",
+      "testName": "keyboard completes the real synthetic comparison flow",
+      "expected": "Keyboard reaches and activates submit after failed-save recovery.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "missing-reference",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/artifacts.test.mjs",
+      "testName": "strict graph validation names unknown endpoints without silently dropping an edge",
+      "expected": "Missing endpoint reports its identity and prevents generation.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "unknown-job",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/artifacts.test.mjs",
+      "testName": "page validation rejects unknown job/page/journey references and both missing acceptance layers",
+      "expected": "Unknown canonical job blocks downstream artifacts.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "orphan-obligation",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/obligations.test.mjs",
+      "testName": "dropping an obligation or unknown artifact reference fails deterministic coverage",
+      "expected": "A dropped obligation remains an error with its canonical ID.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "dependency-cycle",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/local-issues.test.mjs",
+      "testName": "adapter rejects dependency cycle before any execution or history lookup",
+      "expected": "Cycle diagnostic names the participating IDs before work begins.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "contradictory-approval",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/approval.test.mjs",
+      "testName": "loop refuses reviewer unmet criteria before approval publication",
+      "expected": "Approve with unmet criteria cannot publish approval.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "dirty-review",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/approval.test.mjs",
+      "testName": "review sees committed bad data even when executor leaves a dirty correction",
+      "expected": "Reviewer inspects committed source; dirty corrections cannot authenticate approval.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "forged-marker",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/provenance.test.mjs",
+      "testName": "arbitrary display markers cannot create trusted cycles",
+      "expected": "Untrusted display markers cannot become completed reviews or cycles.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "dry-run",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/cli.test.mjs",
+      "testName": "dry runs preserve existing config, worktrees, locks and run records",
+      "expected": "Read-only plans preserve existing local state.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "interrupted-recovery",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/local-recovery.test.mjs",
+      "testName": "restart accounts for an approval interrupted before local delivery without rerunning agents",
+      "expected": "Recovery reconciles durable approval without a duplicate model run.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "stale-context",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/context.test.mjs",
+      "testName": "changed selected sources invalidate derived facts but unrelated edits do not",
+      "expected": "Changed authority invalidates derived facts without treating unrelated edits as changes.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "narrow-refinement",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/feature-state-cli.test.mjs",
+      "testName": "actual refinement route reuses phase identities and audits its controller metadata narrowly",
+      "expected": "Refinement preserves approved phase identities and limits controller edits.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "crosscutting-invariant",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/evaluation/scenarios.mjs",
+      "testName": "crosscutting invariant survives a narrow unrelated path selection",
+      "expected": "Global invariant remains selected even when no path or tag overlaps.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "two-target-isolation",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "portable",
+      "testFile": "test/evaluation/scenarios.mjs",
+      "testName": "two synthetic stacks preserve project facts outputs and exact harness pins",
+      "expected": "Node/custom-tokens and Python/server-template targets use only their own facts and outputs.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    },
+    {
+      "id": "native-boundary-controls",
+      "version": 1,
+      "kind": "deterministic",
+      "environment": "native",
+      "testFile": "test/sandbox.test.mjs",
+      "testName": "native executor boundary denies nested escapes, protected writes and inherited secrets",
+      "expected": "Existing macOS read/write/environment controls pass; this does not establish process-tree containment.",
+      "capabilityTrial": {
+        "status": "not-run",
+        "rubric": "capability-v1",
+        "reason": "Requires explicit model spend authorization; deterministic checks do not establish model capability."
+      }
+    }
+  ]
+}

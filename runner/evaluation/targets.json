@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "targets": [
+    {
+      "id": "cedar-node",
+      "stack": "Node ES modules with client-side draft cards",
+      "designSystem": "Cedar custom CSS tokens and compact cards",
+      "purpose": "Save private local drafts",
+      "audience": "Synthetic editors",
+      "canary": "CEDAR_DRAFT_ONLY",
+      "task": "Correct draft label in app.mjs",
+      "codePath": "app.mjs",
+      "designPath": "ui/cedar.css",
+      "testCommand": "node --test app.test.mjs",
+      "executable": "node",
+      "renderArgs": ["app.mjs"],
+      "testArgs": ["--test", "app.test.mjs"],
+      "outputPath": "outputs/cedar/draft.html",
+      "files": {
+        "app.mjs": "import { pathToFileURL } from 'node:url'\nexport function renderDraft(owner) {\n  if (!owner) throw Error('Authenticated owner required')\n  return '<article class=\"draft-card\" data-system=\"cedar\"><h1>CEDAR_DRAFT_ONLY</h1><p>Local private drafts for ' + owner.replaceAll('<', '&lt;') + '</p></article>'\n}\nif (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) console.log(renderDraft('synthetic-editor'))\n",
+        "app.test.mjs": "import { test } from 'node:test'\nimport assert from 'node:assert/strict'\nimport { renderDraft } from './app.mjs'\ntest('Cedar private draft card authenticates owner and retains target identity', () => {\n assert.throws(() => renderDraft(''), /Authenticated/)\n assert.match(renderDraft('<editor>'), /CEDAR_DRAFT_ONLY/)\n assert.match(renderDraft('<editor>'), /&lt;editor>/)\n assert.doesNotMatch(renderDraft('editor'), /QUARTZ_BOOKING_ONLY/)\n})\n",
+        "ui/cedar.css": ":root { --cedar-space: 8px; --cedar-accent: #246649; }\n.draft-card { padding: var(--cedar-space); border: 1px solid var(--cedar-accent); }\n",
+        "requirements.md": "CEDAR_DRAFT_ONLY: drafts stay local; authenticated editor ownership is required.\n"
+      },
+      "sources": {
+        "requirements": {
+          "kind": "requirement",
+          "path": "requirements.md"
+        },
+        "design": {
+          "kind": "design",
+          "path": "ui/cedar.css"
+        },
+        "code": {
+          "kind": "code",
+          "path": "app.mjs"
+        }
+      }
+    },
+    {
+      "id": "quartz-python",
+      "stack": "Python server-rendered HTML with escaped booking templates",
+      "designSystem": "Quartz CSS tokens and spacious booking rows",
+      "purpose": "Render guest booking confirmations",
+      "audience": "Synthetic reception operators",
+      "canary": "QUARTZ_BOOKING_ONLY",
+      "task": "Correct booking label in app.py",
+      "codePath": "app.py",
+      "designPath": "styles/quartz.css",
+      "testCommand": "python3 -m unittest -v",
+      "executable": "python3",
+      "renderArgs": ["app.py"],
+      "testArgs": ["-m", "unittest", "-v"],
+      "outputPath": "outputs/quartz/booking.html",
+      "files": {
+        "app.py": "from html import escape\n\ndef render_booking(guest):\n    if not guest:\n        raise ValueError('Guest reference required')\n    return '<section class=\"booking-row\" data-system=\"quartz\"><h1>QUARTZ_BOOKING_ONLY</h1><p>Server-rendered booking for ' + escape(guest) + '</p></section>'\n\nif __name__ == '__main__':\n    print(render_booking('synthetic-guest'))\n",
+        "test_app.py": "import unittest\nfrom app import render_booking\n\nclass BookingTest(unittest.TestCase):\n    def test_booking_retains_identity_and_escapes_guest(self):\n        with self.assertRaisesRegex(ValueError, 'Guest reference'):\n            render_booking('')\n        self.assertIn('QUARTZ_BOOKING_ONLY', render_booking('<guest>'))\n        self.assertIn('&lt;guest&gt;', render_booking('<guest>'))\n        self.assertNotIn('CEDAR_DRAFT_ONLY', render_booking('guest'))\n",
+        "styles/quartz.css": ":root { --quartz-space: 24px; --quartz-accent: #584078; }\n.booking-row { margin-block: var(--quartz-space); color: var(--quartz-accent); }\n",
+        "requirements.md": "QUARTZ_BOOKING_ONLY: confirmations render on server; a guest reference is required and HTML must be escaped.\n"
+      },
+      "sources": {
+        "requirements": {
+          "kind": "requirement",
+          "path": "requirements.md"
+        },
+        "design": {
+          "kind": "design",
+          "path": "styles/quartz.css"
+        },
+        "code": {
+          "kind": "code",
+          "path": "app.py"
+        }
+      }
+    }
+  ]
+}

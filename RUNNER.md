@@ -334,3 +334,7 @@ Aggregate allowance and timeout work ([#37](https://github.com/subvisual/the-a-t
 is partial. Accounting and explicit recovery are covered; unobserved detached
 orphans can escape macOS ancestry-based cleanup. See the precise
 [execution limitation](runner/EXECUTION.md#retained-allowances-and-process-timeouts).
+
+## Synthetic evaluation corpus
+
+The runner provides `npm run test:evaluation -- --output <new-directory-outside-harness>` for the portable corpus and `--profile native` for all 20 cases on native macOS with trusted browser tooling. See [runner/EVALUATION.md](runner/EVALUATION.md) for native setup, retained source digests, seeded-defect proof, two-target isolation, and separate agent/expert records. Keep `npm test` and `npm run test:boundary` as independent checks. No provider/model launch or publishing is performed. Model trials and human evaluations remain explicitly not run until separately authorized and evidenced, and #37 keeps release eligibility false.

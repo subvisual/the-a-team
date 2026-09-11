@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "id": "synthetic-calibration-1",
+  "trialId": "synthetic-example-trial-1",
+  "synthetic": true,
+  "recordUse": "SCHEMA EXAMPLE ONLY: fictitious grader disagreement, not actual expert work",
+  "assessments": [
+    {
+      "graderId": "synthetic-grader-a",
+      "rubricId": "capability-v1",
+      "verdict": "accept",
+      "rationale": "Synthetic example interpretation: visible retained input was considered sufficient"
+    },
+    {
+      "graderId": "synthetic-grader-b",
+      "rubricId": "capability-v1",
+      "verdict": "reject",
+      "rationale": "Synthetic example interpretation: reload restoration is required"
+    }
+  ],
+  "rubricRevisions": [
+    {
+      "id": "capability-v1",
+      "digest": "b1a684de676a4dcae946323c3964cc652acc415b79cc458449f79801f49d60f7",
+      "text": "The proposed refinement preserves failed input, restores persisted input after reload, retains authorization and accessibility obligations, and changes only the declared scope. An unsupported request is explicitly blocked rather than invented.",
+      "supersedes": null
+    },
+    {
+      "id": "capability-v2",
+      "digest": "fb8d727908052aade0da16cbe3392d97dd5413465c5efb9943b2bc64e0690228",
+      "text": "The proposed refinement preserves failed input, restores persisted input after reload, retains authorization and accessibility obligations, and changes only the declared scope. An unsupported request is explicitly blocked rather than invented. Explicit calibration: visible input without restoration after reload is a rejection; a separately witnessed reload restoration is required.",
+      "supersedes": "capability-v1"
+    }
+  ],
+  "examples": [
+    {
+      "id": "restored-after-reload",
+      "disposition": "accepted",
+      "rubricId": "capability-v2",
+      "input": "A failed-save draft is reloaded",
+      "output": "Draft restored; current unsaved edits remain protected",
+      "inputDigest": "36d7ad99061921de2968f300fd79f0c204a41a0e615eccd0e7ae28c6c585838f",
+      "outputDigest": "a63b126f8325880e07bad88c86c84f18feec7a6c0b813d4001374abe675074b9",
+      "rationale": "Synthetic example explicitly demonstrates both requirements"
+    },
+    {
+      "id": "visible-before-reload-only",
+      "disposition": "rejected",
+      "rubricId": "capability-v2",
+      "input": "A failed-save draft is reloaded",
+      "output": "Draft remains visible before reload and is empty afterward",
+      "inputDigest": "36d7ad99061921de2968f300fd79f0c204a41a0e615eccd0e7ae28c6c585838f",
+      "outputDigest": "3c0cd5e5841ac4e54114eb669f59d8e08a83a1902c10407682f3e9879df1dd6d",
+      "rationale": "Synthetic example omits the required restoration"
+    }
+  ],
+  "resolution": {
+    "actor": "synthetic-calibrator",
+    "rubricId": "capability-v2",
+    "verdict": "reject",
+    "rationale": "Retain both original verdicts; clarify reload restoration and request a separately identified rescore"
+  }
+}
