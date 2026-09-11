@@ -20,6 +20,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Select the supported Command Line Tools Git
+        run: |
+          # The native fixture invokes /usr/bin/git. Select the installed CLT
+          # runtime already covered by the sandbox's declared system reads.
+          test -x /Library/Developer/CommandLineTools/usr/bin/git
+          sudo xcode-select --switch /Library/Developer/CommandLineTools
+          test "$(/usr/bin/xcode-select -p)" = /Library/Developer/CommandLineTools
+          /usr/bin/git --version
       - name: Ordinary runner tests remain independent
         working-directory: runner
         run: npm test
