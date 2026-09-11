@@ -53,6 +53,7 @@ jobs:
         with:
           name: synthetic-evaluation-${{ github.sha }}
           path: ${{ runner.temp }}/evaluation-evidence
+          include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
 # Success establishes only the declared deterministic checks. The summary retains
