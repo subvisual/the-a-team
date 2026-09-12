@@ -1,16 +1,18 @@
-import { readFileSync, existsSync } from 'node:fs'
+import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { loadConfig, writeConfig, repoEntry, DEFAULTS, LABELS } from './config.mjs'
 import { clonePath } from './paths.mjs'
-import { ensureClone, defaultBranchLocal } from './git.mjs'
+import { defaultBranchLocal } from './git.mjs'
+import { resolvePolicy, readInvocationAuthorization } from './policy.mjs'
 import * as gh from './gh.mjs'
 import { log, setQuiet } from './log.mjs'
-import { runIssue, OUTCOME } from './core/loop.mjs'
+import { runIssue } from './core/loop.mjs'
 import { createGithubAdapter, normaliseIssue } from './adapters/github.mjs'
 import { createLocalAdapter } from './adapters/local.mjs'
 import { reviewPullRequest } from './review-pr.mjs'
 import { watch } from './watch.mjs'
 import { repoStatus, renderStatus } from './status.mjs'
+import { planCommand, renderPlan } from './planning.mjs'
 
 const USAGE = `ateam-runner — issue to PR to independent verdict
 
@@ -22,7 +24,7 @@ const USAGE = `ateam-runner — issue to PR to independent verdict
   status [--repo O/R]                      re-derive run state from GitHub
 
 Common flags
-  --path DIR              local clone to build worktrees from (default: auto-clone)
+  --path DIR              existing target clone (otherwise configured/cache path)
   --base BRANCH           base branch (default: the repo's default branch)
   --model NAME            executor model (default: ${DEFAULTS.executorModel})
   --reviewer-model NAME   reviewer model (default: ${DEFAULTS.reviewerModel})
@@ -36,21 +38,62 @@ Common flags
   --force                 review a sha that already has a verdict
   --dry-run               list what would run, change nothing
   --allow-unprotected-base  proceed against an unprotected base branch
-  --json                  machine-readable result
+  --json                  one versioned result envelope (watch requires --once)
   --quiet                 warnings and errors only
+  --scope-path PATH       declare a requested source path (repeatable)
+  --authorization-file PATH  explicit invocation exceptions, recorded with evidence
 `
 
+const BOOLEAN_FLAGS = new Set([
+  'once',
+  'force',
+  'dry-run',
+  'json',
+  'quiet',
+  'help',
+  'allow-unprotected-base',
+])
+const VALUE_FLAGS = new Set([
+  'repo',
+  'path',
+  'base',
+  'model',
+  'reviewer-model',
+  'max-cycles',
+  'budget',
+  'reviewer-budget',
+  'test-cmd',
+  'branch-prefix',
+  'poll',
+  'source',
+  'issues',
+  'issue',
+  'pr',
+  'authorization-file',
+  'scope-path',
+])
+const COMMANDS = new Set(['init', 'run', 'review', 'watch', 'status', 'help'])
+
+function usageError(message, code = 'invalid-arguments') {
+  return Object.assign(new Error(message), { code, exitCode: 2 })
+}
+
 export function parseArgs(argv) {
-  const out = { _: [], repos: [] }
+  const out = { _: [], repos: [], requestedPaths: [] }
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i]
-    if (!a.startsWith('--')) { out._.push(a); continue }
+    if (!a.startsWith('--')) {
+      out._.push(a)
+      continue
+    }
     const key = a.slice(2)
-    const takesValue = ![
-      'once', 'force', 'dry-run', 'json', 'quiet', 'help', 'allow-unprotected-base',
-    ].includes(key)
+    if (!BOOLEAN_FLAGS.has(key) && !VALUE_FLAGS.has(key)) throw usageError(`unknown option: ${a}`)
+    const takesValue = VALUE_FLAGS.has(key)
+    if (takesValue && (argv[i + 1] === undefined || argv[i + 1].startsWith('--')))
+      throw usageError(`${a} needs a value`)
     const value = takesValue ? argv[++i] : true
     if (key === 'repo') out.repos.push(value)
+    else if (key === 'scope-path') out.requestedPaths.push(value)
     else out[key.replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = value
   }
   return out
@@ -67,15 +110,42 @@ export function cfgFrom(args) {
   if (args.reviewerBudget) cfg.reviewerBudgetUsd = Number(args.reviewerBudget)
   if (args.testCmd) cfg.testCommand = args.testCmd
   if (args.branchPrefix) cfg.branchPrefix = args.branchPrefix
+  cfg.requestedPaths = args.requestedPaths
+  cfg.authorization = readInvocationAuthorization(args.authorizationFile)
+  const command = args._[0]
+  cfg.invocationActions =
+    command === 'run' && args.source === 'local'
+      ? ['record-local-approval']
+      : command === 'review'
+        ? ['post-verdict', 'update-labels']
+        : ['run', 'watch'].includes(command)
+          ? ['push-branch', 'open-pr', 'post-verdict', 'update-labels', 'comment']
+          : []
   return cfg
 }
 
-async function resolveTarget(repo, args, cfg) {
+export async function resolveTarget(repo, args, cfg) {
   const entry = repoEntry(cfg, repo)
   const path = resolve(args.path || entry.path || clonePath(repo))
-  await ensureClone(repo, path)
-  const base = args.base || entry.base || (await gh.defaultBranch(repo))
-  return { repo, repoPath: path, base, testCommand: args.testCmd || entry.testCommand || cfg.testCommand }
+  if (!existsSync(path))
+    throw new Error(
+      `target clone is unavailable: ${path}; prepare the clone explicitly, then pass --path`,
+    )
+  const fallbackBase = entry.base || (await gh.defaultBranch(repo))
+  const policy = await resolvePolicy({
+    repoPath: path,
+    repo,
+    base: args.base,
+    cfg: { ...cfg, ...entry, base: fallbackBase },
+    authorization: cfg.authorization,
+  })
+  return {
+    repo,
+    repoPath: policy.target.root,
+    base: policy.target.base,
+    testCommand: policy.verification.commands.join(' && '),
+    policy,
+  }
 }
 
 // The real backstop is branch protection; everything else is defence in depth
@@ -93,93 +163,254 @@ async function assertBaseSafe(target, args) {
   }
   throw new Error(
     `${target.repo}: base branch '${target.base}' is not protected.\n` +
-    '  A bad autonomous run against an unprotected base is unrecoverable rather than merely noisy.\n' +
-    '  Protect it, or pass --allow-unprotected-base to proceed deliberately.',
+      '  A bad autonomous run against an unprotected base is unrecoverable rather than merely noisy.\n' +
+      '  Protect it, or pass --allow-unprotected-base to proceed deliberately.',
   )
 }
 
-export async function main(argv) {
-  const args = parseArgs(argv)
-  const command = args._[0]
-  if (!command || args.help || command === 'help') { process.stdout.write(USAGE); return 0 }
-  if (args.quiet) setQuiet(true)
+function validateCommand(command, args) {
+  if (!COMMANDS.has(command)) throw usageError(`unknown command: ${command}`)
+  if (args._.length > 1) throw usageError(`unexpected argument: ${args._[1]}`)
+  if (command === 'watch' && !args.once && (args.json || args.dryRun)) {
+    throw usageError(
+      'watch --json and watch --dry-run require --once; streaming output is not supported',
+      'unsupported-combination',
+    )
+  }
+  if (args.dryRun && !['init', 'run', 'review', 'watch'].includes(command))
+    throw usageError(`--dry-run is not supported for ${command}`, 'unsupported-combination')
+  if (args.once && command !== 'watch')
+    throw usageError('--once is only supported for watch', 'unsupported-combination')
+  if ((args.pr || args.force) && command !== 'review')
+    throw usageError('--pr and --force are only supported for review', 'unsupported-combination')
+  if (args.issue && command !== 'run')
+    throw usageError('--issue is only supported for run', 'unsupported-combination')
+  if (args.issues && (command !== 'run' || args.source !== 'local'))
+    throw usageError('--issues is only supported for local run', 'unsupported-combination')
+  if (args.source && (command !== 'run' || !['local', 'github'].includes(args.source)))
+    throw usageError(
+      '--source must be local or github and is only supported for run',
+      'unsupported-combination',
+    )
+  if (command === 'run' && args.source === 'local') {
+    if (!args.issues) throw usageError('local run needs --issues PATH')
+    if (args.repos.length)
+      throw usageError('local run does not accept --repo', 'unsupported-combination')
+  } else if (command === 'run' && (!args.repos.length || !args.issue)) {
+    throw usageError('run needs --repo O/R and --issue N (or --source local)')
+  }
+  if (command === 'review' && (!args.repos.length || !args.pr))
+    throw usageError('review needs --repo O/R and --pr N')
+  if (['run', 'review'].includes(command) && args.repos.length > 1)
+    throw usageError(`${command} accepts one --repo`)
+  for (const repo of args.repos)
+    if (!/^[^/\s]+\/[^/\s]+$/.test(repo))
+      throw usageError(`invalid repository: ${repo}; expected O/R`)
+  for (const key of ['issue', 'pr']) {
+    if (args[key] && !(key === 'issue' && args.source === 'local') && !/^[1-9]\d*$/.test(args[key]))
+      throw usageError(`--${key} must be a positive integer`)
+  }
+  for (const [key, flag] of [
+    ['maxCycles', 'max-cycles'],
+    ['poll', 'poll'],
+    ['budget', 'budget'],
+    ['reviewerBudget', 'reviewer-budget'],
+  ]) {
+    if (
+      args[key] !== undefined &&
+      (!Number.isFinite(Number(args[key])) ||
+        Number(args[key]) <= 0 ||
+        (['maxCycles', 'poll'].includes(key) && !Number.isInteger(Number(args[key]))))
+    ) {
+      throw usageError(
+        `--${flag} must be a positive ${['maxCycles', 'poll'].includes(key) ? 'integer' : 'number'}`,
+      )
+    }
+  }
+}
 
-  const cfg = cfgFrom(args)
-  const labels = { ...LABELS, ...(cfg.labels || {}) }
+function statusFor(result) {
+  if (result?.dryRun) {
+    if (
+      result.prerequisites.length ||
+      result.candidates.some((c) => ['blocked', 'malformed'].includes(c.disposition))
+    )
+      return 'blocked'
+    if (
+      !result.actions.length &&
+      (!result.candidates.length || result.candidates.every((c) => c.disposition === 'skipped'))
+    )
+      return 'skipped'
+    return 'success'
+  }
+  const entries = result?.results || [result]
+  if (entries.some((r) => r?.outcome === 'failed' || r?.error)) return 'error'
+  if (
+    entries.some(
+      (r) =>
+        ['needs-detail', 'changes-requested'].includes(r?.outcome) ||
+        ['blocked', 'request-changes'].includes(r?.verdict) ||
+        /^blocked by\b/.test(r?.reason || ''),
+    )
+  )
+    return 'blocked'
+  if (!entries.length || entries.every((r) => r?.skipped || r?.outcome === 'skipped'))
+    return 'skipped'
+  return 'success'
+}
 
+async function executeCommand(command, args, cfg, labels) {
+  if (args.dryRun) {
+    const result = await planCommand(command, args, cfg, labels)
+    return { result, human: renderPlan(result) }
+  }
   if (command === 'init') {
-    const path = writeConfig({ ...DEFAULTS, repos: [{ repo: 'org/repo', path: '/absolute/path/to/clone', base: 'main' }] })
+    const path = writeConfig({
+      ...DEFAULTS,
+      repos: [{ repo: 'org/repo', path: '/absolute/path/to/clone', base: 'main' }],
+    })
     log.info('config.written', { path })
-    process.stdout.write(`Edit ${path}, then: ateam-runner watch\n`)
-    return 0
+    return { result: { path }, human: `Edit ${path}, then: ateam-runner watch\n` }
   }
 
   if (command === 'run' && args.source === 'local') {
-    const issuesFile = resolve(args.issues || '')
-    if (!existsSync(issuesFile)) throw new Error(`issues file not found: ${issuesFile}`)
+    const issuesFile = resolve(args.issues)
+    if (!existsSync(issuesFile) || !statSync(issuesFile).isFile())
+      throw new Error(`issues file not found: ${issuesFile}`)
     const repoPath = resolve(args.path || process.cwd())
-    const base = args.base || (await defaultBranchLocal(repoPath))
-    const adapter = createLocalAdapter({ issuesFile, repoPath, base, testCommand: cfg.testCommand })
+    const base = await defaultBranchLocal(repoPath)
+    let policy = await resolvePolicy({
+      repoPath,
+      base: args.base,
+      cfg: { ...cfg, base },
+      authorization: cfg.authorization,
+    })
+    const adapter = createLocalAdapter({
+      issuesFile,
+      repoPath: policy.target.root,
+      base: policy.target.base,
+      testCommand: policy.verification.commands.join(' && '),
+    })
+    if (args.issue && !adapter.issues.some((issue) => issue.key === args.issue))
+      throw usageError(`issue not found in ${issuesFile}: ${args.issue}`)
     const results = []
     for (const issue of await adapter.listCandidates()) {
       if (args.issue && issue.key !== args.issue) continue
-      results.push(await runIssue({ adapter, issue, cfg, dryRun: !!args.dryRun }))
+      // Local approval advances the adapter's base. Resolve the next immutable
+      // revision before beginning the next issue; preserve project bindings.
+      if (results.length)
+        policy = await resolvePolicy({
+          repoPath,
+          base: adapter.base,
+          cfg,
+          authorization: cfg.authorization,
+          continuationBase: adapter.base,
+        })
+      results.push(await runIssue({ adapter, issue, cfg: { ...cfg, policy } }))
     }
-    const failed = results.filter((r) => r.outcome === OUTCOME.failed)
-    if (args.json) process.stdout.write(`${JSON.stringify({ results, report: adapter.report }, null, 2)}\n`)
-    else for (const r of results) process.stdout.write(`  ${r.outcome.padEnd(18)} ${r.issue}${r.reason ? ` — ${r.reason}` : ''}\n`)
-    return failed.length ? 1 : 0
+    return {
+      result: { results, report: adapter.report },
+      human: results
+        .map((r) => `  ${r.outcome.padEnd(18)} ${r.issue}${r.reason ? ` — ${r.reason}` : ''}\n`)
+        .join(''),
+    }
   }
 
   if (command === 'run') {
     const repo = args.repos[0]
-    if (!repo || !args.issue) throw new Error('run needs --repo O/R and --issue N (or --source local)')
     const target = await resolveTarget(repo, args, cfg)
-    if (!args.dryRun) await assertBaseSafe(target, args)
+    await assertBaseSafe(target, args)
     const adapter = createGithubAdapter({ ...target, labels })
     await adapter.ensureLabels().catch(() => {})
     const issue = normaliseIssue(await gh.viewIssue(repo, Number(args.issue)))
-    const result = await runIssue({ adapter, issue, cfg, dryRun: !!args.dryRun })
-    if (args.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
-    return result.outcome === OUTCOME.failed ? 1 : 0
+    const result = await runIssue({ adapter, issue, cfg: { ...cfg, policy: target.policy } })
+    return { result }
   }
 
   if (command === 'review') {
     const repo = args.repos[0]
-    if (!repo || !args.pr) throw new Error('review needs --repo O/R and --pr N')
     const target = await resolveTarget(repo, args, cfg)
     const pr = await gh.viewPR(repo, Number(args.pr))
     const result = await reviewPullRequest({
-      repo, repoPath: target.repoPath, pr, cfg: { ...cfg, testCommand: target.testCommand }, labels, force: !!args.force,
+      repo,
+      repoPath: target.repoPath,
+      pr,
+      cfg: { ...cfg, policy: target.policy },
+      labels,
+      force: !!args.force,
     })
-    if (args.json) process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
-    else if (result.skipped) process.stdout.write(`skipped: ${result.reason}\n`)
-    return 0
+    return { result, human: result.skipped ? `skipped: ${result.reason}\n` : '' }
   }
 
   if (command === 'watch') {
     const repos = args.repos.length ? args.repos : (cfg.repos || []).map((r) => r.repo)
-    if (!repos.length) throw new Error('no repos: pass --repo O/R or run `ateam-runner init` and edit the config')
     const targets = []
     for (const repo of repos) {
       const t = await resolveTarget(repo, args, cfg)
       await assertBaseSafe(t, args)
       targets.push(t)
     }
-    await watch({ targets, cfg, labels, once: !!args.once })
-    return 0
+    return { result: { results: await watch({ targets, cfg, labels, once: !!args.once }) } }
   }
 
   if (command === 'status') {
     const repos = args.repos.length ? args.repos : (cfg.repos || []).map((r) => r.repo)
-    if (!repos.length) throw new Error('no repos: pass --repo O/R or configure some')
     const all = []
-    for (const repo of repos) all.push(await repoStatus(repo, cfg, labels))
-    if (args.json) process.stdout.write(`${JSON.stringify(all, null, 2)}\n`)
-    else for (const s of all) process.stdout.write(`${renderStatus(s)}\n`)
-    return 0
+    for (const repo of repos)
+      all.push(await repoStatus(repo, { ...cfg, statusPath: args.path }, labels))
+    return { result: all, human: all.map((s) => `${renderStatus(s)}\n`).join('') }
   }
+}
 
-  process.stderr.write(`unknown command: ${command}\n\n${USAGE}`)
-  return 1
+/** The sole stdout boundary: every finite JSON invocation emits one envelope. */
+export async function main(argv) {
+  const json = argv.includes('--json')
+  let command = argv.find((a) => COMMANDS.has(a)) || argv.find((a) => !a.startsWith('--')) || 'help'
+  try {
+    const args = parseArgs(argv)
+    command = args._[0] || 'help'
+    setQuiet(args.quiet)
+    if (args.help || command === 'help') {
+      if (json)
+        process.stdout.write(
+          `${JSON.stringify({ schemaVersion: 1, command, status: 'success', result: { usage: USAGE }, error: null })}\n`,
+        )
+      else process.stdout.write(USAGE)
+      return 0
+    }
+    validateCommand(command, args)
+    const cfg = cfgFrom(args)
+    const labels = { ...LABELS, ...(cfg.labels || {}) }
+    if (['watch', 'status'].includes(command) && !args.repos.length && !(cfg.repos || []).length) {
+      throw usageError('no repos: pass --repo O/R or run `ateam-runner init` and edit the config')
+    }
+    const { result, human = '' } = await executeCommand(command, args, cfg, labels)
+    const status = statusFor(result)
+    const failure = (result?.results || [result]).find((r) => r?.outcome === 'failed' || r?.error)
+    const error =
+      status === 'error'
+        ? {
+            code: 'execution-failed',
+            message: failure?.reason || failure?.error?.message || 'command failed',
+          }
+        : null
+    if (json)
+      process.stdout.write(
+        `${JSON.stringify({ schemaVersion: 1, command, status, result, error }, null, 2)}\n`,
+      )
+    else if (human) process.stdout.write(human)
+    return status === 'error' ? 1 : status === 'blocked' ? 2 : 0
+  } catch (err) {
+    const error = {
+      code: typeof err.code === 'string' ? err.code : 'command-failed',
+      message: err?.message ?? String(err),
+    }
+    if (json)
+      process.stdout.write(
+        `${JSON.stringify({ schemaVersion: 1, command, status: 'error', result: null, error }, null, 2)}\n`,
+      )
+    process.stderr.write(`ateam-runner: ${error.message}\n`)
+    if (process.env.ATEAM_RUNNER_DEBUG) process.stderr.write(`${err?.stack ?? ''}\n`)
+    return err.exitCode || 1
+  }
 }

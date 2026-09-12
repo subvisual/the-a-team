@@ -12,6 +12,7 @@ process.stdin.on('end', () => {
     toolName: event.tool_name,
     toolInput: event.tool_input,
     cwd: event.cwd || process.cwd(),
+    protectedPaths: JSON.parse(process.argv[2] || '[]'),
   })
   if (!reason) process.exit(0)
   process.stderr.write(`ateam-runner: ${reason}\n`)

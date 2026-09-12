@@ -118,6 +118,29 @@ The orchestrator sets working context before invoking a phase skill:
   the key at bootstrap **from the human's answer**; no agent may set it to `on`
   on its own, infer it, or flip it without an explicit instruction in the
   conversation.
+- **Runner execution policy**: before starting agents or mutating run/GitHub
+  state, resolve the same target config into an immutable policy. It records the
+  invoked harness root/revision, target remote and base SHA, current/product
+  context, design-system binding, verification commands, canonical read/write
+  and output paths, and supervisor actions. Project values beat team defaults;
+  an explicit invocation base may select a feature branch. A pinned harness
+  revision must match; upgrades are deliberate. Ordinary runs refuse the harness
+  itself and renamed forks. Scope conflicts are reported before launch; exact
+  invocation-authorized CI exceptions never grant blanket configuration access.
+  See [the execution contract](runner/EXECUTION.md). No duplicate context or
+  design authority is generated to satisfy missing configuration.
+- **Runner approval**: both approval entrypoints validate process results and
+  model fields at runtime, then bind review and supervisor-owned checks to a
+  fresh detached checkout of the exact committed head. An absent command is not
+  a verification exemption. A documentation-only exemption requires explicit
+  applicable authorization and never excuses unmet criteria. Approval records
+  retain identities, input digests, base/head, evaluator, environment, commands,
+  exits and evidence references. Changed inputs invalidate reuse. Approval does
+  not establish integration, deployment or human acceptance.
+- **Runner machine output**: finite `--json` commands emit one versioned stdout
+  envelope, with diagnostics on stderr. Dry-run plans perform no setup or
+  mutations. `watch --json` and `watch --dry-run` require `--once`; consumers must
+  use the [CLI contract](runner/CLI.md), including status and exit codes.
 - **Revision notes** (on a `revise` gate loop): the human's feedback is appended to
   your invocation prompt. Re-produce the artifact incorporating it.
 

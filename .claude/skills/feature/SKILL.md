@@ -115,6 +115,13 @@ the user (resume it, or pick a different slug) — never silently overwrite.
    precedence:** A-Team Config value wins over any default. **`github issues`
    absent → treat as `off`** — an older config predating the key is not
    consent.
+   Resolve canonical target/harness paths and Git identities before creating
+   output. Refuse a harness target (including the renamed-fork signature below)
+   and escaping destinations. Keep harness root/revision, current/product
+   context, existing design binding and verification commands in this same config;
+   do not create another authority file. A configured harness revision must match
+   the invoked checkout; changing its pin is a deliberate upgrade. Consult
+   `runner/EXECUTION.md` for executable policy keys and native prerequisites.
 3. **New feature:**
    - Compute `<slug>`. Check that neither the feature dir nor the branch
      `feature/<slug>` already exists (`git -C <target> rev-parse --verify
@@ -384,9 +391,32 @@ file cannot conflict by construction. Nothing runs in parallel; that is
 deliberate, not a limitation to work around.
 
 **Orchestrator ↔ runner contract (avoids double-counting retries):**
+
+- First preview the exact invocation with `--dry-run --json`. Inspect resolved
+  target policy, prerequisites and scope conflicts; the preview creates no
+  clones, claims, worktrees, records or GitHub writes. Declare protected work
+  with `--scope-path`; only explicit human authorization may supply a narrow
+  `--authorization-file`. Do not invent exemptions or relax policy to make a run
+  green. Execution requires an existing clone and the native backend described
+  in `runner/EXECUTION.md`.
+- Parse the **entire stdout** as the version 1 envelope in `runner/CLI.md`.
+  Check `schemaVersion`, `status`, `error` and the process exit code. Local
+  outcomes are `envelope.result.results`, with reports under
+  `envelope.result.report`; diagnostics are stderr. Exit 0 means success/skipped,
+  2 means blocked/invalid usage, and 1 means failure. A parsed JSON document alone
+  is not completion. Streaming watch is unsupported with JSON or dry-run; use
+  `--once` for those modes.
 - The orchestrator **owns** `phases.dev.issues` (`{ "<key>": {status, attempts} }`)
   and records each outcome from the runner's `--json` report. The runner writes
   no manifest.
+- Record the returned approval/evidence reference with each approved issue and
+  the resolved policy digest in `execution_policy`. Approval must bind valid
+  process results, independent review and supervisor checks to committed head.
+  Dirty corrections, absent/skipped checks without an applicable explicit
+  documentation exemption, source mutation, or changed head/base/criteria
+  invalidate evidence. Validate it before using an approved branch; an old
+  report or label is insufficient. Later combined-revision checks remain the
+  integration phase's responsibility.
 - One runner invocation of an issue = **one orchestrator attempt**, whatever the
   runner does internally. Its implement↔review cycles (capped at 3, with an
   early stop when the reviewer's objections stop converging) are part of that
@@ -493,6 +523,14 @@ If the target `CLAUDE.md` lacks `## A-Team Config`:
    - base branch: <default branch>
    - design system path: <path>
    - package manager: <from lockfile>
+   - harness root: <canonical installed harness checkout>
+   - harness revision: <invoked committed SHA; upgrade only deliberately>
+   - target remote: <canonical target origin>
+   - current context: docs/product/context.md
+   - product context: docs/product/
+   - read paths: ["."]
+   - write paths: ["."]
+   - output paths: ["docs/features", "docs/product"]
    - github issues: <on|off — ask; write the literal word, not the choice list>
    ```
    **`github issues` must be asked, never detected.** Creating issues is an
