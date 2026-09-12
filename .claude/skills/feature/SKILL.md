@@ -55,8 +55,18 @@ legacy `done`, `approved`, or provisional flags do not supply missing evidence.
 
 ```sh
 node <harness>/runner/src/feature-cli.mjs show --feature <feature-dir>
+node <harness>/runner/src/feature-cli.mjs status --feature <feature-dir> --format json
 node <harness>/runner/src/feature-cli.mjs <operation> --feature <feature-dir> --expected-revision <revision> --event-id <stable-operation-id> --input '<JSON>'
 ```
+
+Use `status` for the compact operator view; `--format text` is the default and
+`--format html` emits a local preview snapshot. Save HTML outside bound artifact
+trees and open it directly in a browser. Both status and `show` revalidate actual
+files without writing the manifest. Status distinguishes current phase decisions
+from provisional choices and the six independent milestones, and shows the
+reason, next action, gate consequence, changed review inputs, assumptions,
+outstanding obligations, documents/boards and recorded runtime links. See
+`runner/FEATURE-STATUS.md` for the full control and snapshot contract.
 
 Read the entire JSON result. `status: success` and exit 0 permit continuing;
 `blocked` includes a persisted concrete reason; `error` includes invalid input or
@@ -157,6 +167,10 @@ the user (resume it, or pick a different slug) — never silently overwrite.
    **Resume:**
    - Call `feature-cli.mjs show --feature <feature-dir>`. Review stale/unknown
      evidence and outstanding provisional decisions; retain all historical records.
+   - If the feature is paused and the human requested resumption, call `resume`
+     with that request's concrete reason and a stable event ID, then reload.
+     This only clears the scheduling hold. It executes no phase and does not
+     retry an uncertain runner action. Inspect exact retained receipts first.
    - Ensure HEAD is on the feature branch: `git -C <target> checkout feature/<slug>`.
 4. Enter the phase loop.
 
@@ -164,6 +178,12 @@ the user (resume it, or pick a different slug) — never silently overwrite.
 
 Read `manifest.state` from `show`. The transition functions derive the next
 state atomically with completion/approval; there is no separate state bump.
+
+- `paused` is a cooperative scheduling hold. Inspect `control.reason` and
+  `control.next_state`; do not dispatch another phase or pass a gate. Already
+  running work may record completion/failure or issue/milestone receipts without
+  lifting the hold. Check the hold again before each new runner dispatch.
+- `aborted` is terminal. Preserve all artifacts, accounted branches and history.
 
 - `failed` is terminal until the cause is fixed and a deliberate `revise` command
   records the recovery reason. Preserve completed issue receipts.
@@ -262,6 +282,9 @@ against the jobs they trace to.
 
 Blocking-gate responses:
 
+- **pause** → call `pause` with the human's reason and stop dispatching new work.
+  This is cooperative control, not suspension or process-tree termination. Native
+  macOS detached-child containment (#37) remains explicitly unresolved.
 - **approve** → call `approve` with `phase` and `decision: {kind:"human",
   actor:"<human>", authorized:true, reference:"<actual decision reference>"}`.
   This approves that artifact/test plan; it does not record product acceptance.
@@ -437,6 +460,13 @@ deliberate, not a limitation to work around.
   (`complete`, `failed`, `needs-detail`), and `evidence` (`reference`, committed
   `revision`, local receipt `artifacts`). Include the resolved `execution_policy`.
   `complete` requires the verified runner approval receipt described below.
+- Before dispatch, include exact adapter repository identities and stable issue
+  keys in `run_brief.runner_history` through the existing authorized `configure`
+  command. This lets status find interrupted work even before `record-issue` has
+  an outcome. Use local target paths for local adapters and `owner/repo` for
+  GitHub; never infer associations from matching titles. Keep explicit HTTP(S)
+  preview links in `run_brief.runtime_links` with `label` and `url`. Status checks
+  link safety and labels runtime availability as not checked.
 - Record the returned approval/evidence reference with each approved issue and
   the resolved policy digest in `execution_policy`. Approval must bind valid
   process results, independent review and supervisor checks to committed head.
@@ -648,3 +678,35 @@ rechecks that proof against the actual issue file, branch and policy. A moved
 branch or changed criteria requires fresh evidence. Keep failed and unexecuted
 checks, substitutions and baseline dispositions visible; a later pass retains
 prior failures. This milestone does not claim integration or human acceptance.
+
+## Research decisions before dependent commitment
+
+Follow `runner/ASSUMPTIONS.md`. Existing research stays in the product research
+plan's single versioned `ateam-assumptions` block, with source digests and retained
+`assumptions-history/<revision>.json` snapshots. `run_brief.assumptions` contains
+actual ASM IDs. Do not invent demand, ownership, validation or authorizations to
+make a gate pass. Legacy prose is preserved and indexed when present; routine
+refinement reuses existing records and needs no full discovery rerun.
+
+The command layer validates current research on phase entry, completion and
+approval, and on refresh of prior phase evidence. A due load-bearing assumption
+names the missing evidence or existing authorized deferral. A prototype before a
+later study remains allowed with uncertainty and unresolved owners visible; its
+synthetic results cannot become observed human validation. Updates to later-stage
+research preserve earlier valid approvals. Prior source/version/result provenance
+cannot be overwritten, even through an intermediate revision.
+
+For a supported no-go or reshape, use `record-research-decision` with
+`{"assumptionIds":["<actual ASM ID>"]}`, the current `--expected-revision` and a
+stable `--event-id`. The command consumes the current recorded decision, returns
+success, and stops dependent work. It preserves implementation, verification,
+human acceptance, integration, release and product-validation records; stopping
+research is not failed delivery. Resuming this direction requires a retained,
+authorized research revision and an explicit `revise` of the affected phase.
+Separate observed implementation/merge/release facts remain recordable; a claim
+of human or product validation still requires its own due evidence.
+These validation claims include earlier unresolved research deadlines and the
+effective deadline of any authorized deferral. Unrelated later studies remain
+pending without invalidating earlier milestones. Recording a valid stop decision
+does not require completing work being stopped; other pending research remains
+visible, while source, decision and history integrity must still validate.

@@ -159,7 +159,8 @@ a human study; gaps remain explicit and link to their canonical obligations.
 
 ## Independent feature milestones
 
-Read `feature-cli.mjs show --feature <feature-dir>` and report all six milestone
+Read `feature-cli.mjs status --feature <feature-dir> --format json` for the verified
+operator projection and `show` when full retained records are needed. Report all six milestone
 keys: implementation, verification, human_acceptance, integration, release,
 and product_validation. Distinguish pending, recorded, stale and unknown; link
 the current revision-bound receipts and retained decision history. A PR report
@@ -168,6 +169,17 @@ a release receipt and “integrated” requires the intended target merge receip
 PR creation/review and locally assembling issue branches supply neither.
 A legacy `done` or provisional flag must remain unknown/stale until revalidated.
 This reporting skill observes milestones and never writes or certifies them.
+
+Use the projection's concrete reason, next action, outstanding assumptions and
+obligations, changed review inputs, and current artifact links. Preserve explicit
+provisional/accepted/stale distinctions. A local HTML status snapshot is available
+through `status --format html`; regenerate it before reporting current evidence.
+Report budget only when the existing repository ledger provides known accounting;
+unknown costs and pending launches make remaining dollars unknown. Neither a
+configured cap nor a phase marked in progress establishes spend or a live process.
+Pause/resume are cooperative scheduling controls; they preserve prior outcomes,
+do not repeat publication, and make no native #37 containment claim. Runtime
+links alone do not establish availability, usability, release or product validation.
 
 ### Combined application evidence
 

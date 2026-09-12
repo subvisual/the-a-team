@@ -15,6 +15,7 @@ import {
 } from 'node:fs'
 import { resolve, relative, isAbsolute, join } from 'node:path'
 import { validateIssuesPhase } from './obligations-cli.mjs'
+import { validateFeatureAssumptions } from './assumptions.mjs'
 import { validateFeatureArtifacts } from './artifacts.mjs'
 import { selectTaskContext, assertCurrentContext } from './context.mjs'
 import * as refinement from './refinement.mjs'
@@ -23,7 +24,15 @@ import { credentialPath, readProjectConfig } from './policy.mjs'
 // Deterministic feature state. This module records authorized work and evidence;
 // it never invokes an agent, creates a PR, merges, deploys, or grants permission.
 export const FEATURE_SCHEMA_VERSION = 2
-export const FEATURE_PHASES = ['discovery', 'definition', 'design', 'spec', 'issues', 'dev', 'pr']
+export const FEATURE_PHASES = [
+  'discovery',
+  'definition',
+  'design',
+  'spec',
+  'issues',
+  'dev',
+  'pr',
+]
 export const FEATURE_MILESTONES = [
   'implementation',
   'verification',
@@ -48,9 +57,13 @@ const fail = (message, code = 'feature-invalid') => {
 const ready = (name, phase) =>
   GATES.has(name) ? phase.status === 'approved' : phase.status === 'complete'
 const stageFor = (command) =>
-  command.type === 'record-milestone'
-    ? command.milestone?.replaceAll('_', '-')
-    : PHASE_STAGE[command.phase] || command.phase
+  command.type === 'record-research-decision'
+    ? 'discovery'
+    : command.type === 'finish-refinement'
+      ? 'verification'
+      : command.type === 'record-milestone'
+        ? command.milestone?.replaceAll('_', '-')
+        : PHASE_STAGE[command.phase] || command.phase
 export { stageFor as featureStage }
 
 function brief(input = {}) {
@@ -119,7 +132,10 @@ export function createFeature(input = {}) {
     run_brief: brief(input.run_brief),
     phases,
     milestones: Object.fromEntries(
-      FEATURE_MILESTONES.map((name) => [name, { status: 'pending', bindings: {}, records: [] }]),
+      FEATURE_MILESTONES.map((name) => [
+        name,
+        { status: 'pending', bindings: {}, records: [] },
+      ]),
     ),
     event_history: [],
     last_error: null,
@@ -138,6 +154,50 @@ function validateFeature(manifest) {
     fail('Versioned run_brief required')
   brief(manifest.run_brief)
   if (!Array.isArray(manifest.event_history)) fail('Feature event_history required')
+  if (
+    manifest.research_decisions !== undefined &&
+    (!Array.isArray(manifest.research_decisions) ||
+      manifest.research_decisions.some(
+        (record) =>
+          !Array.isArray(record?.assumptionIds) ||
+          !record.assumptionIds.length ||
+          record.assumptionIds.some((id) => !text(id)) ||
+          !Array.isArray(record.outcomes) ||
+          record.outcomes.length !== record.assumptionIds.length ||
+          !(record.research?.recordsValid === true || record.research?.ok === true) ||
+          !/^[a-f0-9]{64}$/.test(record.research.source?.sha256 || '') ||
+          record.outcomes.some(
+            (item) =>
+              !record.assumptionIds.includes(item?.assumptionId) ||
+              !['no-go', 'reshape'].includes(item?.kind) ||
+              item.decision?.authorized !== true ||
+              !['actor', 'reference', 'rationale', 'consequence'].every((key) =>
+                text(item.decision?.[key]),
+              ),
+          ),
+      ))
+  )
+    fail('Research decisions require valid retained source and decision receipts')
+  if (
+    manifest.research_outcome &&
+    (!['active', 'reopened'].includes(manifest.research_outcome.status) ||
+      !['no-go', 'reshape'].includes(manifest.research_outcome.kind) ||
+      !Array.isArray(manifest.research_outcome.assumptionIds) ||
+      !(manifest.research_decisions || []).some(
+        (record) =>
+          canonical(record.assumptionIds) ===
+            canonical(manifest.research_outcome.assumptionIds) &&
+          canonical(record.research.source) ===
+            canonical(manifest.research_outcome.source),
+      ))
+  )
+    fail('Research outcome requires its retained research decision receipt')
+  if (
+    manifest.control &&
+    (!['active', 'paused'].includes(manifest.control.status) ||
+      !text(manifest.control.reason))
+  )
+    fail('Invalid cooperative feature control')
   for (const name of FEATURE_PHASES) {
     const phase = manifest.phases?.[name]
     if (
@@ -178,7 +238,9 @@ function validateFeature(manifest) {
   }
   for (const name of FEATURE_MILESTONES)
     if (
-      !['pending', 'recorded', 'stale', 'unknown'].includes(manifest.milestones?.[name]?.status) ||
+      !['pending', 'recorded', 'stale', 'unknown'].includes(
+        manifest.milestones?.[name]?.status,
+      ) ||
       !Array.isArray(manifest.milestones[name].records)
     )
       fail(`Invalid milestone ${name}`)
@@ -199,7 +261,10 @@ export function normalizeFeature(input) {
     fail('Unsupported legacy feature schemaVersion')
   const result = createFeature({
     ...input,
-    run_brief: { ...input?.run_brief, mode: input?.run_brief?.mode || 'implementation-pr' },
+    run_brief: {
+      ...input?.run_brief,
+      mode: input?.run_brief?.mode || 'implementation-pr',
+    },
   })
   result.legacy_snapshot = copy(input)
   result.gate_policy = input.gate_policy || 'block'
@@ -222,12 +287,18 @@ export function normalizeFeature(input) {
   return result
 }
 
-function nextState(manifest) {
+function deriveNextState(manifest) {
   if (manifest.state === 'aborted') return
+  if (manifest.research_outcome?.status === 'active') {
+    manifest.state = 'stopped'
+    manifest.stop_reason = `Research ${manifest.research_outcome.kind}: ${manifest.research_outcome.assumptionIds.join(', ')}; dependent work is stopped by the recorded decision`
+    return
+  }
   if (manifest.refinement?.configured === true) {
     if (manifest.refinement.result?.status === 'verified') {
       manifest.state = 'stopped'
-      manifest.stop_reason = 'Requested refinement completed with current revision evidence'
+      manifest.stop_reason =
+        'Requested refinement completed with current revision evidence'
       return
     }
     if (manifest.refinement.status !== 'ready') {
@@ -236,27 +307,43 @@ function nextState(manifest) {
         : 'refinement_review'
       return
     }
-    manifest.state = ['dev', 'pr'].find((name) => !ready(name, manifest.phases[name])) || 'stopped'
+    manifest.state =
+      ['dev', 'pr'].find((name) => !ready(name, manifest.phases[name])) || 'stopped'
     return
   }
   const stop = FEATURE_PHASES.indexOf(manifest.run_brief.stopping_point)
   manifest.state =
-    FEATURE_PHASES.slice(0, stop + 1).find((name) => !ready(name, manifest.phases[name])) ||
-    'stopped'
+    FEATURE_PHASES.slice(0, stop + 1).find(
+      (name) => !ready(name, manifest.phases[name]),
+    ) || 'stopped'
   if (manifest.state === 'stopped')
     manifest.stop_reason = `Requested ${manifest.run_brief.mode} stopping point reached: ${manifest.run_brief.stopping_point}`
   else delete manifest.stop_reason
 }
 
+function nextState(manifest) {
+  deriveNextState(manifest)
+  if (manifest.state !== 'aborted' && manifest.control?.status === 'paused') {
+    manifest.control.next_state = manifest.state
+    manifest.state = 'paused'
+  }
+}
+
 const intersects = (paths, changed) =>
   paths.some((path) =>
     changed.some(
-      (item) => path === item || path.startsWith(`${item}/`) || item.startsWith(`${path}/`),
+      (item) =>
+        path === item || path.startsWith(`${item}/`) || item.startsWith(`${path}/`),
     ),
   )
 export function invalidateFeature(
   input,
-  { artifacts = [], phases = [], milestones = [], reason = 'Artifact revision changed' } = {},
+  {
+    artifacts = [],
+    phases = [],
+    milestones = [],
+    reason = 'Artifact revision changed',
+  } = {},
 ) {
   const result = normalizeFeature(input)
   if (!Array.isArray(artifacts) || artifacts.some((path) => !text(path)))
@@ -285,12 +372,18 @@ export function invalidateFeature(
   }
   let milestoneChanged = false
   for (const [name, milestone] of Object.entries(result.milestones))
-    if (milestones.includes(name) || intersects(Object.keys(milestone.bindings), artifacts)) {
+    if (
+      milestones.includes(name) ||
+      intersects(Object.keys(milestone.bindings), artifacts)
+    ) {
       milestone.status = 'stale'
       milestone.stale_reason = reason
       milestoneChanged = true
     }
-  if (result.refinement?.result?.status === 'verified' && (affected.size || milestoneChanged)) {
+  if (
+    result.refinement?.result?.status === 'verified' &&
+    (affected.size || milestoneChanged)
+  ) {
     result.refinement.result = {
       ...result.refinement.result,
       status: 'stale',
@@ -330,13 +423,18 @@ function bind(paths, hashes) {
 }
 function obligationGate(acceptance, command) {
   if (!acceptance)
-    fail(`Actual acceptance validation required for ${stageFor(command)}`, 'feature-blocked')
+    fail(
+      `Actual acceptance validation required for ${stageFor(command)}`,
+      'feature-blocked',
+    )
   let errors = (acceptance.diagnostics || []).filter((item) => item.severity === 'error')
   // A milestone records one observed fact. Earlier unfulfilled obligations must
   // stay visible, but cannot erase an independently observed merge or release.
   if (command.type === 'record-milestone')
     errors = errors.filter((item) => {
-      const obligation = acceptance.obligations?.find((entry) => entry.id === item.obligationId)
+      const obligation = acceptance.obligations?.find(
+        (entry) => entry.id === item.obligationId,
+      )
       return (
         !obligation ||
         !['status', 'owner', 'deferral.nextDecisionStage'].includes(item.field) ||
@@ -349,19 +447,70 @@ function obligationGate(acceptance, command) {
       'feature-blocked',
     )
 }
+function researchGate(research, command, { manifest, revalidate = false } = {}) {
+  if (!research) {
+    if (manifest?.run_brief.assumptions.length || manifest?.research_outcome)
+      fail('Actual research assumption validation required', 'feature-blocked')
+    return
+  }
+  const stage = stageFor(command)
+  if (research.stage !== stage)
+    fail(`Research validation must match stage ${stage}`, 'feature-blocked')
+  let errors = (research.diagnostics || []).filter((item) => item.severity === 'error')
+  let outcomes = research.outcomes || []
+  // Observed implementation, merge and release facts remain independently
+  // recordable. Only claims of human/product validation rely on research closure.
+  if (command.type === 'record-milestone') {
+    if (!['human_acceptance', 'product_validation'].includes(command.milestone)) return
+    // These validation claims inherit every research deadline already reached,
+    // including an authorized deferral's target. Later pending studies remain
+    // warnings in this stage's report and do not invalidate earlier milestones.
+    outcomes = outcomes.filter(
+      (item) => research.assumptions.find((entry) => entry.id === item.assumptionId)?.due,
+    )
+  } else if (revalidate) {
+    // A later no-go does not rewrite earlier valid discovery/design decisions.
+    outcomes = outcomes.filter(
+      (item) => research.assumptions.find((entry) => entry.id === item.assumptionId)?.due,
+    )
+  }
+  if (
+    errors.length ||
+    outcomes.length ||
+    (!research.ok && command.type !== 'record-milestone')
+  )
+    fail(
+      `Research gate ${stage} blocked: ${
+        [
+          ...errors.map((item) => item.message),
+          ...outcomes.map(
+            (item) =>
+              `${item.assumptionId}: recorded ${item.kind} for ${item.dependentDecision}; record the research outcome or revise under existing authority`,
+          ),
+        ].join('; ') || 'research validation failed'
+      }`,
+      'feature-blocked',
+    )
+}
 function knownBrief(manifest) {
   for (const key of ['outcome'])
     if (!text(manifest.run_brief[key]))
       fail(`Known run_brief.${key} required before phase work`, 'feature-blocked')
   for (const key of ['deliverables', 'required_verification'])
-    if (!manifest.run_brief[key].length || manifest.run_brief[key].some((item) => !text(item)))
+    if (
+      !manifest.run_brief[key].length ||
+      manifest.run_brief[key].some((item) => !text(item))
+    )
       fail(
         `Known run_brief.${key} required before phase work; record an explicit no-check rationale when applicable`,
         'feature-blocked',
       )
 }
 function withinScope(manifest, phase) {
-  if (FEATURE_PHASES.indexOf(phase) > FEATURE_PHASES.indexOf(manifest.run_brief.stopping_point))
+  if (
+    FEATURE_PHASES.indexOf(phase) >
+    FEATURE_PHASES.indexOf(manifest.run_brief.stopping_point)
+  )
     fail(`Phase ${phase} exceeds the authorized stopping point`, 'feature-blocked')
 }
 
@@ -371,6 +520,7 @@ export function transitionFeature(
   {
     artifactHashes = {},
     acceptance,
+    assumptions,
     refinementPlan,
     refinementCompletion,
     now = new Date().toISOString(),
@@ -379,11 +529,65 @@ export function transitionFeature(
   let result = normalizeFeature(input)
   if (!command || !text(command.type)) fail('Feature command type required')
   if (result.state === 'aborted') fail('Feature is aborted', 'feature-blocked')
+  // Pause is a durable scheduling hold, not process suspension. Retain already
+  // observed work while preventing fresh dispatch and gate advancement.
+  if (
+    result.control?.status === 'paused' &&
+    ![
+      'pause',
+      'resume',
+      'abort',
+      'revise',
+      'configure',
+      'complete',
+      'fail',
+      'record-issue',
+      'record-milestone',
+      'finish-refinement',
+      'record-research-decision',
+    ].includes(command.type)
+  )
+    fail(
+      `Feature is paused: ${result.control.reason}; resume before new work`,
+      'feature-blocked',
+    )
   const phase = result.phases[command.phase]
   if (['start', 'complete', 'approve', 'revise', 'fail'].includes(command.type) && !phase)
     fail(`Unknown feature phase ${command.phase}`)
   const errors = []
+  if (
+    result.research_outcome?.status === 'active' &&
+    ['start', 'complete', 'approve', 'finish-refinement'].includes(command.type)
+  )
+    fail(
+      `Research ${result.research_outcome.kind} stopped dependent work; record an authorized revision and revise the affected stage`,
+      'feature-blocked',
+    )
+  const researchCommands = [
+    'start',
+    'complete',
+    'approve',
+    'finish-refinement',
+    'record-milestone',
+  ]
+  const initialDiscovery =
+    command.type === 'start' &&
+    command.phase === 'discovery' &&
+    !result.phases.discovery.assumptions?.source &&
+    !assumptions?.source
+  if (researchCommands.includes(command.type) && !initialDiscovery)
+    researchGate(assumptions, command, { manifest: result })
   switch (command.type) {
+    case 'pause':
+      if (!text(command.reason)) fail('Pause reason required')
+      result.control = { status: 'paused', reason: command.reason, at: now }
+      break
+    case 'resume':
+      if (result.control?.status !== 'paused')
+        fail('Resume requires a paused feature', 'feature-blocked')
+      if (!text(command.reason)) fail('Resume reason required')
+      result.control = { status: 'active', reason: command.reason, at: now }
+      break
     case 'start': {
       withinScope(result, command.phase)
       if (command.phase !== 'discovery') knownBrief(result)
@@ -409,14 +613,19 @@ export function transitionFeature(
       break
     }
     case 'complete': {
-      if (phase.status !== 'in_progress') fail(`Complete requires in_progress ${command.phase}`)
+      if (phase.status !== 'in_progress')
+        fail(`Complete requires in_progress ${command.phase}`)
       if (command.phase !== 'discovery') obligationGate(acceptance, command)
       knownBrief(result)
       phase.artifacts = copy(command.artifacts)
-      if (command.required_artifacts) phase.required_artifacts = copy(command.required_artifacts)
+      if (command.required_artifacts)
+        phase.required_artifacts = copy(command.required_artifacts)
       phase.bindings = bind(command.artifacts, artifactHashes)
       phase.blocking_flags = copy(command.blocking_flags || [])
-      if (!Array.isArray(phase.blocking_flags) || phase.blocking_flags.some((flag) => !text(flag)))
+      if (
+        !Array.isArray(phase.blocking_flags) ||
+        phase.blocking_flags.some((flag) => !text(flag))
+      )
         fail('blocking_flags must be concrete strings')
       if (phase.blocking_flags.length)
         fail(
@@ -434,7 +643,11 @@ export function transitionFeature(
       if (!GATES.has(command.phase)) fail(`Phase ${command.phase} has no approval gate`)
       if (!['complete', 'approved'].includes(phase.status))
         fail(`Approval requires complete ${command.phase}`)
-      if (Object.entries(phase.bindings).some(([path, hash]) => artifactHashes[path] !== hash))
+      if (
+        Object.entries(phase.bindings).some(
+          ([path, hash]) => artifactHashes[path] !== hash,
+        )
+      )
         fail(
           `Reviewed ${command.phase} artifact changed; revalidate before approval`,
           'feature-blocked',
@@ -471,12 +684,17 @@ export function transitionFeature(
     case 'configure-refinement': {
       if (
         !refinementPlan ||
-        !['ready', 'review-required', 'reopen-required', 'blocked'].includes(refinementPlan.status)
+        !['ready', 'review-required', 'reopen-required', 'blocked'].includes(
+          refinementPlan.status,
+        )
       )
-        fail('A validated refinement plan computed from actual target context is required')
+        fail(
+          'A validated refinement plan computed from actual target context is required',
+        )
       result = invalidateFeature(result, {
         artifacts: command.affectedFeatureArtifacts || [],
-        reason: 'Authorized refinement delta requires affected evidence to be revalidated',
+        reason:
+          'Authorized refinement delta requires affected evidence to be revalidated',
       })
       result.refinement = { ...copy(refinementPlan), configured: true }
       result.run_brief = brief({
@@ -484,7 +702,9 @@ export function transitionFeature(
         mode: 'refinement',
         stopping_point: 'pr',
         outcome: refinementPlan.change.outcome || result.run_brief.outcome,
-        deliverables: [refinementPlan.change.authorizedDelta || result.run_brief.deliverables[0]],
+        deliverables: [
+          refinementPlan.change.authorizedDelta || result.run_brief.deliverables[0],
+        ],
         required_verification:
           refinementPlan.verification?.methods || result.run_brief.required_verification,
       })
@@ -522,7 +742,10 @@ export function transitionFeature(
         fail('Issue ID and runner outcome required')
       if (!text(command.evidence?.reference) || !text(command.evidence?.revision))
         fail('Issue evidence reference and committed revision required')
-      const previous = result.phases.dev.issues[command.issueId] || { attempts: 0, records: [] }
+      const previous = result.phases.dev.issues[command.issueId] || {
+        attempts: 0,
+        records: [],
+      }
       const record = {
         status: command.status,
         evidence: copy(command.evidence),
@@ -535,12 +758,14 @@ export function transitionFeature(
         attempts: previous.attempts + (command.status === 'failed' ? 1 : 0),
         records: [...previous.records, record],
       }
-      if (command.execution_policy) result.execution_policy = copy(command.execution_policy)
+      if (command.execution_policy)
+        result.execution_policy = copy(command.execution_policy)
       break
     }
     case 'configure': {
       const authorization = humanDecision(command.authorization)
-      if (command.run_brief) result.run_brief = brief({ ...result.run_brief, ...command.run_brief })
+      if (command.run_brief)
+        result.run_brief = brief({ ...result.run_brief, ...command.run_brief })
       if (command.gate_policy) {
         if (!['block', 'notify-and-continue', 'run-to-pr'].includes(command.gate_policy))
           fail('Invalid gate_policy')
@@ -557,12 +782,63 @@ export function transitionFeature(
     }
     case 'revise': {
       if (!text(command.reason)) fail('Revision reason required')
+      if (result.research_outcome?.status === 'active') {
+        researchGate(assumptions, command, { manifest: result })
+        result.research_outcome.status = 'reopened'
+        result.research_outcome.reopened_at = now
+      }
       result = invalidateFeature(result, {
+        phases: [command.phase],
         artifacts: Object.keys(phase.bindings),
         reason: command.reason,
       })
       result.phases[command.phase].status = 'pending'
       result.phases[command.phase].revision_reason = command.reason
+      break
+    }
+    case 'record-research-decision': {
+      if (!assumptions?.recordsValid || !assumptions.source)
+        fail(
+          `Valid current research records required: ${(assumptions?.diagnostics || [])
+            .filter(
+              (item) => item.severity === 'error' && item.category !== 'advancement',
+            )
+            .map((item) => item.message)
+            .join('; ')}`,
+          'feature-blocked',
+        )
+      const ids = command.assumptionIds
+      if (
+        !Array.isArray(ids) ||
+        !ids.length ||
+        ids.some((id) => !text(id)) ||
+        new Set(ids).size !== ids.length
+      )
+        fail('Explicit unique assumptionIds required')
+      const outcomes = ids.map((id) =>
+        assumptions.outcomes.find((item) => item.assumptionId === id),
+      )
+      if (outcomes.some((item) => !item))
+        fail(
+          'Every selected assumption must have a current authorized no-go or reshape outcome',
+          'feature-blocked',
+        )
+      result.research_decisions = [
+        ...(result.research_decisions || []),
+        {
+          at: now,
+          assumptionIds: copy(ids),
+          outcomes: copy(outcomes),
+          research: copy(assumptions),
+        },
+      ]
+      result.research_outcome = {
+        status: 'active',
+        kind: outcomes.some((item) => item.kind === 'no-go') ? 'no-go' : 'reshape',
+        assumptionIds: copy(ids),
+        source: copy(assumptions.source),
+        at: now,
+      }
       break
     }
     case 'record-milestone': {
@@ -608,6 +884,10 @@ export function transitionFeature(
     default:
       fail(`Unknown feature command ${command.type}`)
   }
+  if (assumptions && ['start', 'complete', 'approve'].includes(command.type))
+    result.phases[command.phase].assumptions = copy(assumptions)
+  if (assumptions && command.type === 'record-milestone')
+    result.milestones[command.milestone].assumptions = copy(assumptions)
   nextState(result)
   return validateFeature(result)
 }
@@ -629,7 +909,8 @@ function targetRoot(featureDir, manifest) {
   return root
 }
 function artifactHash(featureDir, root, path) {
-  if (!text(path) || isAbsolute(path)) fail('Artifact paths must be relative to feature directory')
+  if (!text(path) || isAbsolute(path))
+    fail('Artifact paths must be relative to feature directory')
   const absolute = resolve(featureDir, path)
   const rel = relative(root, absolute)
   if (!inside(root, absolute) || credentialPath(rel) || /(^|\/)\.git(\/|$)/.test(rel))
@@ -652,10 +933,23 @@ function artifactHash(featureDir, root, path) {
     ])
   return hash(canonical(children))
 }
+
+// Status uses the same target/credential/symlink boundary and digest as gates.
+// This helper never writes or treats mere existence as accepted evidence.
+export function inspectFeatureArtifact(featureDir, root, path) {
+  const digest = artifactHash(featureDir, root, path)
+  const absolute = realpathSync(resolve(featureDir, path))
+  return {
+    absolute,
+    hash: digest,
+    kind: lstatSync(absolute).isDirectory() ? 'directory' : 'file',
+  }
+}
 function allBindings(manifest) {
-  return [...Object.values(manifest.phases), ...Object.values(manifest.milestones)].flatMap(
-    (record) => Object.entries(record.bindings || {}),
-  )
+  return [
+    ...Object.values(manifest.phases),
+    ...Object.values(manifest.milestones),
+  ].flatMap((record) => Object.entries(record.bindings || {}))
 }
 function actualHashes(featureDir, root, paths) {
   return Object.fromEntries(
@@ -682,7 +976,8 @@ export async function loadFeature(featureDir, { policy } = {}) {
     if (
       required.some((path) => !Object.hasOwn(phase.bindings, path)) ||
       (phase.required_artifacts &&
-        canonical([...phase.required_artifacts].sort()) !== canonical([...required].sort()))
+        canonical([...phase.required_artifacts].sort()) !==
+          canonical([...required].sort()))
     ) {
       manifest = invalidateFeature(manifest, {
         artifacts: Object.keys(phase.bindings),
@@ -708,6 +1003,21 @@ export async function loadFeature(featureDir, { policy } = {}) {
   // files. Reuse is conditional on the obligations due at each original stage;
   // future studies are not an implicit new approval gate for earlier work.
   const reports = new Map()
+  const researchReports = new Map()
+  const researchFor = async (command) => {
+    const stage = stageFor(command)
+    if (!researchReports.has(stage))
+      researchReports.set(
+        stage,
+        await validateFeatureAssumptions({
+          featureDir: directory,
+          root,
+          stage,
+          manifest,
+        }),
+      )
+    return researchReports.get(stage)
+  }
   const reportFor = async (command) => {
     const stage = stageFor(command)
     const key = `${command.type}:${stage}`
@@ -727,11 +1037,21 @@ export async function loadFeature(featureDir, { policy } = {}) {
   }
   for (const name of FEATURE_PHASES) {
     const phase = manifest.phases[name]
-    if (name === 'discovery' || !['complete', 'approved'].includes(phase.status)) continue
+    if (!['in_progress', 'complete', 'approved'].includes(phase.status)) continue
     const command = { type: 'complete', phase: name }
-    const report = await reportFor(command)
-    phase.acceptance_validation = copy(report)
+    const research = await researchFor(command)
+    phase.assumptions_validation = copy(research)
     try {
+      // The first discovery dispatch is allowed to assemble missing research.
+      if (
+        name !== 'discovery' ||
+        phase.status !== 'in_progress' ||
+        phase.assumptions?.source
+      )
+        researchGate(research, command, { manifest, revalidate: true })
+      if (name === 'discovery' || phase.status === 'in_progress') continue
+      const report = await reportFor(command)
+      phase.acceptance_validation = copy(report)
       obligationGate(report, command)
       if (name === 'pr') {
         const combined = await validateFeatureDelivery({
@@ -756,7 +1076,10 @@ export async function loadFeature(featureDir, { policy } = {}) {
     const command = { type: 'record-milestone', milestone: name }
     const report = await reportFor(command)
     milestone.acceptance_validation = copy(report)
+    const research = await researchFor(command)
+    milestone.assumptions_validation = copy(research)
     try {
+      researchGate(research, command, { manifest, revalidate: true })
       obligationGate(report, command)
       if (name === 'verification') {
         const evidence = milestone.records.at(-1)?.evidence
@@ -771,9 +1094,21 @@ export async function loadFeature(featureDir, { policy } = {}) {
       }
     } catch (error) {
       if (error.code !== 'feature-blocked') throw error
-      manifest = invalidateFeature(manifest, { milestones: [name], reason: error.message })
+      manifest = invalidateFeature(manifest, {
+        milestones: [name],
+        reason: error.message,
+      })
     }
   }
+  const currentPhase = manifest.control?.next_state || manifest.state
+  manifest.research_validation = copy(
+    await researchFor({
+      type: 'complete',
+      phase: FEATURE_PHASES.includes(currentPhase)
+        ? currentPhase
+        : manifest.run_brief.stopping_point,
+    }),
+  )
   return manifest
 }
 function acquire(directory) {
@@ -796,7 +1131,10 @@ function acquire(directory) {
     try {
       owner = JSON.parse(readFileSync(path, 'utf8'))
     } catch {
-      fail('Feature writer lock is unreadable; inspect the interrupted writer', 'feature-conflict')
+      fail(
+        'Feature writer lock is unreadable; inspect the interrupted writer',
+        'feature-conflict',
+      )
     }
     if (!Number.isSafeInteger(owner.pid) || owner.pid <= 0)
       fail('Feature writer lock has no valid owner', 'feature-conflict')
@@ -839,6 +1177,8 @@ function requiredArtifacts(directory, phase, root, policy) {
       issues: ['issues.md'],
     }[phase] || []
   if (phase === 'design') {
+    if (existsSync(join(directory, 'interaction-comparison.json')))
+      mandatory.push('interaction-comparison.json')
     // These rendered/source bytes are what the human reviews. Bind the trees
     // so edits, deletions and additions cannot retain an old design decision.
     if (existsSync(join(directory, 'lofi'))) mandatory.push('lofi')
@@ -857,7 +1197,8 @@ function requiredArtifacts(directory, phase, root, policy) {
       for (const entry of readdirSync(join(directory, path), { withFileTypes: true })) {
         const child = `${path}/${entry.name}`
         if (entry.isDirectory()) scan(child)
-        else if (entry.name.endsWith('.md') || entry.name === 'board.json') mandatory.push(child)
+        else if (entry.name.endsWith('.md') || entry.name === 'board.json')
+          mandatory.push(child)
       }
     }
     scan('briefs')
@@ -916,13 +1257,33 @@ export async function applyFeatureCommand({
     const root = targetRoot(directory, manifest)
     let next = manifest,
       error = null,
-      status = 'success'
+      status = 'success',
+      research = null
     try {
       const effective = copy(command)
       let refinementPlan, refinementCompletion
       if (
+        [
+          'start',
+          'complete',
+          'approve',
+          'record-milestone',
+          'record-research-decision',
+          'revise',
+          'finish-refinement',
+        ].includes(command.type)
+      )
+        research = await validateFeatureAssumptions({
+          featureDir: directory,
+          root,
+          stage: stageFor(command),
+          manifest,
+        })
+      if (
         command.type === 'configure-refinement' ||
-        (command.type === 'start' && command.phase === 'dev' && manifest.refinement?.configured)
+        (command.type === 'start' &&
+          command.phase === 'dev' &&
+          manifest.refinement?.configured)
       ) {
         try {
           refinementPlan = await refinement.planRefinement({
@@ -947,7 +1308,10 @@ export async function applyFeatureCommand({
         }
         if (command.type === 'configure-refinement')
           effective.affectedFeatureArtifacts = [
-            ...new Set([...refinementPlan.affectedArtifacts, ...refinementPlan.change.surfaces]),
+            ...new Set([
+              ...refinementPlan.affectedArtifacts,
+              ...refinementPlan.change.surfaces,
+            ]),
           ].map((path) => relative(directory, resolve(root, path)))
       }
       if (command.type === 'finish-refinement') {
@@ -994,11 +1358,19 @@ export async function applyFeatureCommand({
           })
           assertCurrentContext(context)
         } catch (cause) {
-          fail(`Current context blocks phase dispatch: ${cause.message}`, 'feature-blocked')
+          fail(
+            `Current context blocks phase dispatch: ${cause.message}`,
+            'feature-blocked',
+          )
         }
       }
       if (command.type === 'complete') {
-        effective.required_artifacts = requiredArtifacts(directory, command.phase, root, policy)
+        effective.required_artifacts = requiredArtifacts(
+          directory,
+          command.phase,
+          root,
+          policy,
+        )
         effective.artifacts = [
           ...new Set([...(command.artifacts || []), ...effective.required_artifacts]),
         ]
@@ -1009,7 +1381,10 @@ export async function applyFeatureCommand({
         ...(effective.evidence?.artifacts || []),
       ]
       const artifactHashes = actualHashes(directory, root, paths)
-      if (['complete', 'approve'].includes(command.type) && command.phase !== 'discovery') {
+      if (
+        ['complete', 'approve'].includes(command.type) &&
+        command.phase !== 'discovery'
+      ) {
         const artifacts = await validateFeatureArtifacts({
           featureDir: directory,
           root,
@@ -1035,7 +1410,10 @@ export async function applyFeatureCommand({
           policy,
         })
         if (!combined.valid)
-          fail(`Combined verification blocks delivery: ${combined.reason}`, 'feature-blocked')
+          fail(
+            `Combined verification blocks delivery: ${combined.reason}`,
+            'feature-blocked',
+          )
         if (command.phase === 'pr') effective.combined_verification = copy(evidence)
       }
       const acceptance =
@@ -1047,6 +1425,7 @@ export async function applyFeatureCommand({
         next = transitionFeature(manifest, effective, {
           artifactHashes,
           acceptance,
+          assumptions: research,
           refinementPlan,
           refinementCompletion,
         })
@@ -1078,6 +1457,7 @@ export async function applyFeatureCommand({
       result: {
         state: next.state,
         phase: command.phase ? copy(next.phases[command.phase]) : null,
+        research: copy(research),
         refinement: ['configure-refinement', 'finish-refinement'].includes(command.type)
           ? copy(next.refinement || null)
           : null,

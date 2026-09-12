@@ -30,6 +30,12 @@ Requires Node 20+, Git and Claude Code. Execution requires the tested macOS
 Seatbelt backend; GitHub commands also require an authenticated supervisor `gh`.
 Zero npm dependencies. Follow [execution setup](runner/EXECUTION.md) before use.
 Prepare an existing target clone and pass `--path` (or configure its path).
+For a first run, follow the [synthetic onboarding walkthrough](runner/ONBOARDING.md).
+`doctor --path DIR --json` checks local prerequisites, references, pinned target
+bindings, isolation and permissions without installation, model starts or remote
+calls. It reports blocked conditions with repairs and withholds configuration
+values and raw process errors. Its native availability probe does not resolve
+the whole-process-tree containment limitation in #37.
 
 ```
 ateam-runner init                              # write ~/.ateam-runner/config.json
@@ -37,6 +43,7 @@ ateam-runner watch --repo org/foo              # poll for ready issues and unrev
 ateam-runner run    --repo org/foo --issue 12  # one issue, end to end
 ateam-runner review --repo org/foo --pr 34     # one PR, fresh reviewer session
 ateam-runner status --repo org/foo             # state, re-derived from GitHub
+ateam-runner doctor --path /absolute/target --json # read-only local setup checks
 ```
 
 Label an issue `agent:ready` and the daemon takes it. `--once` runs a single

@@ -9,6 +9,7 @@ import {
   realpathSync,
 } from 'node:fs'
 import { createHash } from 'node:crypto'
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { join, resolve } from 'node:path'
 import { run } from './sh.mjs'
 
@@ -22,6 +23,10 @@ const SAFE_GIT_CONFIG = [
   '-c',
   'core.attributesFile=/dev/null',
 ]
+const readOnlyGitContext = new AsyncLocalStorage()
+export function withReadOnlyGit(binary, fn) {
+  return readOnlyGitContext.run({ binary }, fn)
+}
 const privateEnvironment = () => ({
   PATH: process.env.PATH,
   GIT_CONFIG_GLOBAL: '/dev/null',
@@ -30,15 +35,104 @@ const privateEnvironment = () => ({
   GIT_TERMINAL_PROMPT: '0',
   GIT_NO_REPLACE_OBJECTS: '1',
 })
-const git = (cwd, args, opts = {}) => {
+const git = async (cwd, args, opts = {}) => {
+  const diagnostic = readOnlyGitContext.getStore()
+  if (
+    diagnostic &&
+    (!diagnostic.binary ||
+      !(
+        ['rev-parse', 'ls-tree', 'log', 'status'].includes(args[0]) ||
+        (args[0] === 'remote' && args[1] === 'get-url')
+      ))
+  )
+    throw Error('Read-only Git diagnostic refused an unavailable binary or unsupported operation')
   const privateStore = existsSync(join(cwd, '.git', 'ateam-private'))
-  return run('git', [...SAFE_GIT_CONFIG, ...args], {
+  const options = {
     cwd,
     ...opts,
-    ...(privateStore
-      ? { env: privateEnvironment(), replaceEnv: true }
-      : { env: { ...opts.env, GIT_NO_REPLACE_OBJECTS: '1' } }),
-  })
+    ...(diagnostic
+      ? {
+          env: {
+            PATH: '/usr/bin:/bin',
+            GIT_CONFIG_GLOBAL: '/dev/null',
+            GIT_CONFIG_SYSTEM: '/dev/null',
+            GIT_CONFIG_NOSYSTEM: '1',
+            GIT_TERMINAL_PROMPT: '0',
+            GIT_NO_REPLACE_OBJECTS: '1',
+            GIT_OPTIONAL_LOCKS: '0',
+            GIT_ATTR_NOSYSTEM: '1',
+            GIT_NO_LAZY_FETCH: '1',
+          },
+          replaceEnv: true,
+        }
+      : privateStore
+        ? { env: privateEnvironment(), replaceEnv: true }
+        : { env: { ...opts.env, GIT_NO_REPLACE_OBJECTS: '1' } }),
+  }
+  if (diagnostic && ['log', 'ls-tree'].includes(args[0])) {
+    const partial = await run(
+      diagnostic.binary,
+      [
+        ...SAFE_GIT_CONFIG,
+        'config',
+        '--null',
+        '--name-only',
+        '--get-regexp',
+        '^(extensions\\.partialclone|remote\\..*\\.promisor)$',
+      ],
+      { ...options, check: false },
+    )
+    if (![0, 1].includes(partial.code) || partial.stdout.length)
+      throw Error(
+        'Read-only Git diagnostic requires complete local objects; partial/promisor repositories are unsupported',
+      )
+  }
+  if (diagnostic && args[0] === 'status') {
+    // Even porcelain status can launch a clean/process filter for a modified
+    // tracked file. Read only configuration names before touching file contents;
+    // never run target-configured filters as part of a diagnostic.
+    const filters = await run(
+      diagnostic.binary,
+      [
+        ...SAFE_GIT_CONFIG,
+        'config',
+        '--null',
+        '--name-only',
+        '--get-regexp',
+        '^filter\\..*\\.(clean|smudge|process)$',
+      ],
+      { ...options, check: false },
+    )
+    if (![0, 1].includes(filters.code) || filters.stdout.length) {
+      const error = Error('Read-only Git diagnostic refused repository-configured filters')
+      error.code = 'ATEAM_DIAGNOSTIC_FILTERS'
+      throw error
+    }
+    const index = await run(
+      diagnostic.binary,
+      [...SAFE_GIT_CONFIG, 'ls-files', '--stage', '-z'],
+      options,
+    )
+    if (index.stdout.split('\0').some((entry) => entry.startsWith('160000 '))) {
+      const error = Error('Read-only Git diagnostic cannot inspect nested submodule state')
+      error.code = 'ATEAM_DIAGNOSTIC_SUBMODULES'
+      throw error
+    }
+    // Nested repositories have their own configuration and executable filters.
+    args = [...args, '--ignore-submodules=all']
+  }
+  return run(
+    diagnostic?.binary || 'git',
+    [
+      ...SAFE_GIT_CONFIG,
+      ...(diagnostic ? ['-c', 'log.showSignature=false'] : []),
+      ...args,
+      ...(diagnostic && args[0] === 'log'
+        ? ['--no-show-signature', '--no-ext-diff', '--no-textconv']
+        : []),
+    ],
+    options,
+  )
 }
 
 export async function ensureClone(repo, dest) {

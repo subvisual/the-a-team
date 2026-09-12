@@ -112,6 +112,16 @@ probe (dry-run examples: the route map, the import file format) — plus the
 cotton-test activity. An assumption that lives only in your report is a
 broken promise to the absent human.
 
+Update the plan's single `ateam-assumptions` block using the versioned contract
+in `runner/ASSUMPTIONS.md` in the harness. Reuse actual ASM IDs, preserve previous
+revisions and source digests, and name risk, dependent decision, required stage,
+owner (or unresolved owner), uncertainty and evidence/disposition. Never promote
+a synthetic prototype result into observed human-study evidence. A later study
+stays pending while its evidence-producing prototype proceeds; a due load-bearing
+assumption blocks dependent work until evidence or an existing authorized deferral
+is recorded. Supported no-go/reshape is a valid research outcome, with its actual
+decision source retained.
+
 ### 6. Commit & manifest
 
 Commit per craft with breadcrumb messages naming what changed and why

@@ -124,17 +124,25 @@ screens is a gate flag. The lint must pass — fix leaks, never bypass.
 ## Screens & flows        # movement 2's output — the lofi's input
 ## Visual approach        # tokens chosen and why: preset, seed hues, principles applied;
                           #   cites docs/product/design-system/ — never restates values
-## Options considered     # each scale/palette variant: what it argues, why it exists,
-                          #   which is recommended and why the others were dropped;
-                          #   the lofi's comparison URLs (?scale= / ?palette=)
+## Options considered     # risk-triggered interaction alternatives under the same
+                          #   tokens, shared criteria/evidence and explicit tradeoffs;
+                          #   or a reason to retain the settled routine interaction
 ## Derived calls & flags  # every derivation the briefing didn't settle, wireflow
                           #   divergences, ambiguity resolutions — the gate reads this first
 ## Lofi                   # path, dev command, screen count, variant URLs
 ## Revision notes         # only on a revise loop — what changed and why
 ```
 
-**Diverge by default**: `## Options considered` presents real, clickable
-alternatives (the variants), not prose about alternatives. Under a non-block
+**Compare when the risk warrants it**: follow `runner/INTERACTION-ALTERNATIVES.md`.
+For a load-bearing task-sequence or user-control uncertainty, record
+`cheapestProbe.method: "interaction-comparison"` in the versioned research plan
+and create two or three structurally different clickable flows under the same
+accepted job, scenario, constraints and visual system. Write
+`interaction-comparison.json` beside `design.md`; the actual artifact gate validates
+its research IDs, shared rubric, exact sources and explicit unrun obligations.
+Scale, palette or labels alone do not establish an interaction alternative.
+Routine corrections keep existing conventions and state the reason to skip variants.
+Under a non-block
 `gate_policy`, self-select the recommended variant **only if** the design
 bank's self-select consent was captured at the grill — recorded as a
 provisional call in `research-plan.md`; otherwise the choice stays open for

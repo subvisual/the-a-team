@@ -18,6 +18,7 @@ import { reviewPullRequest } from './review-pr.mjs'
 import { watch } from './watch.mjs'
 import { repoStatus, renderStatus } from './status.mjs'
 import { planCommand, renderPlan } from './planning.mjs'
+import { doctor, renderDoctor, readDoctorConfig } from './doctor.mjs'
 
 const USAGE = `ateam-runner — issue to PR to independent verdict
 
@@ -28,6 +29,7 @@ const USAGE = `ateam-runner — issue to PR to independent verdict
   review --repo O/R --pr N                 review one open PR in a fresh session
   watch  [--repo O/R ...]                  poll for ready issues and unreviewed PRs
   status [--repo O/R]                      re-derive run state from GitHub
+  doctor --path DIR [--json]               inspect setup locally without changing it
 
 Common flags
   --path DIR              existing target clone (otherwise configured/cache path)
@@ -84,7 +86,16 @@ const VALUE_FLAGS = new Set([
   'authorization-file',
   'scope-path',
 ])
-const COMMANDS = new Set(['init', 'run', 'review', 'watch', 'status', 'migrate-issues', 'help'])
+const COMMANDS = new Set([
+  'init',
+  'run',
+  'review',
+  'watch',
+  'status',
+  'doctor',
+  'migrate-issues',
+  'help',
+])
 
 function usageError(message, code = 'invalid-arguments') {
   return Object.assign(new Error(message), { code, exitCode: 2 })
@@ -417,6 +428,24 @@ export async function main(argv) {
       return 0
     }
     validateCommand(command, args)
+    if (command === 'doctor') {
+      if (
+        !args.path ||
+        argv.some(
+          (value) => value.startsWith('--') && !['--path', '--json', '--quiet'].includes(value),
+        )
+      )
+        throw usageError('doctor accepts --path DIR, --json and --quiet')
+      const result = await doctor({ root: args.path, ...readDoctorConfig() })
+      const status = result.status === 'blocked' ? 'blocked' : 'success'
+      process.stdout.write(
+        json
+          ? JSON.stringify({ schemaVersion: 1, command, status, result, error: null }, null, 2) +
+              '\n'
+          : renderDoctor(result),
+      )
+      return status === 'blocked' ? 2 : 0
+    }
     const cfg = cfgFrom(args)
     const labels = { ...LABELS, ...(cfg.labels || {}) }
     if (['watch', 'status'].includes(command) && !args.repos.length && !(cfg.repos || []).length) {
