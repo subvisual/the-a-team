@@ -501,7 +501,7 @@ export async function featureStatus(featureDir, { now = Date.now(), policy } = {
       issue: 37,
       status: 'unresolved',
       description:
-        'Native macOS containment of a detached child whose intermediate parent exits remains unresolved. Cooperative controls do not establish process termination.',
+        'A detached child whose intermediate parent exits may escape native macOS cleanup. This is an accepted limitation in #37. Cooperative controls do not establish process termination.',
     },
   }
 }
@@ -557,7 +557,7 @@ export function renderFeatureStatus(summary) {
     ...s.execution.unresolvedActions.map(
       (a) => `Unresolved action ${a.actionId}: ${a.reason}`,
     ),
-    `Native #37: ${s.containment.status} — ${s.containment.description}`,
+    `Native containment: ${s.containment.status} — ${s.containment.description}`,
     '',
   ].join('\n')
 }
@@ -619,6 +619,6 @@ ${rows(
   )}</details></section>
 <section id="history"><h2>History and controls</h2><p>${escape(s.control.description)}</p><p>${escape(s.execution.description)}</p>${rows(s.execution.unresolvedActions, (a) => `<strong>Reconcile ${escape(a.kind)}</strong> · <code>${escape(a.actionId)}</code> · ${escape(a.reason)}`, 'No unresolved actions found in the explicitly linked histories.')}${rows(s.execution.diagnostics, escape, s.execution.status === 'unavailable' ? 'Runner history is unavailable until exact repo and issue identities are recorded.' : 'Linked history is readable.')}
 <p>Available commands: ${s.actions.map((a) => `<code>${escape(a.command)}${a.phase ? ` ${escape(a.phase)}` : ''}</code>`).join(', ') || 'inspect retained history'}. Read commands use only <code>--feature &lt;feature-dir&gt;</code>. Mutation commands also require the current revision, a stable event ID, and the required reason or human decision.</p><p>Recorded branches retained: ${escape(s.branches.join(', ') || 'none')}</p><details><summary>Command history (${s.history.length})</summary>${rows(s.history, (e) => `r${e.revision} · ${escape(e.command)} ${escape(e.phase || '')} · ${escape(e.status)}${e.reason ? ` · ${escape(e.reason)}` : ''}`, 'No events recorded.')}</details></section>
-<footer><p>Snapshot generated ${escape(s.generatedAt)}. Rerun status to verify current evidence.</p><p>Native #37 remains unresolved: ${escape(s.containment.description)}</p></footer>
+<footer><p>Snapshot generated ${escape(s.generatedAt)}. Rerun status to verify current evidence.</p><p>Native containment limitation: ${escape(s.containment.description)}</p></footer>
 </main></body></html>\n`
 }

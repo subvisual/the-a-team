@@ -18,7 +18,7 @@ runner has no npm dependencies. Provider authentication and spend require the
 operator's explicit setup; doctor never installs or authenticates anything.
 
 Run `node runner/bin/ateam-runner.mjs doctor --path /absolute/target --json` to
-inspect local setup. Whole-process-tree containment remains unresolved in #37;
+inspect local setup. Whole-process-tree containment is an accepted limitation documented in #37;
 native availability checks do not establish that guarantee.
 
 The skill bundle lives in `.claude/skills/`; [SKILLS.md](SKILLS.md) lists each

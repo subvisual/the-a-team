@@ -1,0 +1,1 @@
+Synthetic correction input: the interrupted fixture should retain both request name and owner. No human session occurred.

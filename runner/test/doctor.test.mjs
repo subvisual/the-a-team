@@ -10,7 +10,12 @@ import { chmodSync, symlinkSync, copyFileSync, existsSync, utimesSync } from 'no
 import { spawnSync } from 'node:child_process'
 
 const harness = resolve(import.meta.dirname, '../..')
-const git = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
+// Fixture setup must finish all writes before byte-preservation snapshots begin.
+const git = (cwd, ...args) =>
+  execFileSync('git', ['-c', 'maintenance.auto=false', '-c', 'gc.auto=0', ...args], {
+    cwd,
+    encoding: 'utf8',
+  }).trim()
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'ateam-doctor-'))
   const previousHome = process.env.ATEAM_RUNNER_HOME

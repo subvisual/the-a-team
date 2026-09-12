@@ -1,0 +1,61 @@
+name: Synthetic evaluation corpus
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-evaluation:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Select the supported Command Line Tools Git
+        run: |
+          # The native fixture invokes /usr/bin/git. Select the installed CLT
+          # runtime already covered by the sandbox's declared system reads.
+          test -x /Library/Developer/CommandLineTools/usr/bin/git
+          sudo xcode-select --switch /Library/Developer/CommandLineTools
+          test "$(/usr/bin/xcode-select -p)" = /Library/Developer/CommandLineTools
+          /usr/bin/git --version
+      - name: Ordinary runner tests remain independent
+        working-directory: runner
+        run: npm test
+      - name: Existing native boundary controls
+        working-directory: runner
+        run: npm run test:boundary
+      - name: Install pinned browser tooling outside the source checkout
+        run: |
+          mkdir -p "$RUNNER_TEMP/evaluation-browser"
+          cp runner/evaluation/browser-tools/package*.json "$RUNNER_TEMP/evaluation-browser/"
+          npm ci --ignore-scripts --prefix "$RUNNER_TEMP/evaluation-browser"
+          node "$RUNNER_TEMP/evaluation-browser/node_modules/playwright/cli.js" install chromium
+      - name: Run every deterministic scenario with native macOS controls
+        working-directory: runner
+        env:
+          ATEAM_BROWSER_CHANNEL: chromium
+        run: |
+          export ATEAM_PLAYWRIGHT_MODULE="$RUNNER_TEMP/evaluation-browser/node_modules/playwright/index.mjs"
+          npm run test:evaluation -- --profile native --output "$RUNNER_TEMP/evaluation-evidence"
+      - name: Retain per-scenario outcomes, traces, source pins and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-evaluation-${{ github.sha }}
+          path: ${{ runner.temp }}/evaluation-evidence
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
+# Success establishes only the declared deterministic checks. The summary retains
+# whole-tree containment as unsupported under #37's accepted native scope;
+# synthetic checks are not release approval. No provider or human trial runs here.

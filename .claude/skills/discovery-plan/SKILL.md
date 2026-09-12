@@ -175,3 +175,13 @@ record; an unreviewed one is neither.
 ## Examples
 
 - Input: `examples/example-input.md` · Output: `examples/example-output.md`
+
+## Pilot handoff and checkpoint
+
+Use `runner/PILOT-PROTOCOL.md` for later pilot planning. Resolve separate target
+authority, accountable roles, selected obligations, comparable ordinary-assisted
+method and dependable-release evidence before execution. Plan the new slice,
+interruption/human revision and recovery/design/feature-delta refinements on two
+distinct stacks/design systems. Keep absent evidence unrun. Append post-pilot
+correction snapshot references here; preserve original sources and versioned
+assumption history. A protocol or synthetic scorecard does not authorize a study.

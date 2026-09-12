@@ -355,7 +355,7 @@ export async function doctor(
     add(
       'containment',
       'warning',
-      'Whole-process-tree containment remains unresolved (#37); native availability does not establish that guarantee.',
+      'Whole-process-tree containment is an accepted limitation (#37); native availability does not establish that guarantee.',
       'Keep this limitation visible when assessing execution authority. This diagnostic does not select or start a VM.',
     )
     add(

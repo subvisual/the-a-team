@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "deterministic-v1",
+  "kind": "deterministic",
+  "criteria": [
+    "The exact catalog test name executes at least one assertion-bearing test.",
+    "The selected process exits zero with no failed, cancelled or skipped tests.",
+    "Every scenario retains a separate outcome and unedited process trace.",
+    "A seeded production defect fails for GLOBAL_INVARIANT_DROPPED; corrected source passes.",
+    "Two synthetic targets run their own stack tests and produce separate outputs with exact harness revisions."
+  ],
+  "doesNotMeasure": [
+    "Model capability",
+    "Human usability",
+    "Whole-process-tree containment beyond the accepted native scope of issue 37",
+    "Production readiness"
+  ],
+  "releaseEligible": false
+}

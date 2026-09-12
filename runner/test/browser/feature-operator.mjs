@@ -151,7 +151,7 @@ try {
       'stable resume replay',
       'actual stale design revalidation',
     ],
-    containment: '#37 remains unresolved; no termination claim',
+    containment: '#37 accepts native cleanup with a known containment limitation; no whole-tree termination claim',
     runtimeAvailability:
       'verified only during this synthetic browser scenario; server is stopped at scenario end',
   }

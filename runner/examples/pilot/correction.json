@@ -1,0 +1,27 @@
+{
+  "id": "LEARN-CONTEXT-1",
+  "category": "context",
+  "summary": "A recovery constraint was missing from the resolved context.",
+  "changedAssumption": {
+    "id": "ASM-SAVE",
+    "beforeVersion": 1,
+    "afterVersion": 2,
+    "change": "Retain the owner as well as the request name after interruption."
+  },
+  "sourceEvidence": [
+    {
+      "reference": "fixture:correction-source.txt",
+      "sha256": "98dba55da6d536a2dacc0a72b68f260f880cfcc5f6ea1ca35ac5160c99ab1690"
+    }
+  ],
+  "generalizedFollowup": {
+    "kind": "fixture",
+    "reference": "harness:interrupted-recovery",
+    "description": "Exercise complete form-state retention when replaying an interrupted flow."
+  },
+  "publicationReview": {
+    "generalized": true,
+    "actor": "Synthetic fixture author",
+    "reference": "fixture:generalized-review"
+  }
+}

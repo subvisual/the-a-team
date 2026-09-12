@@ -1,0 +1,24 @@
+Pilot PILOT-SYNTHETIC-1 — synthetic; valid authored records
+Human-accepted increments: 7
+All attempts: 10; spend USD 27
+Human time: 175 minutes; attribution exact
+Accepted increments per human hour: 2.4 (7 / 175 minutes × 60)
+The denominator includes unsuccessful and interrupted attempts in the whole cohort.
+First-pass acceptance: 5/8; Increment accepted on its first attempt / increments with a recorded human review
+Active review: 66 minutes; decisions requested: 10
+Context: USD 2.7, 27 minutes (subsets of total spend/time)
+Context sufficiency: {"sufficient":8,"insufficient":1,"unknown":1}
+Escaped defects: {"critical":0,"high":1,"medium":0,"low":0,"unknown":0,"missingInventories":0}
+Observed recovery: 2/2; unrun 6, unknown 0
+Observed primary-job success: 0/0; unrun 8, unknown 0
+implementation: recorded 8; unrun 0; unknown 0
+verification: recorded 8; unrun 0; unknown 0
+human_acceptance: recorded 7; unrun 1; unknown 0
+integration: recorded 1; unrun 7; unknown 0
+release: recorded 0; unrun 8; unknown 0
+product_validation: recorded 0; unrun 8; unknown 0
+Ordinary-assisted comparison: unrun; descriptive rate ratio unknown
+A descriptive comparison does not establish a repeatable productivity multiplier or causal effect.
+Unrun obligations: OBL-TARGET-USER-STUDY
+Limitation: All measurements are synthetic; no effectiveness or adoption claim.
+Limitation: Target-user studies and release are unrun.

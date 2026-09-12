@@ -96,8 +96,8 @@ An already-recorded blocked command remains blocked on replay.
   receipts and event history. It performs no deletion or cleanup.
 
 These are cooperative feature controls, not operating-system suspension or
-process-tree termination. The native macOS detached-child containment criterion
-in #37 remains explicitly unresolved. An already-started runner invocation may
+process-tree termination. Native macOS detached-child containment
+is an accepted known limitation in #37. An already-started runner invocation may
 finish its own work; the orchestrator must check the feature hold before its next
 dispatch. Pausing does not revoke an in-flight external operation.
 

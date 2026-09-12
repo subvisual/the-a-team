@@ -159,7 +159,15 @@ console.log(JSON.stringify({is_error:false,structured_output:structured,session_
       issue,
       cfg: { ...DEFAULTS, maxCycles: 1, policy },
     })
-    assert.equal(result.outcome, 'approved', result.reason)
+    const diagnostics = []
+    if (result.outcome !== 'approved' && result.ctx?.runDir) {
+      for (const role of ['executor', 'reviewer']) {
+        const stderrPath = join(result.ctx.runDir, `${role}.stderr.txt`)
+        if (existsSync(stderrPath))
+          diagnostics.push(`${role} stderr:\n${readFileSync(stderrPath, 'utf8').slice(-16_384)}`)
+      }
+    }
+    assert.equal(result.outcome, 'approved', [result.reason, ...diagnostics].filter(Boolean).join('\n'))
     assert.equal(target.calls.filter((c) => c[0] === 'approved').length, 1)
     const record = JSON.parse(readFileSync(result.ctx.approvalPath, 'utf8'))
     assert.equal(record.headSha, result.ctx.head)

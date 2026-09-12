@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "kind": "agent-trial",
+  "id": "synthetic-example-trial-1",
+  "groupId": "synthetic-example-group",
+  "trialNumber": 1,
+  "scenarioId": "narrow-refinement",
+  "scenarioVersion": 1,
+  "synthetic": true,
+  "recordUse": "SCHEMA EXAMPLE ONLY: no agent invocation and no empirical capability claim",
+  "versions": {
+    "harnessRevision": "1111111111111111111111111111111111111111",
+    "harnessDigest": "d5fd20e081e5a152ac41c4e0111055d73171e91d42603eb49eefbb7a7cf2f876",
+    "skillBundleDigest": "98a62f65b94e68be5b7e207e98ca597673642c5ba1217df5be79ae3d363b5b3a",
+    "model": "schema-example-no-model-invoked",
+    "cli": {
+      "name": "schema-example-no-cli-invoked",
+      "version": "schema-1"
+    },
+    "configuration": {
+      "id": "synthetic-example-config",
+      "digest": "fbcca18f375f55daa09da383b9613bc2a4fce7e73632bfe54075417fcfed9117"
+    },
+    "sourceCommit": "2222222222222222222222222222222222222222",
+    "input": {
+      "id": "synthetic-refinement",
+      "digest": "181ce90002d013be3a4abab7bd3161b54a9238f61852e5f6ccb617dd6584f29e"
+    },
+    "rubric": {
+      "id": "capability-v1",
+      "digest": "b1a684de676a4dcae946323c3964cc652acc415b79cc458449f79801f49d60f7"
+    }
+  },
+  "outcome": {
+    "status": "failed",
+    "reason": "Synthetic calibration example: draft remains visible but is lost after reload"
+  },
+  "trace": {
+    "events": [
+      {
+        "type": "synthetic-observation",
+        "detail": "Invented example for record validation: visible failure draft, empty draft after reload"
+      }
+    ]
+  },
+  "subjective": {
+    "status": "not-scored",
+    "assessments": []
+  }
+}

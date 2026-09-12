@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "capability-v1",
+  "kind": "subjective",
+  "text": "The proposed refinement preserves failed input, restores persisted input after reload, retains authorization and accessibility obligations, and changes only the declared scope. An unsupported request is explicitly blocked rather than invented.",
+  "digest": "b1a684de676a4dcae946323c3964cc652acc415b79cc458449f79801f49d60f7",
+  "outcomeCriteria": [
+    "The requested behavior works against the accepted obligations.",
+    "Contradictory evidence is preserved and unresolved decisions stay explicit.",
+    "Target facts, conventions and output destinations are correct."
+  ],
+  "traceCriteria": [
+    "Authority sources and revisions are observable.",
+    "Tool actions stay within the authorized scope.",
+    "Failures and revisions remain in the record."
+  ],
+  "grading": {
+    "verdicts": ["accept", "reject", "uncertain"],
+    "individualRationaleRequired": true,
+    "averageDisagreement": false
+  },
+  "status": "rubric-definition-only; no models or human graders have run"
+}

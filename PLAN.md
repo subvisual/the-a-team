@@ -566,3 +566,12 @@ symptom being reported.
 refresh — kept separate from `ateam-product-report.md` so backward-looking
 verified claims and forward-looking speculation don't share a document, which
 is how a report loses its authority.
+
+## Pilot measurement and learning
+
+The reproducibility corpus and `runner/PILOT-PROTOCOL.md` provide the prerequisites
+and checklist for separately authorized pilots. Measure human-accepted increments
+per attributable human hour across all attempts; report matched ordinary-assisted
+comparison limitations, separate delivery/validation milestones, and generalized
+append-only learning checkpoints. The shipped dataset is synthetic. The accepted native containment limitation in
+#37 remains visible; no live pilot or adoption claim follows from these templates.

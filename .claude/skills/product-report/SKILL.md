@@ -192,3 +192,17 @@ attempts and explicit unresolved baseline dispositions even when a rerun passed.
 Recheck the branch before reporting current verification; a moved SHA makes the
 old evidence stale. Passing a layer fixture cannot establish a protected route
 or connected browser-to-API workflow that was never exercised.
+
+## Pilot evidence and accepted increments
+
+When reporting a separately authorized pilot, use `runner/PILOT-PROTOCOL.md` and
+the pilot CLI scorecard. Include every failed/interrupted attempt in spend and
+human time, the explicit accepted-increment denominator, first-pass acceptance,
+escaped defects by severity, recovery, observed primary-job success, active
+review, decisions and context cost/sufficiency. Show missing measurements as
+unknown and studies as unrun. Compare only matched ordinary-assisted work with
+recorded limitations; artifact/test/PR counts do not establish productivity.
+Preserve all six independent milestones. Link the retained generalized post-pilot
+checkpoint in the report and route checkpoint capture through research-synthesis
+under its existing review rules; this skill still writes only the report. This workflow grants no
+client, model-spend or live-study authority.

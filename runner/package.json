@@ -12,7 +12,8 @@
   },
   "scripts": {
     "test": "node --test \"test/*.test.mjs\"",
-    "test:boundary": "ATEAM_NATIVE_SANDBOX_TEST=1 node --test test/sandbox.test.mjs test/claude.test.mjs test/network-proxy.test.mjs"
+    "test:boundary": "ATEAM_NATIVE_SANDBOX_TEST=1 node --test test/sandbox.test.mjs test/claude.test.mjs test/network-proxy.test.mjs",
+    "test:evaluation": "node src/evaluation-cli.mjs run"
   },
   "dependencies": {}
 }
