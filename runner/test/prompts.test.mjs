@@ -54,6 +54,10 @@ test('the reviewer prompt scopes judgement to the criteria', () => {
   assert.match(p, /out of scope/)
   assert.match(p, /git diff aaa\.\.\.bbb/)
   assert.match(p, /You never edit code/)
+  assert.match(p, /test_adequacy entry for every criterion/)
+  assert.match(p, /expected values.*public behavior.*substituted system boundary/i)
+  assert.match(p, /semantic.*deterministic validation/i)
+  assert.match(p, /Issue-contract source fallback: issue:unkeyed@[0-9a-f]{64}/)
 })
 
 test('the reviewer is never handed the PR body', () => {

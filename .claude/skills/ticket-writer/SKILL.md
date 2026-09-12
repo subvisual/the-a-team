@@ -153,7 +153,15 @@ The ordinary ticket parser and Gherkin gate remain mandatory and unchanged.
 7. **Quality pass, all modes**: in pipeline batch mode, run the acceptance
    coverage gate above and report its outstanding obligations. Every criterion specific, observable,
    testable — strip "fast", "properly", "works correctly" for observable
-   behavior. Each ticket agent-ready: someone (or something) with zero
+   behavior. For each behavioral criterion, make the obligation-to-check map
+   recoverable from the ticket: state independent literal/worked expected values,
+   the public workflow that exercises them, and any external boundary that may be
+   substituted. Preserve the canonical requirement ID/version and source
+   authority. Do not weaken a baseline without a versioned authorized decision
+   in accepted canonical history; implementation-authored authority is invalid,
+   and do not add an implementation-mirroring criterion or a test-count target.
+   Low-impact text/styling may name existing checks and rendered evidence instead
+   of requiring an artificial new test. Each ticket agent-ready: someone (or something) with zero
    conversation context could pick it up and start.
 8. **Close with the handoff**: `Next likely skill(s)` (`jobs-to-be-done` for
    TBD jobs · `epics` when a batch needs structuring · `prd-writer` if

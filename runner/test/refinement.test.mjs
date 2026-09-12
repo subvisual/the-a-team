@@ -8,7 +8,7 @@ import { createHash } from 'node:crypto'
 import * as refinement from '../src/refinement.mjs'
 import { runIssue } from '../src/core/loop.mjs'
 import { parseIssuesFile } from '../src/local-issues.mjs'
-import { config, adapter, impl, verdict } from './approval-fixtures.mjs'
+import { config, adapter, impl, verdict, adequacyFor } from './approval-fixtures.mjs'
 const hash = (value) => createHash('sha256').update(value).digest('hex')
 function fixture(t) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'ateam-refinement-')))
@@ -389,7 +389,10 @@ test('refinement completion requires a delivered runner approval and rejects lat
         })
         return impl
       },
-      review: async () => verdict,
+      review: async ({ adequacyAuthority }) => ({
+        ...verdict,
+        testAdequacy: adequacyFor(issue.acceptanceCriteria, issue, adequacyAuthority),
+      }),
       runVerification: async ({ command, worktree }) => ({
         code: 0,
         stdout: execFileSync('/bin/sh', ['-c', command], { cwd: worktree, encoding: 'utf8' }),

@@ -652,3 +652,16 @@ test('withdrawing product-validation evidence stales only that milestone while e
   assert.equal(loaded.phases.definition.status, 'approved')
   assert.equal(loaded.milestones.integration.status, 'recorded')
 })
+
+test('verification milestone refuses an arbitrary passing report without combined revision proof', (t) => {
+  const f = fixture(t)
+  f.init()
+  writeFixture(f.dir, ledgerFixture())
+  const result = f.run('record-milestone', {
+    milestone: 'verification',
+    evidence: { reference: 'passing-report', revision: 'abc', artifacts: ['prd.md'] },
+  })
+  assert.equal(result.status, 'blocked')
+  assert.match(result.error.message, /combinedVerification/)
+  assert.notEqual(result.manifest.milestones.verification.status, 'recorded')
+})

@@ -161,19 +161,39 @@ Missing/unknown fields, non-boolean test flags, failed processes, inconsistent
 results or approval with unmet criteria cannot produce an approved outcome.
 An executor's replacement test command does not change the declared contract.
 
+The reviewer must return one `test_adequacy` entry for every exact acceptance
+criterion. Each entry records independent expected-value evidence, evidence that
+the public behavior was exercised, substituted-boundary scope, the current
+requirement source ID/revision, baseline status and requirement version, and an
+explicit semantic judgment. Approval rejects missing/duplicate criteria,
+implementation-mirroring expectations, unexercised behavior, inappropriate
+substitutions, inadequate judgments, and weakened baselines. A changed baseline
+needs both a positive version and an authorization reference. These shape and
+consistency checks also bind the reference to accepted-base source bytes and
+complete canonical ledger history containing an actual changed definition, next
+version, and authorized decision. An executor-authored head file cannot authorize
+its own baseline. These checks enforce provenance and known contradictions; they
+do not replace the reviewer's calibrated judgment about whether a check would
+catch the contractual defect.
+
 Every approval uses a fresh detached checkout of the committed head. Dirty or
 untracked executor corrections are absent. The reviewer reads that checkout and
 the supervisor independently executes the declared checks there. Source mutation
 or a failed command invalidates the result. A direct PR review records existing
 committed-PR provenance; it does not invent an executor process result.
 
-The versioned approval record binds target and harness identities, issue/criteria
+The versioned approval record (schema version 2) binds target and harness identities, issue/criteria
 digest, base/head, policy, evaluator, verification command, environment ID,
-exit code and output references. Evidence reuse checks these inputs again. A
+exit code and output references, and the scoped adequacy map. Evidence reuse checks these inputs again. A
 changed head, base or criteria requires new evidence; a GitHub label or old
 comment alone is not proof. Keep these local records: they are required evidence,
 not disposable cache. Approval does not establish merge, deployment, user
 validation or the correctness of a later combined revision.
+
+Low-impact text or styling changes may rely on existing checks plus rendered
+evidence when the reviewer explains why public behavior and substituted
+boundaries do not apply. The runner has no minimum test count and does not require
+a new test whose expected value merely copies the implementation.
 
 Successful delivery has a separate receipt bound to the immutable approval
 file. An evaluation record created before a failed publication is not treated as

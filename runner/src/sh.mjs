@@ -26,7 +26,9 @@ export function run(
     replaceEnv = false,
     check = true,
     onStdout,
+    onSpawn,
     timeoutMs,
+    signal: cancellation,
     killGraceMs = 1000,
   } = {},
 ) {
@@ -37,6 +39,9 @@ export function run(
     ])
       if (value !== undefined && (!Number.isSafeInteger(value) || value < 1))
         throw new Error(`${name} must be a positive integer`)
+    if (cancellation?.aborted) throw new Error('supervisor command was cancelled before launch')
+    if (cancellation && timeoutMs === undefined)
+      throw new Error('cancellable commands require a bounded timeout')
     if (timeoutMs !== undefined && process.platform === 'win32')
       throw new Error('process-tree timeout requires the supported POSIX backend')
     if (timeoutMs !== undefined) assertProcessInventory()
@@ -52,12 +57,14 @@ export function run(
       timer = null,
       killTimer = null,
       finishTimer = null
-    let timedOut = false,
+    let aborted = false,
+      timedOut = false,
       forced = false,
       closed = false,
       exitCode,
       signal,
-      cleanupError = null
+      cleanupError = null,
+      startupError = null
     child.stdout.setEncoding('utf8')
     child.stderr.setEncoding('utf8')
     child.stdout.on('data', (d) => {
@@ -88,8 +95,8 @@ export function run(
       }
     }
     const finish = () => {
-      if (!closed || (timedOut && !forced)) return
-      if (!timedOut && tree) {
+      if (!closed || ((timedOut || aborted) && !forced)) return
+      if (!timedOut && !aborted && tree) {
         try {
           if (tree.alive()) {
             finishTimer = setTimeout(finish, 25)
@@ -101,19 +108,28 @@ export function run(
       }
       if (finishTimer) clearTimeout(finishTimer)
       if (timer) clearTimeout(timer)
+      cancellation?.removeEventListener('abort', cancel)
       tree?.close()
-      const code = cleanupError || tree?.failure ? 125 : timedOut ? 124 : exitCode
+      const code = cleanupError || tree?.failure ? 125 : timedOut ? 124 : aborted ? 130 : exitCode
       const result = {
         code,
         signal,
         stdout,
         stderr,
         timedOut,
+        ...(aborted ? { aborted: true } : {}),
         ...(cleanupError || tree?.failure
           ? { cleanupUncertain: cleanupError || tree.failure.message }
           : {}),
       }
-      if (check && code !== 0) {
+      if (startupError) {
+        reject(
+          Object.assign(startupError, {
+            processResult: result,
+            failureCategory: 'infrastructure-interruption',
+          }),
+        )
+      } else if (check && code !== 0) {
         const error = new CommandError(cmd, args, code, stdout, stderr)
         error.timedOut = timedOut
         error.failureCategory = result.cleanupUncertain
@@ -124,20 +140,31 @@ export function run(
         reject(error)
       } else resolve(result)
     }
-    if (timeoutMs !== undefined)
+    const stop = () => {
+      terminate('SIGTERM')
+      killTimer = setTimeout(() => {
+        terminate('SIGKILL')
+        forced = true
+        finish()
+      }, killGraceMs)
+    }
+    const cancel = () => {
+      if (aborted || timedOut) return
+      aborted = true
+      if (timer) clearTimeout(timer)
+      stderr += '\nateam-runner: supervisor cancelled command; terminating observed process group'
+      stop()
+    }
+    cancellation?.addEventListener('abort', cancel, { once: true })
+    if (cancellation?.aborted) cancel()
+    if (timeoutMs !== undefined && !aborted)
       timer = setTimeout(() => {
         timedOut = true
         stderr += `\nateam-runner: timed out after ${timeoutMs}ms; terminating process group`
-        terminate('SIGTERM')
-        // Keep this timer even if the immediate parent closes: descendants may
-        // have ignored TERM or closed their output streams while still running.
-        killTimer = setTimeout(() => {
-          terminate('SIGKILL')
-          forced = true
-          finish()
-        }, killGraceMs)
+        stop()
       }, timeoutMs)
     child.on('error', (error) => {
+      cancellation?.removeEventListener('abort', cancel)
       if (timer) clearTimeout(timer)
       if (killTimer) clearTimeout(killTimer)
       tree?.close()
@@ -155,6 +182,14 @@ export function run(
     })
     if (input !== undefined) child.stdin.end(input)
     else child.stdin.end()
+    if (child.pid && onSpawn) {
+      try {
+        onSpawn(child.pid)
+      } catch (error) {
+        startupError = error instanceof Error ? error : Error(String(error))
+        cancel()
+      }
+    }
   })
 }
 

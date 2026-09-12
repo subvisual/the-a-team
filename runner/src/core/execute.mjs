@@ -124,10 +124,13 @@ export function executorPrompt({
       ? 'Revalidation CLI: node <context tools path> revalidate --root <worktree> --policy <context policy path> --update <update.json>. Update JSON: {expectedIndexRevision, validation:{id,actor,evidence}, sources:[{id,revision}], facts:[complete replacement observed facts]}. The target-relative evidence file is JSON {method:"source-inspection" or "verification",summary,sourceRevisions:{sourceId:sha256}}. Hash exact file bytes. Preserve intent facts and unresolved decisions. Re-run select afterward; stale observations must not govern review.'
       : '',
     '',
+    '- Before adding checks, make a concise obligation-to-check map for each acceptance criterion: the independent expected values, public behavior to exercise, and system boundaries that may be substituted.',
     '- TDD in vertical slices: one failing test, the minimal code to pass it, then the next. Never write every test up front — bulk tests verify imagined behaviour.',
     '- Test observable behaviour through the public interface. Expected values are independent literals or worked examples, never recomputed the way the code computes them.',
     '- Refactor only once green.',
     '- Mock only at system boundaries (external APIs, DB, time, filesystem). Never mock your own modules.',
+    '- Preserve baseline expectations from accepted-base requirement authority. Weakening them requires a real definition change, the next positive version, and an explicit authorized decision in complete canonical history; files written by this implementation cannot authorize themselves.',
+    '- Low-impact text or styling covered by existing checks and rendered evidence does not need a new implementation-mirroring test. There is no test-count target.',
     '- Follow the conventions already in this repo over anything you would write from scratch. Read neighbouring files first.',
     `- Work only within the issue scope and resolved write paths: ${(policy?.writePaths || ['.']).join(', ')}.`,
     policy?.authorization?.protectedPaths?.length

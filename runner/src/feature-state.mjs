@@ -1,3 +1,4 @@
+import { validateFeatureDelivery } from './combined-verification.mjs'
 import { createHash, randomUUID } from 'node:crypto'
 import {
   readFileSync,
@@ -423,6 +424,8 @@ export function transitionFeature(
           'feature-blocked',
         )
       phase.acceptance = copy(acceptance || null)
+      if (command.phase === 'pr')
+        phase.combined_verification = copy(command.combined_verification || null)
       phase.status = 'complete'
       phase.completed_at = now
       break
@@ -730,6 +733,16 @@ export async function loadFeature(featureDir, { policy } = {}) {
     phase.acceptance_validation = copy(report)
     try {
       obligationGate(report, command)
+      if (name === 'pr') {
+        const combined = await validateFeatureDelivery({
+          featureDir: directory,
+          root,
+          manifest,
+          evidence: phase.combined_verification,
+          policy,
+        })
+        if (!combined.valid) fail(combined.reason, 'feature-blocked')
+      }
     } catch (error) {
       if (error.code !== 'feature-blocked') throw error
       // Semantic gate invalidation must not pretend its artifact bytes changed
@@ -745,6 +758,17 @@ export async function loadFeature(featureDir, { policy } = {}) {
     milestone.acceptance_validation = copy(report)
     try {
       obligationGate(report, command)
+      if (name === 'verification') {
+        const evidence = milestone.records.at(-1)?.evidence
+        const combined = await validateFeatureDelivery({
+          featureDir: directory,
+          root,
+          manifest,
+          evidence,
+          policy,
+        })
+        if (!combined.valid) fail(combined.reason, 'feature-blocked')
+      }
     } catch (error) {
       if (error.code !== 'feature-blocked') throw error
       manifest = invalidateFeature(manifest, { milestones: [name], reason: error.message })
@@ -996,6 +1020,23 @@ export async function applyFeatureCommand({
             `Artifact gate blocked: ${artifacts.diagnostics.map((d) => `${d.path || d.artifact || 'artifact'} ${d.id || d.obligationId || ''}: ${d.message}`).join('; ')}`,
             'feature-blocked',
           )
+      }
+      if (
+        (command.type === 'record-milestone' && command.milestone === 'verification') ||
+        (['complete', 'approve'].includes(command.type) && command.phase === 'pr')
+      ) {
+        const evidence =
+          command.evidence || manifest.milestones.verification.records.at(-1)?.evidence
+        const combined = await validateFeatureDelivery({
+          featureDir: directory,
+          root,
+          manifest,
+          evidence,
+          policy,
+        })
+        if (!combined.valid)
+          fail(`Combined verification blocks delivery: ${combined.reason}`, 'feature-blocked')
+        if (command.phase === 'pr') effective.combined_verification = copy(evidence)
       }
       const acceptance =
         ['complete', 'approve', 'record-milestone'].includes(command.type) &&

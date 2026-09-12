@@ -8,6 +8,7 @@ import {
   config,
   commit,
   verdict,
+  adequacyFor,
   pass,
   git,
   adapter as spy,
@@ -16,6 +17,10 @@ import { createLocalAdapter } from '../src/adapters/local.mjs'
 import { runIssue } from '../src/core/loop.mjs'
 import { appendEvent } from '../src/core/history.mjs'
 let root, repoPath, issuesFile, cfg
+const approvedReview = async ({ issue, adequacyAuthority }) => ({
+  ...verdict,
+  testAdequacy: adequacyFor(issue.acceptanceCriteria, issue, adequacyAuthority),
+})
 const source = `## A\n**ID:** ISS-A\n**Depends on:** none\n### Acceptance criteria\n- [ ] value is good\n\n## A extended\n**ID:** ISS-B\n**Depends on:** ISS-A\n### Acceptance criteria\n- [ ] uses A\n`
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'ateam-recovery-'))
@@ -37,7 +42,7 @@ async function approved() {
     adapter,
     issue: i,
     cfg,
-    deps: { execute: commit, review: async () => ({ ...verdict }), runVerification: pass },
+    deps: { execute: commit, review: approvedReview, runVerification: pass },
   })
   assert.equal(result.outcome, 'approved')
   return result
@@ -137,9 +142,12 @@ test('restart accounts for an approval interrupted before local delivery without
         executions++
         return commit(args)
       },
-      review: async () => {
+      review: async ({ issue, adequacyAuthority }) => {
         reviews++
-        return { ...verdict }
+        return {
+          ...verdict,
+          testAdequacy: adequacyFor(issue.acceptanceCriteria, issue, adequacyAuthority),
+        }
       },
       runVerification: pass,
       checkpoint: async (name) => {
@@ -174,7 +182,7 @@ test('known local report action interruption is reconciled from local evidence',
     cfg,
     deps: {
       execute: commit,
-      review: async () => ({ ...verdict }),
+      review: approvedReview,
       runVerification: pass,
       checkpoint: async (name) => {
         if (name === 'before-onApproved')
@@ -227,7 +235,7 @@ test('each dependent receives the saved prerequisite revision and the whole appr
         git(worktree, ['commit', '-m', 'dependent'])
         return { ...(await import('./approval-fixtures.mjs')).impl }
       },
-      review: async () => ({ ...verdict }),
+      review: approvedReview,
       runVerification: pass,
     },
   })
@@ -263,7 +271,7 @@ test('an approved dependent becomes invalid when its prerequisite criteria chang
         git(worktree, ['commit', '-m', 'B'])
         return { ...(await import('./approval-fixtures.mjs')).impl }
       },
-      review: async () => ({ ...verdict }),
+      review: approvedReview,
       runVerification: pass,
     },
   })
@@ -300,7 +308,7 @@ test('reordering independent issue sections preserves the recorded approved cont
         git(worktree, ['commit', '-m', 'independent B'])
         return { ...(await import('./approval-fixtures.mjs')).impl }
       },
-      review: async () => ({ ...verdict }),
+      review: approvedReview,
       runVerification: pass,
     },
   })

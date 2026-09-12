@@ -159,7 +159,15 @@ body, never the executor's transcript, never its notes.
 
 Runs the suite and pastes real output. Judges only against the acceptance
 criteria — anything it wants that is not in the AC is out of scope by
-definition, which is also the anti-oscillation lever.
+definition, which is also the anti-oscillation lever. For each criterion it
+returns a concise obligation-to-check map covering independent expected values,
+the exercised public behavior, substituted system boundaries, current
+requirement source revision, baseline version/authorization, and its semantic
+adequacy judgment. The supervisor binds those identifiers to the accepted base
+revision; only complete canonical ledger history with an actual authorized
+definition change can authorize a changed baseline. Green machine checks do not
+supply the semantic judgment. Approval records retain the map and authority
+binding and fail closed when either is absent or admits a known gap.
 
 Cycle 1 is a fresh session. Cycles 2-3 `--resume` that same session in stable
 reviewer-only scratch, with a new source checkout and explicit current paths.

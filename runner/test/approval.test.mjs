@@ -21,6 +21,7 @@ import {
   issue,
   impl,
   verdict,
+  adequacyFor,
   pass,
   commit,
   adapter,
@@ -245,7 +246,7 @@ test('clean revision records one exact approval and uses declared checks instead
   assert.equal(a.calls.filter((c) => c[0] === 'approved').length, 1)
   assert.equal(command, cfg.policy.verification.commands[0])
   const record = JSON.parse(readFileSync(result.ctx.approvalPath, 'utf8'))
-  assert.equal(record.schemaVersion, 1)
+  assert.equal(record.schemaVersion, 2)
   assert.equal(record.headSha, result.ctx.head)
   assert.equal(record.baseSha, cfg.policy.target.baseSha)
   assert.equal(record.policyDigest, cfg.policy.digest)
@@ -478,7 +479,16 @@ test('direct PR successful checks record exactly one approval; old markers are i
   assert.deepEqual(calls, ['approve'])
 })
 
-for (const change of ['head', 'base', 'criteria', 'evidence'])
+for (const change of [
+  'head',
+  'base',
+  'criteria',
+  'evidence',
+  'authority-absent',
+  'authority-null',
+  'rendered-authority-absent',
+  'rendered-authority-null',
+])
   test(`stored approval becomes invalid when ${change} changes`, async () => {
     const { validateApprovalRecord } = await import('../src/core/approval.mjs')
     const a = adapter(repoPath)
@@ -501,10 +511,14 @@ for (const change of ['head', 'base', 'criteria', 'evidence'])
     if (change === 'head') context.head = 'f'.repeat(40)
     if (change === 'base') context.baseSha = 'e'.repeat(40)
     if (change === 'criteria') context.issue.acceptanceCriteria.push('another criterion')
+    if (change === 'authority-absent') delete record.testAdequacyAuthority
+    if (change === 'authority-null') record.testAdequacyAuthority = null
     if (change === 'evidence') {
       rmSync(record.verification.commands[0].outputRef)
       writeFileSync(record.verification.commands[0].outputRef, 'tampered')
     }
+    if (change === 'rendered-authority-absent') delete record.renderedAuthority
+    if (change === 'rendered-authority-null') record.renderedAuthority = null
     assert.equal(validateApprovalRecord(record, context).valid, false)
   })
 
@@ -836,10 +850,15 @@ for (const disposition of ['request-changes'])
         setPhaseLabel: async () => {},
         removeLabels: async () => {},
       },
-      review: async () => {
+      review: async ({ issue: reviewedIssue, adequacyAuthority }) => {
         reviews++
         return {
           ...verdict,
+          testAdequacy: adequacyFor(
+            reviewedIssue.acceptanceCriteria,
+            reviewedIssue,
+            adequacyAuthority,
+          ),
           verdict: disposition,
           unmetAc:
             disposition === 'request-changes'
@@ -1127,7 +1146,11 @@ test('repository allowance accounts distinct overlapping attempts without double
   }
   const deps = {
     execute: async (args) => ({ ...(await commit(args)), costUsd: 1 }),
-    review: async () => ({ ...verdict, costUsd: 0.1 }),
+    review: async ({ issue: reviewedIssue, adequacyAuthority }) => ({
+      ...verdict,
+      testAdequacy: adequacyFor(reviewedIssue.acceptanceCriteria, reviewedIssue, adequacyAuthority),
+      costUsd: 0.1,
+    }),
     runVerification: pass,
   }
   const first = runIssue({ adapter: a, issue, cfg, deps })

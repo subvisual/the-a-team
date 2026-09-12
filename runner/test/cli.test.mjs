@@ -17,7 +17,7 @@ import { spawnSync } from 'node:child_process'
 import { criteriaDigest } from '../src/core/approval.mjs'
 import { writeReviewEvidence, recordReviewPublication } from '../src/core/provenance.mjs'
 import { normaliseIssue } from '../src/adapters/github.mjs'
-import { verdict, publicationFixture } from './approval-fixtures.mjs'
+import { adequacyFor, verdict, publicationFixture } from './approval-fixtures.mjs'
 
 const binary = fileURLToPath(new URL('../bin/ateam-runner.mjs', import.meta.url))
 const goodBody = '## Acceptance criteria\n- [ ] Works as requested\n'
@@ -392,12 +392,13 @@ test('review dry-run and execution reuse authenticated completed evidence withou
   const preview = envelope(invoke([...args, '--dry-run']), 'review').result
   const policy = preview.targets[0].policy
   assert.ok(policy)
+  const currentIssue = normaliseIssue(issue(1))
   const dir = join(runnerHome, 'runs/o-r/pr-10/fixture')
   mkdirSync(dir, { recursive: true })
   const evidence = writeReviewEvidence({
     repo: 'o/r',
-    issue: normaliseIssue(issue(1)),
-    criteriaDigest: criteriaDigest(normaliseIssue(issue(1))),
+    issue: currentIssue,
+    criteriaDigest: criteriaDigest(currentIssue),
     head: current.headRefOid,
     baseSha: current.baseRefOid,
     policy,
@@ -406,6 +407,7 @@ test('review dry-run and execution reuse authenticated completed evidence withou
       ...verdict,
       verdict: 'request-changes',
       unmetAc: [{ criterion: 'Works as requested', why: 'revise' }],
+      testAdequacy: adequacyFor(currentIssue.acceptanceCriteria, currentIssue),
     },
     runDir: dir,
     cycle: 1,
