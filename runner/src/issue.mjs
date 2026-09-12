@@ -3,7 +3,7 @@
 
 const AC_HEADING = /^(#{1,6})\s*acceptance\s+criteria\s*:?\s*$/i
 const HEADING = /^(#{1,6})\s+/
-const BULLET = /^\s*(?:[-*+]\s+(?:\[[ xX]\]\s*)?|\d+[.)]\s+)(.+?)\s*$/
+const BULLET = /^\s*(?:[-*+]\s+|\d+[.)]\s+)(.*?)\s*$/
 const GHERKIN = /^\s*(given|when|then|and|but)\b/i
 
 // Extract the acceptance-criteria items from an issue body.
@@ -34,7 +34,7 @@ export function acceptanceCriteria(body) {
     const b = line.match(BULLET)
     if (b) {
       flush()
-      pending = b[1]
+      pending = b[1].replace(/^\[[ xX]\](?:\s+|$)/, '').trim()
       continue
     }
     if (GHERKIN.test(line)) {
@@ -42,7 +42,10 @@ export function acceptanceCriteria(body) {
       else pending = line.trim()
       continue
     }
-    if (!line.trim()) { flush(); continue }
+    if (!line.trim()) {
+      flush()
+      continue
+    }
     if (pending) pending += ` ${line.trim()}`
   }
   flush()

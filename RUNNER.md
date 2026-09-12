@@ -96,27 +96,26 @@ PR) stays orchestrator-owned and untouched.
 | 12 | Reviewer fresh at cycle 1, `--resume`d after | Independence buys the catch at cycle 1; a fresh reviewer per cycle raises new objections instead of checking old ones, and never terminates |
 | 13 | Stop on two consecutive **disjoint** objection sets | The oscillation signature, caught without asking the reviewer to self-classify its own objections |
 | 14 | Never auto-merge | Approve = verdict + `agent:approved`. A human merges |
-| 14b | Verdicts land as a **marked PR comment**, with a real review attempted first | GitHub refuses approve / request-changes on your own PR, and the runner uses the operator's own auth. A hidden marker (`sha`, `cycle`) makes both carriers equivalent to state derivation |
+| 14b | Verdicts use a commit-pinned review, with a marked comment only for GitHub's own-PR restriction | Immutable evidence records the numeric server publication/actor IDs and body digest. Reuse fetches and authenticates that exact publication; markers alone have no authority. Blocked attempts remain pending evaluation |
 | 15 | GitHub carries workflow state; local immutable records carry approval evidence | Labels and comments alone cannot establish verification of the current revision |
-| 16 | Ordering is the label; `Blocked by #N` as a guard; concurrency 1 | Serial FIFO means each issue's base is the previous one's merged result. Raising the cap later is config, not redesign |
+| 16 | Stable local IDs and dependency ancestry; concurrency 1 | Local continuation selects a verified approved chain without merging. A dependency is ready only when its current approved revision is present in the selected base |
 | 17 | Reviewer assesses criteria; supervisor independently runs declared checks | An approval requires both a valid review and successful checks on the exact committed head |
 | 18 | Lives in `the-a-team` for the POC | Extract to its own repo + brew tap once one issue goes label → PR → verdict unassisted |
 | 19 | Spawned sessions use native role policies, minimal environment and isolated settings | Hooks and settings suppress unintended context; Seatbelt enforces child filesystem and network access |
 
 ## Claim
 
-v1: a local `O_EXCL` lockfile plus an `agent:running` label for visibility.
-Single writer per repo is assumed. A crashed run leaves a lock to delete by hand.
+A local `O_EXCL` claim records the repository, issue, host, PID, process identity
+and an unguessable ownership token. Single writer per repository remains the
+execution contract. Release checks the token so an old owner cannot remove a
+replacement's claim.
 
-The `claim(issue) -> token | nil` seam exists so the multi-writer version can
-land without touching callers: claim by `POST /git/refs` creating
-`agent/issue-<n>` at the base sha, which returns **422 if the ref already
-exists** — a real server-side create-if-not-exists. The lock and the working
-branch are then the same object, and a stale claim is inspectable (a ref with no
-commits and no PR) rather than inferred.
-
-`gh issue develop` links a branch to an issue natively; use it so the link shows
-in the UI for free.
+A same-host claim can be recovered only after its owner is proven dead (or its
+observed process-start identity proves that the PID was reused). A successful
+liveness check without a comparable process-start identity remains live. Age
+alone never authorizes recovery. Foreign-host, legacy, malformed and unreadable
+owners remain blocked. Recovered claim metadata is archived beside the claim;
+its failed branch and checkout are retained.
 
 ## Labels
 
@@ -205,15 +204,16 @@ record binding repository, criteria, policy, base/head and verification evidence
 
 | state | derived from |
 |-------|--------------|
-| issue claimed | `agent:running` + `agent/issue-<n>` exists |
+| issue claimed | ownership-checked local claim; GitHub running label is workflow visibility |
 | PR under review | open PR with head ref `agent/issue-*` |
-| review markers | comments/reviews carrying the existing head/cycle marker |
+| review provenance | exact GitHub publication and numeric author identity matching immutable review evidence; head/cycle markers are display pointers |
 | current approval | valid local approval record matching current inputs |
 | claimed terminal label | `agent:approved` / `agent:failed`; a stale approval is reported invalid |
 
-Not derivable: the reviewer's session id for the cycle-2 `--resume`. It lives in
-the local dir with the transcripts, and losing it is a graceful degrade — cycle 2
-starts fresh, worse but correct.
+Attempt checkpoints retain the reviewer session ID, current cycle, unmet criteria,
+private checkout, imported head and completed evaluation. Interrupted execution
+can continue from those exact artifacts after rechecking the current issue,
+base, dependencies and approval inputs.
 
 Local run records (`~/.ateam-runner/runs/<repo>/<issue>/<stamp>/`) retain prompts,
 argv, results, stderr, independent check output and versioned approval evidence.
@@ -275,11 +275,47 @@ Done:
 
 ## Parked
 
-- **Lease + heartbeat + reaping** for stale claims. Dropped from v1 with the
-  single-writer assumption; returns with the atomic-ref claim.
+- **Distributed leases and heartbeats.** Current recovery only proves local
+  process ownership/liveness; foreign-host claims require explicit reconciliation.
 - **Parallel execution.** Concurrency is a config value, not a redesign.
 - **Transcript retention limits.** No pruning in v1.
 - **Webhooks** instead of polling. Needs a tunnel.
 - **Agent SDK** substrate behind the `runner` interface.
 - **A second local viewer.** `rev` already covers looking at diffs; building a UI
   now guesses at what matters before a run has been watched to failure.
+
+
+## Durable local continuation
+
+Local issue titles and `Implements issue:` commit messages are display text.
+Neither a failed branch nor an unrelated commit can complete an issue or unblock
+its dependents. The adapter and dry-run planner reconstruct current status from
+stable issue IDs/content versions, immutable approval records, current policy,
+verification evidence and Git ancestry. Renames, criteria changes, missing Git
+objects, exhausted attempts, stale claims and uncertain actions remain distinct.
+
+The selected continuation is an existing approved descendant chain. Its head is
+pinned by SHA before the next executor starts, and each required dependency SHA
+must already be an ancestor of that base. A reviewed branch can be available
+without being integrated into the human-selected delivery base. Divergent
+approved branches remain available but cannot unblock work on another chain.
+The runner does not merge or cherry-pick them.
+
+Supervisor-owned history under `~/.ateam-runner/history/` consists of immutable,
+fsynced event files. Events retain issue/version/attempt identity, selected base,
+dependency heads, checkout/branch/head, stage, outcome, failure category, evidence
+paths and available cost/duration. Status is replayed from these events. New
+recovery windows append to lifetime history; they do not erase attempts or costs.
+
+Each supervisor adapter action has a stable intent/result identity. An action
+with no confirmed result stays uncertain and blocks automatic repetition until
+its exact result is reconciled. Local report/base projections and missing local
+delivery receipts can be rebuilt from current approval evidence. Remote actions
+require their own authoritative receipt. Failed or unaccounted checkouts and
+branches are kept; successful checkout cleanup follows the recorded delivery.
+
+
+Aggregate allowance and timeout work ([#37](https://github.com/subvisual/the-a-team/issues/37))
+is partial. Accounting and explicit recovery are covered; unobserved detached
+orphans can escape macOS ancestry-based cleanup. See the precise
+[execution limitation](runner/EXECUTION.md#retained-allowances-and-process-timeouts).

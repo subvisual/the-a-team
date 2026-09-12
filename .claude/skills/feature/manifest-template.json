@@ -14,13 +14,49 @@
     "done_looks_like": null
   },
   "phases": {
-    "discovery":  { "status": "pending", "artifact": "../../product/jtbd/", "attempts": 0 },
-    "definition": { "status": "pending", "artifact": "prd.md",    "attempts": 0 },
-    "design":     { "status": "pending", "artifact": "design.md", "attempts": 0 },
-    "spec":       { "status": "pending", "artifact": "spec.md",   "attempts": 0 },
-    "issues":     { "status": "pending", "artifact": "issues.md", "attempts": 0 },
-    "dev":        { "status": "pending", "attempts": 0, "issues": {} },
-    "pr":         { "status": "pending", "attempts": 0 }
+    "discovery": {
+      "status": "pending",
+      "artifact": "../../product/jtbd/",
+      "attempts": 0
+    },
+    "definition": {
+      "status": "pending",
+      "artifact": "prd.md",
+      "attempts": 0
+    },
+    "design": {
+      "status": "pending",
+      "artifact": "design.md",
+      "attempts": 0
+    },
+    "spec": {
+      "status": "pending",
+      "artifact": "spec.md",
+      "attempts": 0
+    },
+    "issues": {
+      "status": "pending",
+      "artifact": "issues.md",
+      "attempts": 0
+    },
+    "dev": {
+      "status": "pending",
+      "attempts": 0,
+      "issues": {}
+    },
+    "pr": {
+      "status": "pending",
+      "attempts": 0
+    }
   },
-  "last_error": null
+  "last_error": null,
+  "execution_limits": {
+    "runBudgetUsd": 45,
+    "executorBudgetUsd": 10,
+    "reviewerBudgetUsd": 5,
+    "runTimeoutMs": 7200000,
+    "sessionTimeoutMs": 1200000,
+    "maxCycles": 3
+  },
+  "recovery_authorization": null
 }

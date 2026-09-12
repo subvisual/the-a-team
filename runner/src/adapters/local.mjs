@@ -1,81 +1,25 @@
 import { readFileSync } from 'node:fs'
-import { acceptanceCriteria } from '../issue.mjs'
-import { run } from '../sh.mjs'
+import { join, dirname, basename } from 'node:path'
+import { claim } from '../core/claim.mjs'
+import { runAction, stableActionId, appendEvent } from '../core/history.mjs'
+import { recordDelivery, hasDeliveryReceipt } from '../core/approval.mjs'
+import { digest } from '../policy.mjs'
+import { parseIssuesFile, validateIssues } from '../local-issues.mjs'
+export { parseIssuesFile, validateIssues, migrateIssuesText, slugify } from '../local-issues.mjs'
+export { migrateIssuesFile } from '../migrate-issues.mjs'
+import { resolveLocalBase } from '../local-base.mjs'
+export { resolveLocalBase }
+import { rebuildLocalState } from '../core/local-recovery.mjs'
 import { revParse } from '../git.mjs'
 import { log } from '../log.mjs'
 
-export function slugify(title) {
-  return String(title)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60)
-}
-
 /**
- * Parse an issues.md in the shape prd-to-issues / ticket-writer produce:
- * `## <title>`, an optional `**Depends on:**` line, then `### Description`,
- * `### Acceptance criteria`, `### Technical notes`.
- *
- * Only sections carrying an acceptance-criteria subsection are issues — that
- * is what separates them from a leading dependency-graph summary.
- */
-export function parseIssuesFile(text) {
-  const lines = String(text).split(/\r?\n/)
-  const sections = []
-  let current = null
-
-  for (const line of lines) {
-    const h2 = line.match(/^##\s+(?!#)(.+?)\s*$/)
-    if (h2) {
-      if (current) sections.push(current)
-      current = { title: h2[1].replace(/^\[|\]$/g, '').trim(), lines: [] }
-      continue
-    }
-    if (line.match(/^#\s+(?!#)/)) {
-      if (current) sections.push(current)
-      current = null
-      continue
-    }
-    if (current) current.lines.push(line)
-  }
-  if (current) sections.push(current)
-
-  return sections
-    .map((s) => {
-      const body = s.lines.join('\n').trim()
-      const criteria = acceptanceCriteria(body)
-      const deps = (body.match(/\*\*Depends on:\*\*\s*(.+)/i)?.[1] || '')
-        .split(/\s*,\s*/)
-        .map((d) => d.replace(/^\[|\]$/g, '').trim())
-        .filter((d) => d && !/^none$/i.test(d))
-      return {
-        key: slugify(s.title),
-        title: s.title,
-        body,
-        acceptanceCriteria: criteria,
-        dependsOn: deps,
-        blockedBy: [],
-      }
-    })
-    .filter((i) => i.acceptanceCriteria.length > 0 || /###\s*acceptance\s+criteria/i.test(i.body))
-}
-
-async function implementedTitles(repoPath) {
-  const { stdout } = await run('git', ['log', '--all', '--pretty=%B'], {
-    cwd: repoPath,
-    check: false,
-  })
-  return stdout
-}
-
-/**
- * The pipeline's front-end. No network, no PRs: the dev phase's serialized
+ * The pipeline's front-end. No remote Git/GitHub, no PRs: the dev phase's serialized
  * integration and single feature PR stay orchestrator-owned (RUNNER.md,
- * decision 12). Approved branches are left in place and reported.
+ * decision 16). Approved branches are left in place and reported.
  */
-export function createLocalAdapter({ issuesFile, repoPath, base, testCommand }) {
-  const issues = parseIssuesFile(readFileSync(issuesFile, 'utf8'))
+export function createLocalAdapter({ issuesFile, repoPath, base, testCommand, cfg = {} }) {
+  const issues = validateIssues(parseIssuesFile(readFileSync(issuesFile, 'utf8')))
   const report = []
 
   return {
@@ -87,15 +31,154 @@ export function createLocalAdapter({ issuesFile, repoPath, base, testCommand }) 
     issues,
     report,
 
+    async refresh() {
+      this.issues = validateIssues(parseIssuesFile(readFileSync(issuesFile, 'utf8')))
+      const policy =
+        cfg.policy ||
+        (await resolveLocalBase({ repoPath, base, cfg, authorization: cfg.authorization }))
+      this.state = await rebuildLocalState({ repoPath, issues: this.issues, policy })
+      this.base = this.state.base
+      return this.state
+    },
+
     async listCandidates() {
-      const log_ = await implementedTitles(repoPath)
-      return issues.filter((i) => !log_.includes(`Implements issue: ${i.title}`))
+      await this.refresh()
+      await this.reconcileLocal()
+      await this.refresh()
+      return this.issues.filter((issue) => !this.state.issues[issue.key].approved)
+    },
+
+    async reconcileAction(issue, pending) {
+      // These adapter callbacks only update an in-memory report/base or log.
+      // Rebuilding that projection accounts for either side of an interruption.
+      if (['onClaimed', 'onVerdict', 'onApproved', 'onFailed'].includes(pending.kind))
+        return { status: 'confirmed', result: null }
+      if (pending.kind === 'onImplemented')
+        return { status: 'confirmed', result: { branch: pending.input.branch } }
+      const record = this.state?.issues[issue.key]?.record
+      if (pending.kind === 'recordDelivery' && record && pending.input.head === record.headSha) {
+        if (hasDeliveryReceipt(record, { repo: repoPath }))
+          return {
+            status: 'confirmed',
+            result: join(
+              dirname(record.verificationPath),
+              basename(record.verificationPath).replace('verification-', 'delivery-'),
+            ),
+          }
+        return {
+          status: 'absent',
+          evidence: 'current immutable approval has no valid local receipt',
+        }
+      }
+      return { status: 'unknown' }
+    },
+
+    async reconcileLocal() {
+      for (const issue of this.issues) {
+        const entry = this.state.issues[issue.key]
+        const record = entry.record
+        const localKinds = [
+          'onClaimed',
+          'onImplemented',
+          'onVerdict',
+          'onApproved',
+          'onFailed',
+          'recordDelivery',
+        ]
+        if (entry.history.unresolvedActions.some((a) => !localKinds.includes(a.kind))) continue
+        if (!record && !entry.history.unresolvedActions.length) continue
+        const token = claim(repoPath, issue.key, { kind: 'local-reconciliation' })
+        if (!token) continue
+        try {
+          for (const pending of entry.history.unresolvedActions) {
+            if (pending.kind === 'recordDelivery' && !record) continue
+            await runAction(
+              {
+                repo: repoPath,
+                issue,
+                attemptId: pending.attemptId,
+                actionId: pending.actionId,
+                kind: pending.kind,
+                input: pending.input,
+                reconcile: (e) => this.reconcileAction(issue, e),
+              },
+              async () =>
+                recordDelivery({
+                  record,
+                  approvalPath: pending.input.approvalPath,
+                  repo: repoPath,
+                  kind: 'adapter-approval',
+                }),
+            )
+          }
+          if (!record) continue
+          const cycle = Number(
+            basename(record.verificationPath).match(/^verification-(\d+)\.json$/)[1],
+          )
+          const dir = dirname(record.verificationPath)
+          const approvalPath = join(dir, `approval-${cycle}.json`)
+          const prior = entry.history.currentAttempts.find((a) => a.runDir === dir)
+          const attemptId = prior?.attemptId || `approval-${digest(record)}`
+          if (!hasDeliveryReceipt(record, { repo: repoPath })) {
+            const deliveryPath = await runAction(
+              {
+                repo: repoPath,
+                issue,
+                attemptId,
+                actionId: stableActionId({ attemptId, kind: 'recordDelivery', cycle }),
+                kind: 'recordDelivery',
+                input: { approvalPath, head: record.headSha },
+                reconcile: (e) => this.reconcileAction(issue, e),
+              },
+              async () =>
+                recordDelivery({ record, approvalPath, repo: repoPath, kind: 'adapter-approval' }),
+            )
+            appendEvent(repoPath, issue, {
+              type: 'attempt.recovered',
+              attemptId,
+              outcome: 'approved',
+              failureCategory: null,
+              head: record.headSha,
+              baseSha: record.baseSha,
+              dependencyHeads: entry.dependencyHeads,
+              runDir: dir,
+              approvalPath,
+              deliveryPath,
+              stage: 'delivered',
+              evidence: { approvalPath, deliveryPath },
+            })
+          }
+          if (
+            !report.some(
+              (r) => r.issue === issue.key && r.head === record.headSha && r.outcome === 'approved',
+            )
+          )
+            report.push({
+              issue: issue.key,
+              title: issue.title,
+              outcome: 'approved',
+              head: record.headSha,
+              recovered: true,
+              integrated: entry.integrated,
+            })
+        } finally {
+          token.release()
+        }
+      }
     },
 
     async openBlockers(issue) {
-      if (!issue.dependsOn.length) return []
-      const log_ = await implementedTitles(repoPath)
-      return issue.dependsOn.filter((t) => !log_.includes(`Implements issue: ${t}`))
+      await this.refresh()
+      return this.state.issues[issue.key]?.blockers || issue.dependsOn
+    },
+
+    async dependencyHeads(issue) {
+      await this.refresh()
+      return Object.fromEntries(
+        issue.dependsOn
+          .filter((id) => this.state.issues[id]?.selected)
+          .map((id) => [id, this.state.issues[id].head]),
+      )
     },
 
     async onNeedsDetail(issue, reason) {
@@ -109,14 +192,14 @@ export function createLocalAdapter({ issuesFile, repoPath, base, testCommand }) 
     },
 
     async currentApprovalInputs(issue, ctx) {
-      const latest = parseIssuesFile(readFileSync(issuesFile, 'utf8')).find(
-        (candidate) => candidate.key === issue.key && candidate.title === issue.title,
+      const latest = validateIssues(parseIssuesFile(readFileSync(issuesFile, 'utf8'))).find(
+        (candidate) => candidate.key === issue.key,
       )
       if (!latest) throw new Error('issue criteria changed or issue disappeared before approval')
       return {
         issue: latest,
         head: await revParse(repoPath, ctx.branch),
-        baseSha: await revParse(repoPath, this.base),
+        baseSha: (await resolveLocalBase({ repoPath, base: this.base })).target.baseSha,
       }
     },
 

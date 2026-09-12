@@ -25,8 +25,8 @@ ACs, explicit dependencies, nothing implied.
 
 The issues phase is one step, and it is this skill in **batch decomposition
 mode**: `prd.md` + `spec.md` in (with `briefs/` as supporting context), the
-whole `docs/features/<slug>/issues.md` out — tracer-bullet vertical slices in
-dependency order, each carrying Gherkin acceptance criteria sourced from the
+whole `docs/features/<slug>/issues.md` out — tracer-bullet vertical slices with
+immutable `**ID:** ISS-...` identities and explicit ID dependencies, in dependency order, each carrying Gherkin acceptance criteria sourced from the
 PRD's requirement-level ACs (R-ids), the spec's per-state expectations, and the
 constraints behind known edge cases, and each stamped with the `[[NN]]` job it
 rolls up to.
@@ -98,8 +98,10 @@ a decomposition gap at the next gate.
    ordered so the dependency chain is obvious. Note the epic each ticket
    belongs to (`[[epic:NN]]` — bare `[[NN]]` always cites a job) when epics
    exist. **In-pipeline**, follow `references/decomposition.md`: tracer bullet
-   first, vertical slices, and every issue records the files it expects to
-   touch plus the PRD requirement IDs it implements. Continue to step 7.
+   first, vertical slices, and every issue records an immutable `**ID:**`,
+   `**Depends on:**` IDs (or `none`), the files it expects to touch, and
+   `**Requirements:**` PRD IDs it implements. Preserve IDs on rename or reorder;
+   legacy files use the explicit `migrate-issues` command before execution. Continue to step 7.
 6. **AC-only mode** (`references/acceptance_criteria_template.md`): parse the
    source into the primary job (preserved, or `TBD`), discrete user outcomes,
    and failure paths. State preconditions; tie edge cases to the constraints
@@ -136,3 +138,6 @@ gate accepts it and the reviewer then has nothing real to check.
   `ticket_chore_template.md` — the ticket shapes.
 - `references/acceptance_criteria_template.md` — the pasteable AC block.
 - `examples/example-input.md` · `examples/example-output.md`.
+- `examples/issues.md` — synthetic runnable pipeline batch, validated by the real
+  local adapter in `runner/test/local-issues.test.mjs`. That required test also
+  checks ticket-writer reference files exist.

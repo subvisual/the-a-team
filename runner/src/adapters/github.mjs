@@ -35,6 +35,7 @@ export function normaliseIssue(raw) {
 }
 
 export function createGithubAdapter({ repo, repoPath, base, labels, testCommand }) {
+  repo = repo.toLowerCase()
   return {
     name: 'github',
     repo,
@@ -138,6 +139,7 @@ export function createGithubAdapter({ repo, repoPath, base, labels, testCommand 
         event: verdict.verdict === 'approve' ? 'approve' : 'request-changes',
         body,
         headSha: ctx.head,
+        evidenceDigest: ctx.reviewDigest,
       })
       log.info('verdict.posted', { repo, pr: ctx.prNumber, via, verdict: verdict.verdict })
       if (verdict.verdict !== 'approve') {

@@ -14,9 +14,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
-import { recordNonapprovalDelivery } from '../src/core/approval.mjs'
+import { criteriaDigest } from '../src/core/approval.mjs'
+import { writeReviewEvidence, recordReviewPublication } from '../src/core/provenance.mjs'
 import { normaliseIssue } from '../src/adapters/github.mjs'
-import { verdict } from './approval-fixtures.mjs'
+import { verdict, publicationFixture } from './approval-fixtures.mjs'
 
 const binary = fileURLToPath(new URL('../bin/ateam-runner.mjs', import.meta.url))
 const goodBody = '## Acceptance criteria\n- [ ] Works as requested\n'
@@ -52,7 +53,7 @@ beforeEach(() => {
   writeFileSync(join(repo, 'CLAUDE.md'), '## A-Team Config\n- test command: node --test\n')
   writeFileSync(
     issuesFile,
-    '## Ready\n### Acceptance criteria\n- [ ] Works\n\n## Blocked\n**Depends on:** Ready\n### Acceptance criteria\n- [ ] Depends on Ready\n\n## Malformed\n### Acceptance criteria\nTBD\n',
+    '## Ready\n**ID:** ISS-READY\n### Acceptance criteria\n- [ ] Works\n\n## Blocked\n**ID:** ISS-BLOCKED\n**Depends on:** ISS-READY\n### Acceptance criteria\n- [ ] Depends on Ready\n\n## Malformed\n**ID:** ISS-MALFORMED\n### Acceptance criteria\nTBD\n',
   )
   fixture()
   // All external programs are recorded stubs. An unexpected command fails
@@ -78,7 +79,7 @@ if (name === 'git') {
   const action = args.slice(0, 2).join(' ')
   if (data.fail === action) { process.stderr.write('fixture discovery failure'); process.exitCode = 3 }
   else if (action === 'repo view') emit({ defaultBranchRef: { name: 'main' } })
-  else if (args[0] === 'api') emit({})
+  else if (args[0] === 'api') emit(data.publication || {})
   else if (action === 'issue list') emit(data.issues)
   else if (action === 'issue view') {
     const found = [...data.issues, ...(data.otherIssues || [])].find(i => i.number === Number(args[2]))
@@ -252,9 +253,10 @@ test('local dry-run reports dependencies and malformed issues in its structured 
   assert.equal(child.status, 2)
   assert.deepEqual(
     output.result.candidates.map((c) => c.disposition),
-    ['ready', 'blocked', 'malformed'],
+    ['blocked', 'blocked', 'malformed'],
   )
-  assert.deepEqual(output.result.candidates[1].blockers, ['Ready'])
+  assert.deepEqual(output.result.candidates[1].blockers, ['ISS-READY'])
+  assert.ok(output.result.prerequisites.some((p) => p.code === 'empty-criteria'))
 })
 
 test('missing clone is reported without cloning or creating runner home', () => {
@@ -320,10 +322,10 @@ test('ordinary run still sets labels and requests detail, with nested WARN only 
   assert.ok(commands().some((c) => c.args.slice(0, 2).join(' ') === 'issue comment'))
 })
 
-test('ordinary local multi-issue run emits one envelope and nested diagnostics on stderr', () => {
+test('ordinary local multi-issue run rejects the whole invalid batch before launch', () => {
   writeFileSync(
     issuesFile,
-    '## First\n### Acceptance criteria\nTBD\n## Second\n**Depends on:** Missing\n### Acceptance criteria\n- [ ] Works\n',
+    '## First\n**ID:** ISS-FIRST\n### Acceptance criteria\nTBD\n## Second\n**ID:** ISS-SECOND\n**Depends on:** ISS-MISSING\n### Acceptance criteria\n- [ ] Works\n',
   )
   const child = invoke([
     'run',
@@ -335,11 +337,13 @@ test('ordinary local multi-issue run emits one envelope and nested diagnostics o
     repo,
     '--json',
   ])
-  const output = envelope(child, 'run', 'blocked')
+  const output = envelope(child, 'run', 'error')
   assert.equal(child.status, 2)
-  assert.equal(output.result.results.length, 2)
-  assert.match(child.stderr, /WARN local.needs_detail/)
-  assert.match(child.stderr, /INFO issue.blocked_by/)
+  assert.equal(output.error.code, 'invalid-local-issues')
+  assert.match(output.error.message, /ISS-FIRST: no checkable acceptance criteria/)
+  assert.match(output.error.message, /unknown dependency ISS-MISSING/)
+  assert.equal(existsSync(runnerHome), false)
+  assert.deepEqual(commands(), [])
 })
 
 test('review with no linked issue produces a skipped envelope', () => {
@@ -381,7 +385,7 @@ test('watch and its preview do not suppress current review because of an old mar
   assert.notEqual(live.results[0].verdict, 'approve')
 })
 
-test('review dry-run and execution reuse current delivered negative evidence without writes or model calls', () => {
+test('review dry-run and execution reuse authenticated completed evidence without writes or model calls', async () => {
   const current = { ...pr, headRefOid: 'b'.repeat(40), baseRefOid: 'a'.repeat(40) }
   fixture({ issues: [issue(1)], prs: [current], pr: current })
   const args = ['review', '--repo', 'o/r', '--pr', '10', '--path', repo, '--json']
@@ -390,22 +394,48 @@ test('review dry-run and execution reuse current delivered negative evidence wit
   assert.ok(policy)
   const dir = join(runnerHome, 'runs/o-r/pr-10/fixture')
   mkdirSync(dir, { recursive: true })
-  recordNonapprovalDelivery({
+  const evidence = writeReviewEvidence({
     repo: 'o/r',
     issue: normaliseIssue(issue(1)),
+    criteriaDigest: criteriaDigest(normaliseIssue(issue(1))),
     head: current.headRefOid,
     baseSha: current.baseRefOid,
     policy,
-    verdict: { ...verdict, verdict: 'blocked' },
-    prNumber: 10,
-    via: 'review',
+    model: 'opus',
+    verdict: {
+      ...verdict,
+      verdict: 'request-changes',
+      unmetAc: [{ criterion: 'Works as requested', why: 'revise' }],
+    },
     runDir: dir,
     cycle: 1,
+  })
+  const published = publicationFixture()
+  const publication = await published.postVerdict('o/r', 10, {
+    body: 'result',
+    headSha: current.headRefOid,
+    event: 'request-changes',
+    evidenceDigest: evidence.reviewDigest,
+  })
+  recordReviewPublication({
+    reviewPath: evidence.reviewPath,
+    publication,
+    repo: 'o/r',
+    prNumber: 10,
+  })
+  fixture({
+    issues: [issue(1)],
+    prs: [current],
+    pr: current,
+    publication: await published.readPublication('o/r', 10, publication),
   })
   const before = { repo: snapshot(repo), home: snapshot(runnerHome), issues: snapshot(issuesFile) }
   const planned = envelope(invoke([...args, '--dry-run']), 'review').result
   assert.equal(planned.candidates[0].disposition, 'skipped')
-  assert.equal(envelope(invoke(args), 'review', 'skipped').result.previousVerdict, 'blocked')
+  assert.equal(
+    envelope(invoke(args), 'review', 'skipped').result.previousVerdict,
+    'request-changes',
+  )
   const forced = envelope(invoke([...args, '--dry-run', '--force']), 'review').result
   assert.equal(forced.candidates[0].disposition, 'ready')
   assertReadOnly(before)
@@ -518,7 +548,8 @@ test('unknown dependency state blocks dry-run without requesting issue changes',
   )
 })
 
-test('local dry-run lists already implemented work as skipped without GitHub discovery', () => {
+test('local dry-run keeps title-marker work pending without GitHub discovery', () => {
+  writeFileSync(issuesFile, '## Ready\n**ID:** ISS-READY\n### Acceptance criteria\n- [ ] Works\n')
   fixture({ gitLog: 'Implements issue: Ready\n' })
   const child = invoke([
     'run',
@@ -527,13 +558,13 @@ test('local dry-run lists already implemented work as skipped without GitHub dis
     '--issues',
     issuesFile,
     '--issue',
-    'ready',
+    'ISS-READY',
     '--dry-run',
     '--json',
   ])
-  const output = envelope(child, 'run', 'skipped')
+  const output = envelope(child, 'run', 'success')
   assert.equal(child.status, 0)
-  assert.equal(output.result.candidates[0].disposition, 'skipped')
+  assert.equal(output.result.candidates[0].disposition, 'ready')
   assert.equal(
     commands().some((c) => c.name !== 'git'),
     false,
@@ -554,10 +585,11 @@ test('local dry-run reports a requested issue missing from an existing input fil
   ])
   const output = envelope(child, 'run', 'blocked')
   assert.equal(child.status, 2)
-  assert.equal(output.result.prerequisites[0].code, 'missing-issue')
+  assert.ok(output.result.prerequisites.some((p) => p.code === 'missing-issue'))
 })
 
 test('ordinary run reports a requested local issue missing from an existing file', () => {
+  writeFileSync(issuesFile, '## Ready\n**ID:** ISS-READY\n### Acceptance criteria\n- [ ] Works\n')
   const child = invoke([
     'run',
     '--source',
@@ -670,4 +702,23 @@ test('dry-run exposes project bindings and scoped invocation authorization', () 
   assert.equal(plan.targets[0].policy.bindings.designSystemPath, 'existing/tokens')
   assert.equal(plan.targets[0].policy.authorization.id, 'explicit-fixture-request')
   assert.equal(plan.targets[0].policy.githubIssues, false)
+})
+
+// GitHub mode operates on the already prepared clone. Remote refresh is an
+// operator action; the runner never silently changes which base is reviewed.
+test('existing GitHub clone execution does not implicitly fetch or clone', () => {
+  const output = envelope(
+    invoke(['run', '--repo', 'o/r', '--issue', '3', '--path', repo, '--json']),
+    'run',
+    'blocked',
+  )
+  assert.equal(output.result.outcome, 'needs-detail')
+  assert.equal(
+    commands().some((c) => c.name === 'git' && c.args[0] === 'fetch'),
+    false,
+  )
+  assert.equal(
+    commands().some((c) => c.name === 'gh' && c.args.slice(0, 2).join(' ') === 'repo clone'),
+    false,
+  )
 })

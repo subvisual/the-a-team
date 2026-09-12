@@ -12,6 +12,8 @@ import { canonicalPath, digest, validateChanges } from '../policy.mjs'
 import { runSandboxed } from '../sandbox.mjs'
 import { ensureDir, home, slug } from '../paths.mjs'
 import { validateExecutor, validateReviewer } from './results.mjs'
+import { openBudget } from './budget.mjs'
+import { writeReviewEvidence } from './provenance.mjs'
 
 export const criteriaDigest = (issue) =>
   digest({
@@ -107,13 +109,14 @@ export function approvalGate({ implementation, verdict, verification, policy, ch
       )
   return true
 }
-const runVerification = ({ command, worktree, scratchDir, policy }) =>
+const runVerification = ({ command, worktree, scratchDir, policy, timeoutMs }) =>
   runSandboxed('/bin/sh', ['-c', command], {
     cwd: worktree,
     scratchDir,
     policy,
     role: 'reviewer',
     check: false,
+    timeoutMs,
   })
 
 /** Evaluate only committed bytes, with separate source and scratch for every process. */
@@ -131,9 +134,12 @@ export async function evaluateRevision({
   cycle = 1,
   model,
   budgetUsd,
+  budget,
+  attemptId,
   resumeSessionId = null,
   deps = {},
 }) {
+  const allowance = budget || openBudget({ repo, policy })
   await assertDescendsFrom(source, baseSha, head)
   const changed = await validateChanges(policy, source, baseSha, head)
   const criteria = criteriaDigest(issue)
@@ -145,22 +151,33 @@ export async function evaluateRevision({
   await createPrivateCheckout(source, reviewSource, head)
   try {
     await assertExactCheckout(reviewSource, head)
-    verdict = validateReviewer(
-      await review({
-        issue,
-        base: baseSha,
-        head,
-        worktree: reviewSource,
-        testCommand: policy.verification.commands.join(' && '),
-        model,
-        budgetUsd,
-        runDir,
-        cycle,
-        resumeSessionId,
-        repoPath: reviewSource,
-        policy,
-        scratchDir: reviewScratch,
-      }),
+    verdict = await allowance.call(
+      'reviewer',
+      async (grant) => {
+        const result = await review({
+          issue,
+          base: baseSha,
+          head,
+          worktree: reviewSource,
+          testCommand: policy.verification.commands.join(' && '),
+          model,
+          budgetUsd: grant.budgetUsd,
+          timeoutMs: grant.timeoutMs,
+          runDir,
+          cycle,
+          resumeSessionId,
+          repoPath: reviewSource,
+          policy,
+          scratchDir: reviewScratch,
+        })
+        try {
+          return validateReviewer(result)
+        } catch (error) {
+          error.costUsd = result?.costUsd
+          throw error
+        }
+      },
+      { issueKey: issue.key, attemptId, cycle, headSha: head },
     )
     await assertExactCheckout(reviewSource, head)
   } finally {
@@ -168,7 +185,21 @@ export async function evaluateRevision({
   }
   if (criteriaDigest(issue) !== criteria)
     throw new Error('issue acceptance criteria changed during review')
-  if (verdict.verdict !== 'approve') return { verdict }
+  const reviewEvidence = (approvalPath = null) =>
+    writeReviewEvidence({
+      repo,
+      issue,
+      criteriaDigest: criteria,
+      head,
+      baseSha,
+      policy,
+      verdict,
+      cycle,
+      model,
+      runDir,
+      approvalPath,
+    })
+  if (verdict.verdict !== 'approve') return { verdict, ...reviewEvidence() }
 
   const verification = {
     commands: [],
@@ -187,12 +218,18 @@ export async function evaluateRevision({
     await createPrivateCheckout(source, checkSource, head)
     try {
       await assertExactCheckout(checkSource, head)
-      result = await (deps.runVerification || runVerification)({
-        command,
-        worktree: checkSource,
-        scratchDir,
-        policy,
-      })
+      result = await allowance.call(
+        'verification',
+        async ({ timeoutMs }) =>
+          (deps.runVerification || runVerification)({
+            command,
+            worktree: checkSource,
+            scratchDir,
+            policy,
+            timeoutMs,
+          }),
+        { issueKey: issue.key, attemptId, cycle, headSha: head, command },
+      )
       if (
         !result ||
         !Number.isInteger(result.code) ||
@@ -226,6 +263,23 @@ export async function evaluateRevision({
           `supervisor verification failed with exit ${result.code}; output: ${outputRef}`,
         )
     } catch (error) {
+      if (error.processResult && !existsSync(outputRef)) {
+        const timed = error.processResult
+        writeEvidence(outputRef, {
+          command,
+          exitCode: timed.code,
+          stdout: timed.stdout,
+          stderr: timed.stderr,
+          timedOut: timed.timedOut === true,
+        })
+        verification.commands.push({
+          command,
+          exitCode: timed.code,
+          outputRef,
+          outputDigest: outputDigest(outputRef),
+          failureCategory: error.failureCategory,
+        })
+      }
       failure = error
       break
     } finally {
@@ -251,6 +305,7 @@ export async function evaluateRevision({
       repository: { name: repo, ...policy.target },
       harness: policy.harness,
       issueKey: issue.key,
+      issueVersion: issue.contentVersion || issue.version || criteria,
       criteriaDigest: criteria,
       baseSha,
       headSha: head,
@@ -269,7 +324,14 @@ export async function evaluateRevision({
       createdAt: new Date().toISOString(),
     }
     const approvalPath = writeEvidence(join(runDir, `approval-${cycle}.json`), record)
-    return { verdict, verification, verificationPath, approvalPath, record }
+    return {
+      verdict,
+      verification,
+      verificationPath,
+      approvalPath,
+      record,
+      ...reviewEvidence(approvalPath),
+    }
   } catch (error) {
     error.verificationPath = verificationPath
     throw error
@@ -324,8 +386,10 @@ export async function assertApprovalCurrent(record, context) {
   const result = validateApprovalRecord(record, context)
   if (!result.valid) throw new Error(result.reason)
   if (
-    (await revParse(context.repoPath, context.baseRef || context.policy.target.base)) !==
-    record.baseSha
+    (await revParse(
+      context.repoPath,
+      context.baseRef || context.policy.target.baseRef || context.policy.target.base,
+    )) !== record.baseSha
   )
     throw new Error('approval base changed before delivery')
   if (context.branch && (await revParse(context.repoPath, context.branch)) !== record.headSha)
@@ -376,11 +440,23 @@ function deliveryPaths(record) {
   }
 }
 
+function writeReceipt(path, value) {
+  try {
+    return writeEvidence(path, value)
+  } catch (error) {
+    if (error.code === 'EEXIST') {
+      const previous = JSON.parse(readFileSync(path, 'utf8'))
+      const withoutTime = ({ publishedAt, ...record }) => record
+      if (digest(withoutTime(previous)) === digest(withoutTime(value))) return path
+    }
+    throw error
+  }
+}
 export function recordDelivery({ record, approvalPath, repo, prNumber = null, kind, via = null }) {
   const paths = deliveryPaths(record)
   if (paths.approvalPath !== approvalPath)
     throw new Error('delivery refers to a different approval record')
-  return writeEvidence(paths.receiptPath, {
+  return writeReceipt(paths.receiptPath, {
     schemaVersion: 1,
     repo,
     prNumber,
@@ -453,7 +529,7 @@ export function recordNonapprovalDelivery({
     throw new Error('negative review receipt cannot represent approval')
   if (!Number.isInteger(prNumber) || prNumber < 1 || !['review', 'comment'].includes(via))
     throw new Error('negative review requires confirmed GitHub delivery')
-  return writeEvidence(join(runDir, `review-delivery-${cycle}.json`), {
+  return writeReceipt(join(runDir, `review-delivery-${cycle}.json`), {
     schemaVersion: 1,
     kind: 'delivered-nonapproval-review',
     repository: { name: repo, ...policy.target },

@@ -177,17 +177,31 @@ validation or the correctness of a later combined revision.
 
 Successful delivery has a separate receipt bound to the immutable approval
 file. An evaluation record created before a failed publication is not treated as
-delivered; a retry can try publication again. GitHub review requests explicitly
+delivered. A recorded action with an uncertain remote outcome must be reconciled before another publication is attempted. GitHub review requests explicitly
 set `commit_id` and validate the returned commit/state, so a concurrent push
 cannot attach the review to unevaluated code. Only GitHub's own-PR restriction
 permits a comment fallback; that comment explicitly names the evaluated SHA.
 See the [GitHub review API contract](https://docs.github.com/en/rest/pulls/reviews#create-a-review-for-a-pull-request).
 
-Successfully delivered `request-changes` and `blocked` reviews have a separate
-negative-review record bound to the same current inputs. Watch and direct review
-skip an unchanged delivered review; changed inputs or `review --force` trigger
-another evaluation. Negative-review records never authorize approval. A failed
-publication creates no delivered record and remains eligible for a retry.
+Review reuse starts from immutable `review-evidence` and `review-receipt` files.
+The supervisor records GitHub's numeric publication and actor IDs, the exact
+body digest and a review-evidence pointer. On restart, it fetches that exact
+review/comment and matches the author ID, PR, body, evaluated commit and outcome.
+It also matches current issue/content version, base/head, policy and evaluator
+model/session identity. Display names and copied head/cycle markers cannot
+authenticate a review or increase the trusted cycle count. Missing, edited or
+untrusted evidence appears in `ignoredEvidence` with a reason.
+
+Authenticated completed `approve` and `request-changes` reviews can be reused.
+Blocked/failed attempts cannot suppress required evaluation; changed inputs or
+`review --force` also require evaluation. A request for changes never authorizes
+approval. Local records from before this provenance format remain history but
+cannot authenticate remote review reuse.
+
+The implementation follows GitHub's [review](https://docs.github.com/en/rest/pulls/reviews)
+and [issue-comment](https://docs.github.com/en/rest/issues/comments) API identity
+fields. Tests use synthetic server responses; an authenticated production pilot
+is a separate operation.
 
 ## Verification
 
@@ -206,3 +220,107 @@ secrets or live provider/GitHub writes. Passing these tests does not assert a
 successful authenticated end-to-end Claude/GitHub run.
 
 See [CLI.md](CLI.md) for pure dry-runs and the versioned stdout envelope.
+
+## Retained allowances and process timeouts
+
+**Issue #37 remains partial.** Spend accounting, recovery windows and observed
+process cleanup are implemented. This macOS backend does not yet guarantee the
+issue's whole-process-tree termination criterion: a detached descendant can
+orphan itself between ancestry snapshots and survive a timeout. A synthetic
+three-generation process reproduced this limitation. Keep #37 open until a
+supported lifecycle containment mechanism passes that regression. Run the local diagnostic explicitly with `node runner/test/fixtures/orphan-timeout-probe.mjs` from the repository root; it cleans up its own synthetic descendant and is excluded from the passing acceptance suite. A single non-reproduction does not establish containment.
+
+Resolved policy includes `limits`: aggregate `runBudgetUsd` (45 by default),
+`executorBudgetUsd` (10), `reviewerBudgetUsd` (5), `runTimeoutMs` (7,200,000),
+`sessionTimeoutMs` (1,200,000), and `maxCycles` (3). Values must be positive,
+finite numbers; times and cycle counts must be bounded integers. Project config
+may declare these numeric fields; effective values are frozen into the policy.
+
+One repository allowance window covers all attempts and both model roles,
+including direct PR reviews. Restart and a new issue do not reset it. Before each
+model launch, the supervisor records an intent and caps its provider allowance to
+the lesser of the role limit and remaining aggregate spend. Verification commands
+also receive the lesser of the remaining run time and session time. The run clock
+starts when the window opens, so time between retries counts. Exhaustion stops
+new launches. A live process timeout tracks PID/start identity and parent ancestry, suspends
+and discovers the observed tree across process groups, then sends TERM/CONT and
+KILL after a one-second grace period. It also always signals the original group;
+partial output and timeout disposition are retained. Execution requires the
+supported native POSIX backend; this is not a Windows process-control contract.
+
+`budgets/<repository>/events.jsonl` retains window, launch, accounting and stop
+events. Its claim serializes reservations across supervisors. Failed processes
+still contribute any reported cost. Missing, invalid or interrupted accounting is
+unknown, never zero; a pending launch or unknown cost blocks continuation. Status
+and command results expose the current allowance and lifetime known totals plus
+unknown costs/pending launches. Keep the ledger with attempt and approval history.
+
+These are provider-reported costs and the provider's session allowance, not a
+billing guarantee. The supervisor cannot determine charges omitted after a crash
+or force a provider to honor a dollar cap. Reported overspend is retained and
+stops the run; unknown charges remain visible even after recovery. Resumed-session
+costs are conservatively counted as reported, without inventing a deduction.
+
+A fresh allowance requires an explicit invocation authorization file, for example:
+
+```json
+{"id":"operator-approved-recovery-2026-09-10","recoveryWindow":"recovery-2"}
+```
+
+Pass it with `--authorization-file`. A new `recoveryWindow` opens one new window
+under the newly resolved limits; reusing the same value resumes that window.
+An older consumed value cannot reset it. Changed limits alone cannot replenish
+an existing window. Recovery preserves earlier attempts, costs and uncertainty;
+it does not reconcile an uncertain publication or approve retained source.
+
+
+## Restart evidence and retained attempts
+
+The local adapter and local dry-run planner share read-only reconstruction from
+stable issue versions, current immutable approvals and Git ancestry. Title
+markers in any Git ref have no authority. Both expose approved branch
+availability separately from integration into the selected delivery base.
+Dependencies require the current approved prerequisite revision in the selected
+continuation; missing commits, changed criteria/policy, and divergent histories
+cannot silently satisfy them. Selecting an existing descendant SHA introduces
+no merge, cherry-pick or duplicate implementation revision.
+
+Before creating an executor checkout, the supervisor appends its issue/version,
+attempt ID, branch, source path, base and dependency heads to immutable event
+history. Execution, imported commits, review/verification and delivery add
+checkpoints with retained evidence and available duration/cost. Recovery reuses
+only the matching issue version and base/dependency revisions. A saved executor
+result or complete evaluation is reused after the matching interruption, so
+resume retains the checkout and does not repeat completed implementation or
+review. Missing or corrupt history/checkouts block recovery instead of erasing
+an attempt. Failed checkouts are not removed.
+
+Adapter side effects use stable action IDs and append an intent before invocation
+and a result after confirmation. An interrupted or failed publication whose
+outcome cannot be proven remains `action-uncertain`; it is not automatically
+posted again. Local adapter report/base actions can be projected from history,
+and a missing local receipt can be written from a revalidated approval record.
+A current receipt resolves its original action rather than inventing a second
+publication. Cycle exhaustion remains exhausted across retries until an
+explicitly authorized recovery window is supplied; lifetime attempt and budget
+records remain intact.
+
+Claim files record host, PID, process identity and ownership token. Recovery
+requires proven same-host process death or a comparable changed process-start
+identity. Live, foreign-host and unknown ownership are never reclaimed because
+of elapsed time. Release verifies the token and stale claim metadata is retained
+alongside the original branch/worktree evidence. Dry-run performs none of these
+claim, event, receipt or checkout mutations.
+
+Direct PR review retains action results separately from their projections into
+receipts and labels. An unfinished attempt, or a failed attempt with an
+acknowledged publication, reports `delivery-incomplete` before either a completed
+review skip or another launch, including `--force`. The recorded publication and
+attempt remain available for explicit delivery reconciliation. This bounded
+command does not automatically repair incomplete GitHub labels or replay an
+uncertain publication.
+
+A recovery guard left by an interrupted claim-recovery operation is
+`recovery-uncertain`, even when the original claim's process is dead. The guard
+and original owner evidence are retained for explicit reconciliation; their age
+or an empty guard file cannot prove another recovery operation is absent.

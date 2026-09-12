@@ -1,24 +1,27 @@
+import { budgetReadiness } from './core/budget.mjs'
 // Read-only command planning. Keep this boundary independent of setup and
 // execution adapters: a preview must never obtain context by creating it.
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { resolve, join } from 'node:path'
 import { repoEntry } from './config.mjs'
 import { clonePath, configPath } from './paths.mjs'
-import { defaultBranchLocal } from './git.mjs'
 import { run } from './sh.mjs'
 import * as gh from './gh.mjs'
 import { normaliseIssue, PHASE_LABELS } from './adapters/github.mjs'
-import { parseIssuesFile } from './adapters/local.mjs'
+import { parseIssuesFile, validateIssues, resolveLocalBase } from './adapters/local.mjs'
 import { linkedIssueNumber } from './review-pr.mjs'
 import { isClaimed } from './core/claim.mjs'
+import { rebuildLocalState } from './core/local-recovery.mjs'
 import { resolvePolicy } from './policy.mjs'
-import { findDeliveredApprovalRecord, findDeliveredNonapprovalRecord } from './core/approval.mjs'
+import { criteriaDigest, validateApprovalRecord } from './core/approval.mjs'
+import { authenticatedReviews } from './core/provenance.mjs'
 
 function prerequisite(code, message, details = {}) {
   return { code, message, ...details }
 }
 
 async function describeTarget(repo, args, cfg, command) {
+  repo = repo.toLowerCase()
   const entry = repoEntry(cfg, repo)
   const repoPath = resolve(args.path || entry.path || clonePath(repo))
   const prerequisites = []
@@ -39,6 +42,7 @@ async function describeTarget(repo, args, cfg, command) {
         authorization: cfg.authorization,
       })
       base = policy.target.base
+      budgetReadiness({ repo, policy })
     } catch (err) {
       prerequisites.push(prerequisite('policy-conflict', err.message))
     }
@@ -181,26 +185,33 @@ async function reviewCandidate(pr, target, cfg, force) {
     !force &&
     target.policy &&
     pr.baseRefName === target.policy.target.base &&
-    pr.baseRefOid === target.policy.target.baseSha &&
-    [`pr-${pr.number}`, issue.key].some((key) =>
-      [findDeliveredApprovalRecord, findDeliveredNonapprovalRecord].some((findRecord) =>
-        findRecord(target.repo, key, {
-          repo: target.repo,
-          issue,
-          head: pr.headRefOid,
-          baseSha: pr.baseRefOid,
-          policy: target.policy,
-          prNumber: pr.number,
-        }),
-      ),
-    )
-  )
-    return {
-      ...candidate,
-      disposition: 'skipped',
-      reason: 'current delivered review record already exists',
-      actions: [],
+    pr.baseRefOid === target.policy.target.baseSha
+  ) {
+    const context = {
+      repo: target.repo,
+      issue,
+      head: pr.headRefOid,
+      baseSha: pr.baseRefOid,
+      policy: target.policy,
     }
+    const authentication = await authenticatedReviews({
+      ...context,
+      pr,
+      prNumber: pr.number,
+      model: cfg.reviewerModel,
+      criteriaDigest: criteriaDigest(issue),
+      gh,
+      validateApproval: (record) => validateApprovalRecord(record, context).valid,
+    })
+    candidate.ignoredEvidence = authentication.ignored
+    if (authentication.completed.length)
+      return {
+        ...candidate,
+        disposition: 'skipped',
+        reason: 'authenticated completed review already exists',
+        actions: [],
+      }
+  }
   if (!pr.headRefOid || !pr.baseRefName) {
     candidate.prerequisites.push(
       prerequisite('missing-pr-refs', 'PR head and base refs are required'),
@@ -231,19 +242,21 @@ async function localPlan(args, cfg) {
       }),
     )
   }
-  let base = args.base || (available ? await defaultBranchLocal(repoPath) : null)
+  let base = args.base || cfg.base || null
   let policy = null
   if (available) {
     try {
-      policy = await resolvePolicy({
+      policy = await resolveLocalBase({
         repoPath,
         base: args.base,
-        cfg: { ...cfg, base },
+        cfg,
         authorization: cfg.authorization,
       })
       base = policy.target.base
     } catch (err) {
-      prerequisites.push(prerequisite('policy-conflict', err.message))
+      prerequisites.push(
+        prerequisite(err.code === 'missing-local-base' ? err.code : 'policy-conflict', err.message),
+      )
     }
   }
   const target = {
@@ -257,37 +270,62 @@ async function localPlan(args, cfg) {
   }
   const plan = { dryRun: true, targets: [target], candidates: [], prerequisites, actions: [] }
   if (prerequisites.some((p) => p.code === 'missing-issues-file')) return plan
-  let history = ''
-  if (available) {
-    const result = await run('git', ['log', '--all', '--pretty=%B'], {
-      cwd: repoPath,
-      check: false,
-    })
-    if (result.code !== 0)
-      prerequisites.push(
-        prerequisite(
-          'unavailable-history',
-          `cannot inspect local implementation history: ${result.stderr.trim()}`,
-        ),
-      )
-    else history = result.stdout
+  let batch = parseIssuesFile(readFileSync(issuesFile, 'utf8'))
+  try {
+    batch = validateIssues(batch)
+  } catch (err) {
+    if (!err.diagnostics) throw err
+    prerequisites.push(
+      ...err.diagnostics.map((d) => prerequisite(d.code, d.message, { issue: d.issue })),
+    )
   }
-  const issues = parseIssuesFile(readFileSync(issuesFile, 'utf8')).filter(
-    (i) => !args.issue || i.key === args.issue,
-  )
+  let state = null
+  if (policy && !prerequisites.length) {
+    try {
+      state = await rebuildLocalState({ repoPath, issues: batch, policy })
+      target.continuationBase = state.base
+      target.deliveryBase = state.deliveryBase
+      budgetReadiness({ repo: repoPath, policy })
+    } catch (error) {
+      prerequisites.push(
+        prerequisite(error.failureCategory || error.code || 'unavailable-history', error.message),
+      )
+    }
+  }
+  const issues = batch.filter((i) => !args.issue || i.key === args.issue)
   if (args.issue && !issues.length)
     prerequisites.push(
       prerequisite('missing-issue', `issue not found in ${issuesFile}: ${args.issue}`),
     )
   for (const issue of issues) {
-    plan.candidates.push(
-      issueCandidate(issue, target, cfg, {
-        blockers: issue.dependsOn.filter(
-          (title) => !history.includes(`Implements issue: ${title}`),
-        ),
-        implemented: history.includes(`Implements issue: ${issue.title}`),
-      }),
-    )
+    const recovered = state?.issues[issue.key]
+    const pending =
+      recovered &&
+      ['action-uncertain', 'cycle-exhausted', 'budget-exhausted', 'missing-checkout'].includes(
+        recovered.status,
+      )
+        ? [prerequisite(recovered.status, recovered.reason || recovered.status)]
+        : []
+    const candidate = issueCandidate(issue, target, cfg, {
+      blockers: recovered?.blockers || issue.dependsOn,
+      prerequisites: pending,
+      implemented: !!recovered?.approved,
+    })
+    if (recovered?.approved)
+      candidate.reason = recovered.integrated
+        ? 'approved revision integrated into delivery base'
+        : 'approved revision available on retained chain'
+    candidate.recovery = recovered
+      ? {
+          status: recovered.status,
+          head: recovered.head,
+          integrated: recovered.integrated,
+          selected: recovered.selected,
+          claim: recovered.claim,
+          lifetime: recovered.history.lifetime,
+        }
+      : null
+    plan.candidates.push(candidate)
   }
   return plan
 }
@@ -356,6 +394,8 @@ export function renderPlan(plan) {
       `  ${candidate.disposition.padEnd(10)} ${name}${candidate.reason ? ` — ${candidate.reason}` : ''}`,
     )
     if (candidate.actions.length) lines.push(`    would: ${candidate.actions.join(', ')}`)
+    for (const evidence of candidate.ignoredEvidence || [])
+      lines.push(`    ignored evidence: ${evidence.reason}`)
   }
   if (!plan.candidates.length && !plan.actions.length) lines.push('  no candidates')
   return `${lines.join('\n')}\n`

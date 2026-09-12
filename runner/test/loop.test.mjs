@@ -253,3 +253,159 @@ test('the claim is released, so a second run can take the issue', async () => {
   const second = await runIssue({ adapter, issue: issue(), cfg, deps })
   assert.equal(second.outcome, OUTCOME.approved)
 })
+
+import { readEvents, replayIssue } from '../src/core/history.mjs'
+import { existsSync } from 'node:fs'
+test('attempt history retains failure evidence, checkout, identities and measured totals', async () => {
+  const adapter = adapterSpy()
+  const result = await runIssue({
+    adapter,
+    issue: issue(),
+    cfg,
+    deps: {
+      execute: async () => ({
+        ...impl,
+        status: 'blocked',
+        blockedReason: 'cannot proceed',
+        costUsd: 0.2,
+      }),
+      review: reviewer([{ verdict: 'approve' }]),
+      runVerification: pass,
+    },
+  })
+  const state = replayIssue(readEvents(adapter.repo, '1'), issue())
+  assert.equal(state.attempts.length, 1)
+  assert.equal(state.attempts[0].failureCategory, 'executor-blocked')
+  assert.equal(state.attempts[0].costUsd, 0.2)
+  assert.ok(state.attempts[0].durationMs >= 0)
+  assert.equal(state.attempts[0].worktree, result.ctx.worktree)
+  assert.ok(existsSync(result.ctx.worktree))
+})
+test('interruption after commit resumes the recorded checkout without reexecuting implementation', async () => {
+  let executions = 0
+  const execute = async (args) => {
+    executions++
+    return committingExecutor()(args)
+  }
+  const adapter = adapterSpy()
+  const first = await runIssue({
+    adapter,
+    issue: issue(),
+    cfg,
+    deps: {
+      execute,
+      review: reviewer([{ verdict: 'approve' }]),
+      runVerification: pass,
+      checkpoint: async (name) => {
+        if (name === 'after-commit')
+          throw Object.assign(Error('simulated stop'), { code: 'interrupted' })
+      },
+    },
+  })
+  assert.equal(first.outcome, 'failed')
+  assert.ok(existsSync(first.ctx.worktree))
+  const second = await runIssue({
+    adapter,
+    issue: issue(),
+    cfg,
+    deps: { execute, review: reviewer([{ verdict: 'approve' }]), runVerification: pass },
+  })
+  assert.equal(second.outcome, 'approved', second.reason)
+  assert.equal(second.ctx.worktree, first.ctx.worktree)
+  assert.equal(executions, 1)
+  assert.equal(replayIssue(readEvents(adapter.repo, '1'), issue()).lifetime.attempts, 1)
+})
+test('interruption after review reuses durable evaluation before publishing', async () => {
+  let reviews = 0
+  const deps = {
+    execute: committingExecutor(),
+    review: async () => {
+      reviews++
+      return { ...verdict }
+    },
+    runVerification: pass,
+  }
+  const adapter = adapterSpy()
+  const first = await runIssue({
+    adapter,
+    issue: issue(),
+    cfg,
+    deps: {
+      ...deps,
+      checkpoint: async (name) => {
+        if (name === 'after-review')
+          throw Object.assign(Error('simulated stop'), { code: 'interrupted' })
+      },
+    },
+  })
+  assert.equal(first.outcome, 'failed')
+  const second = await runIssue({ adapter, issue: issue(), cfg, deps })
+  assert.equal(second.outcome, 'approved', second.reason)
+  assert.equal(reviews, 1)
+  assert.equal(adapter.calls.filter((c) => c[0] === 'verdict').length, 1)
+})
+test('uncertain publication blocks a second attempt instead of posting again', async () => {
+  let publications = 0
+  const adapter = adapterSpy({
+    async onVerdict() {
+      publications++
+      throw Error('receipt lost')
+    },
+  })
+  const deps = {
+    execute: committingExecutor(),
+    review: reviewer([{ verdict: 'approve' }]),
+    runVerification: pass,
+  }
+  const first = await runIssue({ adapter, issue: issue(), cfg, deps })
+  assert.equal(first.failureCategory, 'action-uncertain')
+  const second = await runIssue({ adapter, issue: issue(), cfg, deps })
+  assert.equal(second.failureCategory, 'action-uncertain')
+  assert.equal(publications, 1)
+})
+
+test('interruption in a later cycle never reuses the previous cycle review', async () => {
+  let executions = 0,
+    reviews = 0
+  const commitNext = committingExecutor()
+  const execute = async (args) => {
+    executions++
+    return commitNext(args)
+  }
+  const review = async () => {
+    reviews++
+    return reviews === 1
+      ? {
+          ...verdict,
+          verdict: 'request-changes',
+          unmetAc: [{ criterion: 'it works', why: 'revise' }],
+        }
+      : { ...verdict }
+  }
+  const adapter = adapterSpy(),
+    limited = { ...cfg, maxCycles: 2 }
+  const first = await runIssue({
+    adapter,
+    issue: issue(),
+    cfg: limited,
+    deps: {
+      execute,
+      review,
+      runVerification: pass,
+      checkpoint: async (name) => {
+        if (name === 'after-commit' && executions === 2)
+          throw Object.assign(Error('stop cycle two'), { code: 'interrupted' })
+      },
+    },
+  })
+  assert.equal(first.failureCategory, 'interrupted')
+  const second = await runIssue({
+    adapter,
+    issue: issue(),
+    cfg: limited,
+    deps: { execute, review, runVerification: pass },
+  })
+  assert.equal(second.outcome, 'approved', second.reason)
+  assert.equal(executions, 2)
+  assert.equal(reviews, 2)
+})

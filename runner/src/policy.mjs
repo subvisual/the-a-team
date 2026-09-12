@@ -3,6 +3,7 @@ import { resolve, dirname, relative, isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
 import { git, revParse } from './git.mjs'
+import { resolveLimits, LIMIT_DEFAULTS } from './core/budget.mjs'
 import { DENIED_PATHS } from './deny.mjs'
 
 const HARNESS_ROOT = fileURLToPath(new URL('../../', import.meta.url))
@@ -22,6 +23,12 @@ const KEYS = {
   'read paths': 'readPaths',
   'write paths': 'writePaths',
   'supervisor actions': 'supervisorActions',
+  'run budget usd': 'runBudgetUsd',
+  'executor budget usd': 'executorBudgetUsd',
+  'reviewer budget usd': 'reviewerBudgetUsd',
+  'run timeout ms': 'runTimeoutMs',
+  'session timeout ms': 'sessionTimeoutMs',
+  'max cycles': 'maxCycles',
 }
 const ALLOWED = new Set(Object.values(KEYS))
 const ALWAYS_PROTECTED = [
@@ -70,7 +77,7 @@ export function readInvocationAuthorization(path) {
   if (!value || Array.isArray(value) || typeof value !== 'object')
     throw new Error('invocation authorization must be a JSON object')
   for (const key of Object.keys(value))
-    if (!['id', 'protectedPaths', 'documentationExemption'].includes(key))
+    if (!['id', 'protectedPaths', 'documentationExemption', 'recoveryWindow'].includes(key))
       throw new Error(`unsupported invocation authorization key: ${key}`)
   return value
 }
@@ -146,7 +153,11 @@ export function readProjectConfig(repoPath) {
     if (!key) throw new Error(`unsupported A-Team Config key: ${match[1]}`)
     if (Object.hasOwn(out, key)) throw new Error(`duplicate A-Team Config key: ${key}`)
     const value = match[2].replace(/^`(.*)`$/, '$1')
-    out[key] = value.startsWith('[') ? JSON.parse(value) : value
+    out[key] = Object.hasOwn(LIMIT_DEFAULTS, key)
+      ? Number(value)
+      : value.startsWith('[')
+        ? JSON.parse(value)
+        : value
   }
   for (const key of Object.keys(out))
     if (!ALLOWED.has(key)) throw new Error(`unsupported A-Team Config key: ${key}`)
@@ -185,6 +196,7 @@ export async function resolvePolicy({
   cfg = {},
   authorization = {},
   continuationBase,
+  baseRef,
 }) {
   const root = canonicalPath(repoPath)
   const top = canonicalPath((await git(root, ['rev-parse', '--show-toplevel'])).stdout.trim())
@@ -225,7 +237,7 @@ export async function resolvePolicy({
     /[\s\x00-\x1f]/.test(selectedBase)
   )
     throw new Error('base branch must be an explicit Git ref')
-  const baseSha = await revParse(root, `${selectedBase}^{commit}`)
+  const baseSha = await revParse(root, `${baseRef || selectedBase}^{commit}`)
   const merged = { ...cfg, ...project }
   const verification =
     project.verificationCommands !== undefined || project.testCommand !== undefined
@@ -271,6 +283,15 @@ export async function resolvePolicy({
     )
       throw new Error(`protected exception must name one eligible file: ${p}`)
   }
+  if (
+    authorization.recoveryWindow !== undefined &&
+    (!authorization.id ||
+      typeof authorization.recoveryWindow !== 'string' ||
+      !authorization.recoveryWindow.trim())
+  )
+    throw new Error(
+      'fresh recovery window needs an invocation authorization ID and nonempty window ID',
+    )
   const actions = list(cfg.invocationActions, [])
   const configuredActions = list(merged.supervisorActions, actions)
   for (const action of actions)
@@ -279,7 +300,13 @@ export async function resolvePolicy({
   const policy = {
     schemaVersion: 1,
     harness: { root: harness, revision },
-    target: { root, remote: identity, base: selectedBase, baseSha },
+    target: {
+      root,
+      remote: identity,
+      base: selectedBase,
+      ...(baseRef ? { baseRef } : {}),
+      baseSha,
+    },
     bindings,
     readPaths,
     writePaths,
@@ -287,7 +314,14 @@ export async function resolvePolicy({
     githubIssues: project.githubIssues === true || project.githubIssues === 'on',
     supervisor: { actions },
     verification: { commands, exemption: authorization.documentationExemption || null },
-    authorization: { id: authorization.id || null, protectedPaths: approved },
+    authorization: {
+      id: authorization.id || null,
+      protectedPaths: approved,
+      ...(authorization.recoveryWindow !== undefined
+        ? { recoveryWindow: authorization.recoveryWindow }
+        : {}),
+    },
+    limits: resolveLimits(merged),
     sandbox: cfg.sandbox || { backend: 'macos-seatbelt' },
   }
   if (

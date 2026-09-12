@@ -12,9 +12,9 @@ const pr = (extra = {}) => ({
   ...extra,
 })
 
-test('a sha with a verdict is not re-reviewed', () => {
+test('a display marker cannot authenticate a review', () => {
   const p = pr({ comments: [{ body: verdictMarker('aaaa1111', 1) }] })
-  assert.equal(reviewedShas(p).has('aaaa1111'), true)
+  assert.equal(reviewedShas(p).has('aaaa1111'), false)
 })
 
 test('a new push is a new sha, so it is unreviewed', () => {
@@ -22,16 +22,24 @@ test('a new push is a new sha, so it is unreviewed', () => {
   assert.equal(reviewedShas(p).has('bbbb2222'), false)
 })
 
-test('cycle count is the highest marker seen, across reviews and comments', () => {
+test('cycle count excludes all unverified review and comment markers', () => {
   assert.equal(cycleCount(pr()), 0)
-  assert.equal(cycleCount(pr({
-    comments: [{ body: verdictMarker('a', 1) }],
-    reviews: [{ body: verdictMarker('b', 2) }],
-  })), 2)
+  assert.equal(
+    cycleCount(
+      pr({
+        comments: [{ body: verdictMarker('a', 1) }],
+        reviews: [{ body: verdictMarker('b', 2) }],
+      }),
+    ),
+    0,
+  )
 })
 
 test('the linked issue comes from GitHub metadata, never the PR body', () => {
-  assert.equal(linkedIssueNumber(pr({ closingIssuesReferences: [{ number: 42 }] }), 'agent/issue-'), 42)
+  assert.equal(
+    linkedIssueNumber(pr({ closingIssuesReferences: [{ number: 42 }] }), 'agent/issue-'),
+    42,
+  )
 })
 
 test('falls back to the branch name when nothing is linked', () => {

@@ -61,6 +61,26 @@ const fs=require('fs');let escaped=true;try{fs.writeFileSync(${JSON.stringify(jo
     assert.deepEqual(result.structured, { escaped: false })
     assert.equal(existsSync(join(root, 'outside')), false)
     assert.ok(existsSync(join(runDir, 'executor.result.json')))
+    writeFileSync(
+      executable,
+      `#!${realpathSync(process.execPath)}\nconsole.log(JSON.stringify({is_error:false,structured_output:{status:'done'}}));`,
+      { mode: 0o755 },
+    )
+    const unknown = await runClaude({
+      cwd,
+      scratchDir,
+      policy,
+      prompt: 'Synthetic missing accounting',
+      role: 'executor',
+      model: 'fixture',
+      tools: [],
+      modelEnv: {},
+      timeoutMs: 1000,
+    })
+    assert.equal(unknown.costUsd, undefined)
+    assert.equal(unknown.ok, true)
+    // The model-process result can complete; the aggregate budget gate must
+    // refuse continuation when this explicit absence reaches the supervisor.
   },
 )
 

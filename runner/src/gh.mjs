@@ -1,5 +1,7 @@
 import { run, json } from './sh.mjs'
 import { log } from './log.mjs'
+import { digest } from './policy.mjs'
+import { publishedVerdictBody, matchesRemotePublication } from './core/provenance.mjs'
 
 // Markers carry the evaluated head/cycle. Current approval also requires the
 // supervisor's immutable evidence and successful delivery record.
@@ -152,11 +154,34 @@ export async function commentPR(repo, number, body) {
 // the operator's own auth — so a real review is attempted, then degraded to a
 // marked comment. Pin commit_id so a concurrent push cannot move this review
 // onto a revision that the supervisor never evaluated.
-export async function postVerdict(repo, number, { event, body, headSha }) {
+export async function postVerdict(repo, number, { event, body, headSha, evidenceDigest }) {
   if (!/^[0-9a-f]{40,64}$/.test(headSha || ''))
     throw new Error('verdict publication requires the full evaluated commit SHA')
   if (!['approve', 'request-changes'].includes(event)) throw new Error('invalid review event')
-  const publishedBody = `Evaluated commit: \`${headSha}\`.\n\n${body}`
+  if (!/^[0-9a-f]{64}$/.test(evidenceDigest || ''))
+    throw new Error('verdict publication requires immutable review evidence')
+  const actor = await json('gh', ['api', 'user'])
+  if (!Number.isSafeInteger(actor?.id) || actor.id < 1)
+    throw new Error('authenticated GitHub actor ID is unavailable')
+  const publishedBody = publishedVerdictBody({ body, headSha, evidenceDigest })
+  const receipt = (response, via) => {
+    const publication = {
+      via,
+      id: response?.id,
+      authorId: actor.id,
+      bodyDigest: digest(publishedBody),
+      headSha,
+      event,
+      evidenceDigest,
+    }
+    if (
+      !Number.isSafeInteger(publication.id) ||
+      publication.id < 1 ||
+      !matchesRemotePublication(response, publication, { repo, prNumber: number })
+    )
+      throw new Error('GitHub response does not match the evaluated commit, actor and evidence')
+    return publication
+  }
   const request = {
     commit_id: headSha,
     event: event === 'approve' ? 'APPROVE' : 'REQUEST_CHANGES',
@@ -173,12 +198,7 @@ export async function postVerdict(repo, number, { event, body, headSha }) {
     } catch {
       throw new Error('GitHub returned malformed review publication evidence')
     }
-    if (
-      response.commit_id !== headSha ||
-      response.state !== (event === 'approve' ? 'APPROVED' : 'CHANGES_REQUESTED')
-    )
-      throw new Error('GitHub review response does not match the evaluated commit and disposition')
-    return 'review'
+    return receipt(response, 'review')
   }
   if (
     !/can(?:not| not|'t) (?:approve|request changes on) your own pull request/i.test(
@@ -189,8 +209,26 @@ export async function postVerdict(repo, number, { event, body, headSha }) {
       `verdict publication failed: ${stderr.trim() || stdout.trim() || `exit ${code}`}`,
     )
   log.warn('verdict.review_unavailable', { pr: number, reason: stderr.trim().split('\n')[0] })
-  await commentPR(repo, number, publishedBody)
-  return 'comment'
+  const response = await json(
+    'gh',
+    ['api', `repos/${repo}/issues/${number}/comments`, '--method', 'POST', '--input', '-'],
+    { input: JSON.stringify({ body: publishedBody }) },
+  )
+  return receipt(response, 'comment')
+}
+
+export async function readPublication(repo, number, publication) {
+  if (
+    !Number.isSafeInteger(publication?.id) ||
+    publication.id < 1 ||
+    !['review', 'comment'].includes(publication.via)
+  )
+    throw new Error('invalid GitHub publication identity')
+  const endpoint =
+    publication.via === 'review'
+      ? `repos/${repo}/pulls/${number}/reviews/${publication.id}`
+      : `repos/${repo}/issues/comments/${publication.id}`
+  return json('gh', ['api', endpoint])
 }
 
 export async function defaultBranch(repo) {

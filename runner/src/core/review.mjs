@@ -143,6 +143,7 @@ export async function review({
   testCommand,
   model,
   budgetUsd,
+  timeoutMs,
   runDir,
   cycle = 1,
   resumeSessionId = null,
@@ -170,13 +171,25 @@ export async function review({
     tools: REVIEWER_TOOLS,
     model,
     maxBudgetUsd: budgetUsd,
+    timeoutMs: timeoutMs ?? policy?.limits?.sessionTimeoutMs,
     jsonSchema: REVIEWER_SCHEMA,
     resume: resumeSessionId,
     role: `reviewer-cycle${cycle}`,
     runDir,
   })
 
-  return normalizeReviewer(result)
+  try {
+    return normalizeReviewer(result)
+  } catch (error) {
+    error.costUsd = result.costUsd
+    error.durationMs = result.durationMs
+    error.failureCategory = result.timedOut
+      ? 'timeout'
+      : result.ok === false
+        ? 'infrastructure-interruption'
+        : 'invalid-result'
+    throw error
+  }
 }
 
 export function verdictBody({
