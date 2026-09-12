@@ -646,6 +646,11 @@ def main():
     ap.add_argument("--cards-only", action="store_true",
                     help="skip the JTBD definitions + job→pages index pages")
     ap.add_argument("--rasterize", action="store_true", help="also emit a PNG for self-verify")
+    mode = ap.add_mutually_exclusive_group()
+    mode.add_argument("--strict", dest="mode", action="store_const", const="strict")
+    mode.add_argument("--permissive", dest="mode", action="store_const", const="permissive")
+    ap.set_defaults(mode="strict")
+    ap.add_argument("--validate-only", action="store_true")
     args = ap.parse_args()
 
     with open(args.spec, encoding="utf-8") as f:
@@ -653,12 +658,22 @@ def main():
     if args.columns:
         spec["columns"] = args.columns
 
+    from pathlib import Path
+    sys.dont_write_bytecode = True
+    sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "runner" / "scripts"))
+    from artifact_gate import validate, write_receipt
+    report = validate("page-brief", spec, args.spec, args.mode)
+    if args.validate_only:
+        print(json.dumps(report))
+        return
+
     spec, warnings = normalise(spec)
     for w in warnings:
         print("warning: " + w, file=sys.stderr)
 
     svg, W, H = build(spec, cards_only=args.cards_only)
     os.makedirs(args.out, exist_ok=True)
+    write_receipt(report, args.out)
     base = args.name or os.path.splitext(os.path.basename(args.spec))[0]
     svg_path = os.path.join(args.out, base + ".svg")
     html_path = os.path.join(args.out, base + ".html")

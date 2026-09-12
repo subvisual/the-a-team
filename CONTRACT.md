@@ -685,3 +685,24 @@ ticket and exact reviewed revision, validates current context and method-specifi
 evidence, and records the result. It leaves human acceptance, integration, release
 and product validation independent. See [runner/REFINEMENT.md](runner/REFINEMENT.md)
 for the change and completion formats.
+
+## Strict artifact handoffs
+
+Before advancing definition or any later interface phase, validate the actual
+wireflow and page-brief JSON, canonical job/requirement/obligation references,
+both acceptance layers, and (from spec onward) per-component empty/loading/error/
+populated states. Reasoned not-applicable dispositions are allowed.
+`feature-cli.mjs` runs this gate on completion, approval and reload. A rendered
+draft cannot establish eligibility. Standalone permissive rendering must be
+explicit and retains warnings. See [runner/ARTIFACTS.md](runner/ARTIFACTS.md) for
+commands, exact IDs, component schema and source-bound headless exemptions.
+
+## Prototype fidelity and flow continuity
+
+Design, generated prototype data and spec carry the same versioned flow contract,
+including the current wireflow graph and stable node/page/edge IDs. The design
+and later feature gates validate their actual content. Interaction fidelity is
+explicit: navigation sketches cannot verify validation or recovery; interactive
+prototypes use deterministic local scenarios and reset, without real backend
+requests. Record browser observations separately from production and human-study
+acceptance. See [runner/PROTOTYPES.md](runner/PROTOTYPES.md).

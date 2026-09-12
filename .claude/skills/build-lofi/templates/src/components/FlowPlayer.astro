@@ -1,0 +1,121 @@
+---
+const { contract } = Astro.props;
+const serialized = JSON.stringify(contract).replace(/</g, '\\u003c');
+---
+<section data-flow-player class="space-y-6">
+  <p data-fidelity class="text-sm text-gray-600"></p>
+  <div data-flow-view class="space-y-5"></div>
+  <p data-flow-status role="status" aria-live="polite" class="text-sm text-gray-700"></p>
+  <button data-reset type="button" class="border border-gray-400 rounded px-4 py-2 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-900">Reset scenario</button>
+  <details class="text-sm text-gray-600">
+    <summary class="cursor-pointer">Review scenario evidence</summary>
+    <pre data-flow-evidence class="mt-3 overflow-auto whitespace-pre-wrap break-words"></pre>
+  </details>
+  <script type="application/json" data-flow-contract set:html={serialized} />
+  <noscript>This prototype needs JavaScript to run its local scenario.</noscript>
+</section>
+
+<script>
+  import { createFlow } from '../lib/flow-runtime.mjs';
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-flow-player]')) {
+    const contract = JSON.parse(root.querySelector('[data-flow-contract]')!.textContent!);
+    const flow = createFlow(contract);
+    const view = root.querySelector<HTMLElement>('[data-flow-view]')!;
+    const status = root.querySelector<HTMLElement>('[data-flow-status]')!;
+    const evidence = root.querySelector<HTMLElement>('[data-flow-evidence]')!;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let epoch = 0;
+    root.querySelector('[data-fidelity]')!.textContent = contract.fidelity === 'interactive'
+      ? 'Interactive prototype · deterministic local data · no real request is submitted.'
+      : 'Navigation sketch · validation and recovery remain unverified.';
+
+    function element(tag: string, text = '', classes = '') {
+      const node = document.createElement(tag);
+      node.textContent = text;
+      node.className = classes;
+      return node;
+    }
+    function act(action: () => unknown) {
+      try { action(); render(true); }
+      catch (error) { status.textContent = `${(error as Error).message}. Use Reset scenario to replay.`; }
+    }
+    function render(focus = false) {
+      clearTimeout(timer);
+      const snapshot = flow.snapshot();
+      const node = contract.graph.nodes.find((n: any) => n.id === snapshot.nodeId);
+      const current = contract.states.find((s: any) => s.nodeId === snapshot.nodeId);
+      view.replaceChildren();
+      view.dataset.nodeId = node.id;
+      view.dataset.pageId = current.pageId;
+      view.setAttribute('aria-busy', String(current.kind === 'loading' && contract.fidelity === 'interactive'));
+      const heading = element('h2', node.text, 'text-2xl font-semibold break-words');
+      heading.tabIndex = -1;
+      view.append(heading);
+      const outgoing = contract.graph.edges.filter((edge: any) => edge.from === node.id);
+      status.textContent = current.kind === 'loading' && contract.fidelity === 'interactive' ? 'Saving locally simulated request…' : '';
+      if (contract.fidelity === 'navigation') {
+        const nav = element('nav', '', 'flex flex-wrap gap-3');
+        nav.setAttribute('aria-label', 'Graph destinations');
+        for (const edge of outgoing) {
+          const condition = typeof edge.condition === 'string' ? edge.condition : edge.condition?.value || edge.condition?.kind;
+          const label = edge.label || contract.graph.nodes.find((n: any) => n.id === edge.to).text;
+          const link = element('a', `${label}${condition ? ` (${condition})` : ''}`, 'underline underline-offset-4 px-2 py-2') as HTMLAnchorElement;
+          link.href = `#${encodeURIComponent(edge.to)}`;
+          link.dataset.transitionId = edge.id;
+          link.addEventListener('click', (event) => { event.preventDefault(); act(() => flow.navigate(edge.id)); });
+          nav.append(link);
+        }
+        view.append(nav);
+      } else {
+        let controls: HTMLElement = view;
+        if (current.kind === 'form') {
+          const form = document.createElement('form'); form.noValidate = true; form.className = 'space-y-5';
+          for (const field of current.fields) {
+            const label = element('label', '', 'block space-y-2');
+            label.append(element('span', field.label, 'block font-medium'));
+            const input = document.createElement('input');
+            input.name = field.key; input.value = snapshot.draft[field.key]; input.required = field.required;
+            input.className = 'block w-full min-w-0 border border-gray-400 rounded px-3 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-900';
+            if (current.invalid && field.required && !input.value.trim()) {
+              input.setAttribute('aria-invalid', 'true');
+              const hint = element('span', `Enter ${field.label.toLowerCase()} before saving.`, 'block text-sm font-medium');
+              hint.id = `flow-${contract.id}-${field.key}-error`; input.setAttribute('aria-describedby', hint.id); label.append(hint);
+            }
+            input.addEventListener('input', () => flow.change(field.key, input.value));
+            label.append(input); form.append(label);
+          }
+          form.addEventListener('submit', (event) => { event.preventDefault(); act(() => flow.send(outgoing[0].trigger)); });
+          view.append(form); controls = form;
+        }
+        if (current.kind === 'summary' || current.kind === 'error') {
+          const summary = element('dl', '', 'space-y-2');
+          for (const [key, value] of Object.entries(current.kind === 'error' ? snapshot.draft : snapshot.persisted)) {
+            const label = contract.states.flatMap((s: any) => s.fields || []).find((f: any) => f.key === key)?.label || key;
+            summary.append(element('dt', label, 'text-sm text-gray-600'), element('dd', String(value), 'break-words font-medium'));
+          }
+          view.append(summary);
+        }
+        if (current.kind !== 'loading') {
+          const actions = element('div', '', 'flex flex-wrap gap-3');
+          const triggers = new Set<string>();
+          for (const edge of outgoing) {
+            if (triggers.has(edge.trigger)) continue; triggers.add(edge.trigger);
+            const button = element('button', edge.label, 'cta rounded px-4 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-900') as HTMLButtonElement;
+            button.type = current.kind === 'form' && edge === outgoing[0] ? 'submit' : 'button';
+            if (button.type !== 'submit') button.addEventListener('click', () => act(() => flow.send(edge.trigger)));
+            actions.append(button);
+          }
+          controls.append(actions);
+        } else {
+          const generation = epoch;
+          timer = setTimeout(() => { if (generation === epoch) act(() => flow.settle()); }, current.delayMs);
+        }
+      }
+      evidence.textContent = JSON.stringify(flow.receipt(), null, 2);
+      if (focus) heading.focus();
+    }
+    root.querySelector('[data-reset]')!.addEventListener('click', () => { epoch++; clearTimeout(timer); act(() => flow.reset()); });
+    render();
+  }
+</script>

@@ -169,3 +169,12 @@ Critique against the method — don't redraw unless asked. Be a sharp, specific 
 - `references/pipeline.md` — the end-to-end build pipeline checklist.
 - `references/review-criteria.md` — the REVIEW rubric.
 - `references/figjam-rebuild.md` — native FigJam mechanics (load only for an editable board).
+
+## Strict versus draft rendering
+
+Rendering defaults to strict validation. Use `--validate-only` for a source-only
+check and explicit `--permissive` for incomplete drafts with visible warnings.
+Unknown edge/job/page references must be fixed before phase completion. Keep
+canonical job IDs, stable node/edge IDs, and screen `pageId` values in board.json.
+See `<harness>/runner/ARTIFACTS.md` for the cross-file gate. The validator requires
+the full harness checkout and Node 20+; set `ATEAM_NODE` if needed.

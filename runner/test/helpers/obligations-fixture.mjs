@@ -1,5 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { artifactFixture } from './artifact-fixture.mjs'
+import { compileFlow } from '../../src/flow.mjs'
 
 export function fixture() {
   const obligation = (id, category, method, requiredStage) => ({
@@ -65,18 +67,44 @@ export function snapshots(ledger) {
 }
 
 export function writeFixture(directory, ledger = fixture(), records = snapshots(ledger)) {
+  const { wireflow, pages, components } = artifactFixture()
+  const flow = compileFlow({
+    wireflow,
+    prototype: {
+      schemaVersion: 1,
+      id: 'F-SAVE',
+      fidelity: 'navigation',
+      journeyId: 'J-SAVE',
+      initialNodeId: 'N-START',
+      scenario: { id: 'S-NAV', initial: {}, sequences: {} },
+      states: wireflow.journeys[0].nodes.map((n) => ({
+        nodeId: n.id,
+        pageId: 'P1',
+        kind: 'summary',
+      })),
+      obligations: [
+        { id: 'OBL-SCREEN', capability: 'navigation', requiredTransitions: ['E-OPEN', 'E-SAVE'] },
+      ],
+    },
+  })
+  const flowBlock = '\n```flow-contract\n' + JSON.stringify(flow) + '\n```\n'
+  mkdirSync(join(directory, 'lofi/src/data'), { recursive: true })
+  writeFileSync(join(directory, 'lofi/src/data/flow.json'), JSON.stringify(flow))
+  writeFileSync(join(directory, 'design.md'), '# Design\nSave button\n' + flowBlock)
+  mkdirSync(join(directory, 'briefs/wireflow'), { recursive: true })
+  writeFileSync(join(directory, 'briefs/wireflow/board.json'), JSON.stringify(wireflow))
   writeFileSync(join(directory, 'acceptance.json'), JSON.stringify(ledger, null, 2))
   for (const artifact of ledger.artifacts) {
     const path = join(directory, artifact.path)
     mkdirSync(dirname(path), { recursive: true })
     const data = records[artifact.path]
     if (path.endsWith('.json'))
-      writeFileSync(path, JSON.stringify({ pages: [{ id: 'P1' }], acceptanceObligations: data }))
+      writeFileSync(path, JSON.stringify({ ...pages, acceptanceObligations: data }))
     else {
       const body =
         artifact.kind === 'issues'
           ? '# Issues\n\n## Implement persistence\n**ID:** ISS-CODE\n**Depends on:** none\n**Requirements:** R-ROUNDTRIP\n\n### Acceptance criteria\n- [ ] Given saved input, when reopened, then it is restored\n\n### Technical notes\nCode implementation only.\n'
-          : `# ${artifact.kind}\n\nRequirement R-ROUNDTRIP describes persistence.\n`
+          : `# ${artifact.kind}\n\nRequirement R-ROUNDTRIP describes persistence.\n${artifact.kind === 'spec' ? '\n```component-states\n' + JSON.stringify(components) + '\n```\n' + flowBlock : ''}`
       writeFileSync(
         path,
         `${body}\n\`\`\`acceptance-obligations\n${JSON.stringify(data, null, 2)}\n\`\`\`\n`,

@@ -91,17 +91,22 @@ WCAG nudge loop, the shadcn bridge. No seed anywhere → the skill's
 The lofi's only input, so it exists in both paths:
 
 - **`briefs/` present** → derive from the wireflow: its screens, purposes,
-  and journey arrow-strings, cited. You may diverge where design craft says
+  and stable graph IDs, conditions and transitions, cited. You may diverge where design craft says
   the flow reads wrong on a screen — every divergence is an explicit call in
   `## Derived calls`, with reasoning, never a silent re-decision.
 - **`briefs/` absent** → draft from the JTBDs (+ `prd.md` if present): the
   screens each job's progress needs, purposes phrased as what the user does
-  there, flows as arrow-strings per job. Mark the section
+  there, a proposed stable-ID graph per job. Mark the section
   `derived without briefs` — the gate reviews it as a proposal.
 
-Shape (what `build-lofi` parses): nested screen list `- Screen name —
-one-line purpose.`; one H4 per flow, body a single arrow-string using screen
-names verbatim. Validate exact-name references before moving on.
+Keep `## Screens & flows` readable, but carry the complete executable handoff in
+one top-level `flow-contract` JSON fence. Compile it from the current wireflow and
+a feature-local prototype scenario using `<harness>/runner/PROTOTYPES.md`.
+Preserve every node/page/edge ID, condition and transition; never reconstruct
+navigation from display names. Choose `navigation` or `interactive` fidelity
+explicitly according to the obligations being assessed. Branching validation and
+recovery require interactive local fixtures; navigation sketches remain useful
+with those capabilities explicitly unverified.
 
 ### 3. Lofi (conduct `build-lofi`, pipeline mode)
 
@@ -186,7 +191,8 @@ a lint bypass. The one hard stop is a missing North Star (movement 0).
 - Tokens: create-once respected; WCAG checks ran (palette + shadcn bridge
   pairs); TBD-draft honest if seedless; no raw hex without OKLCH source.
 - `## Screens & flows` validates: every flow reference exact-matches a
-  screen; derivation source (wireflow vs JTBDs) stated.
+  screen; derivation source (wireflow vs JTBDs) stated. Stable flow contracts match
+  the actual wireflow and generated data under `prototype-cli.mjs validate`.
 - Lofi: lint passes; sentinel touched; JOURNEY.md cites job ids; variant CSS
   actually mounted (URLs listed); fidelity honored.
 - Every derived call is in `## Derived calls & flags` AND

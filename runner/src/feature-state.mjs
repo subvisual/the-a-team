@@ -14,6 +14,7 @@ import {
 } from 'node:fs'
 import { resolve, relative, isAbsolute, join } from 'node:path'
 import { validateIssuesPhase } from './obligations-cli.mjs'
+import { validateFeatureArtifacts } from './artifacts.mjs'
 import { selectTaskContext, assertCurrentContext } from './context.mjs'
 import * as refinement from './refinement.mjs'
 import { credentialPath, readProjectConfig } from './policy.mjs'
@@ -706,9 +707,20 @@ export async function loadFeature(featureDir, { policy } = {}) {
   const reports = new Map()
   const reportFor = async (command) => {
     const stage = stageFor(command)
-    if (!reports.has(stage))
-      reports.set(stage, await validateIssuesPhase({ featureDir: directory, stage }))
-    return reports.get(stage)
+    const key = `${command.type}:${stage}`
+    if (!reports.has(key)) {
+      const report =
+        command.type === 'complete'
+          ? await validateFeatureArtifacts({ featureDir: directory, root, stage })
+          : await validateIssuesPhase({ featureDir: directory, stage })
+      reports.set(
+        key,
+        command.type === 'complete'
+          ? { ...report.acceptance, ok: report.ok, diagnostics: report.diagnostics }
+          : report,
+      )
+    }
+    return reports.get(key)
   }
   for (const name of FEATURE_PHASES) {
     const phase = manifest.phases[name]
@@ -973,6 +985,18 @@ export async function applyFeatureCommand({
         ...(effective.evidence?.artifacts || []),
       ]
       const artifactHashes = actualHashes(directory, root, paths)
+      if (['complete', 'approve'].includes(command.type) && command.phase !== 'discovery') {
+        const artifacts = await validateFeatureArtifacts({
+          featureDir: directory,
+          root,
+          stage: stageFor(command),
+        })
+        if (!artifacts.ok)
+          fail(
+            `Artifact gate blocked: ${artifacts.diagnostics.map((d) => `${d.path || d.artifact || 'artifact'} ${d.id || d.obligationId || ''}: ${d.message}`).join('; ')}`,
+            'feature-blocked',
+          )
+      }
       const acceptance =
         ['complete', 'approve', 'record-milestone'].includes(command.type) &&
         command.phase !== 'discovery'

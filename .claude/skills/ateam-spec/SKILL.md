@@ -180,3 +180,19 @@ is the done signal; `blocked` retains the reason and requires its resolution.
 The command validates actual stage obligations and binds artifact revisions.
 Do not edit phase status, approval, attempts, milestones, or state by hand.
 Standalone artifact work without a manifest does not create one.
+
+## Executable component declarations
+
+In addition to the narrative screen specification, emit exactly one top-level
+`component-states` JSON fence using `<harness>/runner/ARTIFACTS.md`. Declare stable
+component IDs, page IDs, canonical requirement/obligation IDs, and empty/loading/
+error/populated behavior for every component. A non-applicable state needs a
+concrete reason. Every page has a component declaration; a prose mention alone
+cannot satisfy this gate. Run strict feature artifact validation at `--stage spec`
+before completion. This checks declared criteria, without claiming future human
+studies have occurred.
+
+Preserve the exact accepted `flow-contract` JSON fence from design.md in spec.md.
+Run `prototype-cli.mjs validate --stage spec` as documented in
+`<harness>/runner/PROTOTYPES.md`. Component behavior refers to these node/page/edge
+IDs; navigation-only observations cannot satisfy validation or recovery criteria.

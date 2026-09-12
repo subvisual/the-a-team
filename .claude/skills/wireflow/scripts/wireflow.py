@@ -761,12 +761,27 @@ def main():
                     help="override board['layout']")
     ap.add_argument("--rasterize", action="store_true", help="also emit PNGs (needs cairosvg)")
     ap.add_argument("--print-example", action="store_true")
+    mode = ap.add_mutually_exclusive_group()
+    mode.add_argument("--strict", dest="mode", action="store_const", const="strict")
+    mode.add_argument("--permissive", dest="mode", action="store_const", const="permissive")
+    ap.set_defaults(mode="strict")
+    ap.add_argument("--validate-only", action="store_true")
     a = ap.parse_args()
     if a.print_example:
         print(json.dumps(EXAMPLE, indent=2))
         return
     board = EXAMPLE if not a.spec else json.load(open(a.spec, encoding="utf-8"))
+    from pathlib import Path
+    sys.dont_write_bytecode = True
+    sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "runner" / "scripts"))
+    from artifact_gate import validate, write_receipt
+    validation_board = {**board, "layout": a.layout} if a.layout and isinstance(board, dict) else board
+    report = validate("wireflow", validation_board, a.spec or "built-in-example", a.mode)
+    if a.validate_only:
+        print(json.dumps(report))
+        return
     written, pngs = render_board(board, a.out, a.rasterize, a.layout)
+    write_receipt(report, a.out)
     for p in written + pngs:
         print(p)
 

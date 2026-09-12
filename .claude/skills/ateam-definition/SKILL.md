@@ -185,3 +185,13 @@ is the done signal; `blocked` retains the reason and requires its resolution.
 The command validates actual stage obligations and binds artifact revisions.
 Do not edit phase status, approval, attempts, milestones, or state by hand.
 Standalone artifact work without a manifest does not create one.
+
+## Machine-readable artifact handoff
+
+Write `briefs/wireflow/board.json` and `briefs/pages/board.json` with shared stable
+journey/node/page IDs and actual durable job IDs. Screen nodes carry `pageId`;
+page occurrences name that exact node in `step`; internal connections use
+`targetId`. Each page includes both acceptance layers and canonical requirement/
+obligation IDs. Run the strict feature artifact command before completion, as
+documented in `<harness>/runner/ARTIFACTS.md`. Partial drafts may use explicit
+`--permissive` rendering while their diagnostics remain blocking for handoff.

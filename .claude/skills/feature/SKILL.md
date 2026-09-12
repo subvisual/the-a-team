@@ -627,3 +627,11 @@ linked to the change. Explicit start `task.paths` are target-relative.
 ## Concurrency
 
 One feature at a time (v1). Do not start a second feature while one is in flight.
+
+## Strict artifact gate
+
+The feature CLI validates real wireflow/page-brief sources at definition and
+later stages, and component state declarations from spec onward. Follow
+`<harness>/runner/ARTIFACTS.md`. A permissive render, stale SVG or receipt alone
+cannot advance a phase. Repair invalid IDs or missing criteria in the owning
+source, then rerun completion; do not weaken the canonical obligation ledger.
