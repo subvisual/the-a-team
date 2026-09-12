@@ -98,8 +98,8 @@ The orchestrator sets working context before invoking a phase skill:
 - **Product directory**: `docs/product/`.
 - **Manifest**: `feature.json` in the feature directory. Read it for `slug`,
   `prompt`, `repo`, `base_branch` — and, when set, `gate_policy` and
-  `run_brief` (design reads `fidelity`, dev reads `purpose`). Do not hand-edit
-  fields other than your own phase entry (see "done-signal").
+  `run_brief` (design reads `fidelity`, dev reads `purpose`). Read state and
+  request all mutations through `runner/src/feature-cli.mjs`; never hand-edit it.
 - **Role intake banks**: the harness repo's `intake/` directory — absolute path
   passed at invocation. Rubric pre-work each role skill reads at run start.
   Three banks, one per role: `pm-intake.md`, `design-intake.md`,
@@ -129,6 +129,25 @@ The orchestrator sets working context before invoking a phase skill:
   invocation-authorized CI exceptions never grant blanket configuration access.
   See [the execution contract](runner/EXECUTION.md). No duplicate context or
   design authority is generated to satisfy missing configuration.
+- **Current authority at every task entry**: resolve `current context` through
+  existing target configuration. Its fenced `ateam-context` index identifies
+  purpose/audience, current observations, authority order, global invariants,
+  design/engineering bindings, commands, unresolved decisions and source links.
+  Phase orchestration calls `node <harness>/runner/src/context-cli.mjs select
+  --root <target> --task '<task JSON>'` before dispatch; executor and reviewer
+  startup enforce the same resolution in code. Missing/legacy indexes require
+  project-context bootstrap/revalidation. Stale selected source revisions,
+  code/intent conflicts and configured context-budget overruns block progression.
+  Always include crosscutting obligations by behavior/risk as well as changed
+  paths. Selective reads omit unrelated archives, never applicable invariants.
+  Before independent review, the executor uses the supplied scratch context tool's
+  `revalidate` command to record inspection of changed code/test source revisions;
+  this authored evidence is not approval or integration. Requirement/design/ADR
+  changes require existing authorized decision receipts. Intent facts are preserved.
+  After integration, the context `refresh` command updates affected observed facts
+  with an integration receipt, current hashes and preserved history; it cannot
+  rewrite accepted intent. See [the current-context schema](runner/CONTEXT.md)
+  for exact fields, instrumentation and the configurable operating budget.
 - **Runner approval**: both approval entrypoints validate process results and
   model fields at runtime, then bind review and supervisor-owned checks to a
   fresh detached checkout of the exact committed head. An absent command is not
@@ -149,7 +168,7 @@ The orchestrator sets working context before invoking a phase skill:
 A skill may be invoked directly by a human, outside `/feature`. The manifest is a
 **branch, not a requirement**:
 
-- Manifest present → read `prompt` from it; set your phase status on exit.
+- Manifest present → read `prompt` from it; submit phase completion through the CLI.
 - Manifest absent → take the prompt from invocation args; skip all manifest writes.
 
 Everything else — especially durable writes and their review step — behaves
@@ -250,8 +269,9 @@ Everything else — especially durable writes and their review step — behaves
     say so, record the gap in `research-plan.md`, and continue. An undecided
     shape is a degraded run, and a recorded degradation is not a dishonest one.
 - **Run brief**: capture how the human wants the A-Team to run. The manifest's
-  `run_brief` holds four fields — `purpose`, `fidelity`, `timebox`,
-  `done_looks_like`. The **questions and their answer options** live in
+  `run_brief` retains `purpose`, `fidelity`, `timebox` and `done_looks_like`
+  alongside mode, outcome, assumptions, deliverables, required verification, limits
+  and stopping point. The **questions and their answer options** live in
   `intake/pm-intake.md`; skills read them there rather than carrying copies. Runs alongside the challenge beat but is **not
   skippable with it** — `run_brief` is a required manifest write. Durable
   per-project defaults may live in `context.md` so repeat runs don't re-ask.
@@ -269,12 +289,14 @@ Everything else — especially durable writes and their review step — behaves
   proceed and have the **human** choose the `gate_policy` — `block` (default;
   wait at every gate) / `notify-and-continue` (gates become logged provisional
   checkpoints, reviewed on return) / `run-to-pr` (only the final PR review
-  blocks). Write `gate_policy` + `run_brief` to the manifest. The agent never
+  blocks). Submit `gate_policy` + `run_brief` through the CLI's `configure` command
+  with the existing human decision and explicit provisional scope. The agent never
   chooses the policy; absent an answer, `block` stands. State explicitly:
   "assumptions made after you leave land in `research-plan.md` with confidence
   levels."
-- **Done-signal**: set `phases.discovery.status = "complete"`. No gate — the
-  orchestrator advances to `definition`.
+- **Done-signal**: invoke `feature-cli.mjs complete` with `phase: "discovery"`
+  and the actual JTBD artifacts. The selected run brief determines whether to stop
+  or advance to definition.
 
 #### context.md template — the canonical shape
 
@@ -448,8 +470,8 @@ Full annotated template: the `architecture` skill's
   - `docs/product/epics/NN-<slug>.md` — the Epics: durable delivery structures
     bundling the PRD's requirement IDs, traced to job ids (durable rules apply —
     ids forever, supersede never delete, human review at the gate).
-- **Done-signal**: set `phases.definition.status = "complete"`. The orchestrator
-  flips it to `approved` after the human gate.
+- **Done-signal**: invoke `feature-cli.mjs complete` with `phase: "definition"`.
+  Invoke `approve` only with the recorded human decision bound to current artifacts.
 
 ### `ateam-design` — 📝 draft + review
 
@@ -489,8 +511,8 @@ Full annotated template: the `architecture` skill's
   dropped. Under a non-block `gate_policy` the skill self-selects the
   recommended variant only if the design bank's self-select consent was
   captured at the grill, recorded as a provisional call in `research-plan.md`.
-- **Done-signal**: set `phases.design.status = "complete"`. Orchestrator flips to
-  `approved` after the human gate.
+- **Done-signal**: invoke `feature-cli.mjs complete` with `phase: "design"`.
+  Invoke `approve` only with the recorded human decision bound to current artifacts.
 
 ### `ateam-spec` — 🚀 autonomous
 
@@ -519,8 +541,8 @@ Full annotated template: the `architecture` skill's
   - **`## Components to install`** — the deduplicated list dev needs. Spec
     *names*, dev *installs*: this phase never writes code or touches the
     target repo.
-- **Done-signal**: set `phases.spec.status = "complete"`. No gate; orchestrator
-  advances automatically.
+- **Done-signal**: invoke `feature-cli.mjs complete` with `phase: "spec"`.
+  Current artifacts and obligations due at this stage must pass before advancement.
 
 ## Rules for all phase skills
 
@@ -537,13 +559,15 @@ Full annotated template: the `architecture` skill's
 - **Report blocking flags loudly.** Your return report must surface, as a
   distinct list, every blocking flag your run produced: "serves an unlisted
   job?" signals, `TBD`s inside committed (Must) scope, failed self-checks,
-  qualitative criteria that need a human run. The orchestrator's provisional
+  qualitative criteria due at this stage that need a human run. Report later-stage
+  obligations as visible outstanding work, not as an earlier-stage blocker. The orchestrator's provisional
   gates depend on this list being honest — an empty flags list is a claim,
   not a default.
-- **Only set your own phase's `status` field** in the manifest. The orchestrator owns
-  everything else (state transitions, approvals, attempts, errors). One
-  exception: `ateam-discovery` also writes `gate_policy` and `run_brief` —
-  once, from the human's answers at the independence handoff.
+- **Use the manifest command layer for every state mutation.** Phase skills invoke
+  `complete`, `fail`, or `revise`; the orchestrator invokes `start`, `approve`, and
+  milestone commands. Discovery submits the human's run brief and gate decision
+  through `configure`. Every mutation requires the expected revision and a unique
+  event ID; retries reuse the same ID and identical command.
 - **Be idempotent.** A skill may be re-invoked (revise loop, resume after crash).
   Overwrite per-feature artifacts cleanly rather than appending duplicates; update
   durable artifacts in place per the superseding rules above.
@@ -607,5 +631,57 @@ Star, and the two must never be conflated to justify each other.
 
 `pending` → `in_progress` → `complete` → (`approved` for gated phases) | `failed` | `aborted`
 
-Phase skills only ever set `complete` (or leave `in_progress`/`failed` on error).
-`approved`, `failed`-escalation, and `aborted` are set by the orchestrator.
+These are command-layer states, never instructions to edit JSON. Changed bound
+artifacts produce `stale` state. Legacy `done`/provisional data is retained as
+history and migrated without inventing approval or acceptance.
+
+## Executable phase and acceptance gates
+
+`runner/src/feature-cli.mjs` owns manifest schema version 2. Each command reads
+actual artifacts, checks their hashes and obligations, and atomically appends an
+event. See the feature skill for complete command inputs. A run brief records
+mode, outcome, assumptions, deliverables, required verification, limits and a
+stopping point. Discovery-only stops after discovery; prototype can stop at design
+or proceed to coded dev; implementation-PR and refinement stop at PR review.
+
+`acceptance.json` is the feature's versioned obligation ledger. Product, design
+and engineering obligations retain their IDs, statement, method, required stage,
+owner, evidence and status across PRD, specification, page briefs and tickets.
+The issues gate reads those actual files through `obligations-cli.mjs issues`.
+An automated check does not satisfy a rendered review or a human study. Unknown
+owners and authorized deferrals remain visible; a deferral needs an actor,
+decision reference, rationale, consequence and next decision stage. Revised
+requirements and performance benchmarks retain contiguous immutable history and
+invalidate old evidence; workload, units, threshold, method and scope are versioned.
+
+Implementation, verification, human acceptance, integration, release and product
+validation are six independent milestone records. An observed merge can record
+integration while later human acceptance remains pending. Neither phase approval
+nor a passing test implies release, product validation or delivery to the intended
+target. GitHub projections remain open until integration into that target is
+observed and explicitly recorded.
+
+## Existing-product refinement
+
+Use `configure-refinement` with a short authorized change record to select the
+smallest route supported by current context and uncertainty. It retains linked
+obligations, invariants, delta, surfaces, dependencies, risks, selected revisions,
+verification methods, dispositions and result. Known defects reuse accepted
+discovery, PRD, boards and conventions. New audiences, jobs or load-bearing
+assumptions reopen discovery; interaction/accessibility changes require design
+review; architecture, authorization, business rules and migrations require the
+corresponding review regardless of diff size.
+
+Behavior changes require meaningful regression evidence and independent review.
+Low-impact copy/styling may use existing checks and rendered review. Save/retry
+fixtures cover failed first save followed by retry, edits in flight, blocked
+dependent submission and unsaved navigation. Accepted tokens and architecture
+remain bound unless the authorized delta and relevant review explicitly change
+them. Scope auditing compares actual file changes against the recorded baseline,
+preserves inherited work and permits refresh only of affected artifacts.
+
+`finish-refinement` reuses a delivered local runner approval for the current
+ticket and exact reviewed revision, validates current context and method-specific
+evidence, and records the result. It leaves human acceptance, integration, release
+and product validation independent. See [runner/REFINEMENT.md](runner/REFINEMENT.md)
+for the change and completion formats.

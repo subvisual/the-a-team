@@ -1,3 +1,6 @@
+import { createHash } from 'node:crypto'
+import { writeCurrentContext } from './helpers/current-context.mjs'
+import { execFileSync } from 'node:child_process'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
@@ -32,7 +35,7 @@ test(
     writeFileSync(
       executable,
       `#!${realpathSync(process.execPath)}
-const fs=require('fs');let escaped=true;try{fs.writeFileSync(${JSON.stringify(join(root, 'outside'))},'bad')}catch{escaped=false};fs.writeFileSync(process.env.TMPDIR+'/build','ok');console.log(JSON.stringify({is_error:false,structured_output:{escaped,github:process.env.GH_TOKEN,canary:process.env.UNRELATED_CANARY},session_id:'synthetic',total_cost_usd:0}));`,
+const fs=require('fs');let escaped=true;try{fs.writeFileSync(${JSON.stringify(join(root, 'outside'))},'bad')}catch{escaped=false};fs.writeFileSync(process.env.TMPDIR+'/build','ok');console.log(JSON.stringify({is_error:false,structured_output:{escaped,github:process.env.GH_TOKEN,canary:process.env.UNRELATED_CANARY},session_id:'synthetic',total_cost_usd:0,usage:{input_tokens:19}}));`,
       { mode: 0o755 },
     )
     const oldPath = process.env.PATH
@@ -58,6 +61,7 @@ const fs=require('fs');let escaped=true;try{fs.writeFileSync(${JSON.stringify(jo
       modelEnv: { GH_TOKEN: 'fake', UNRELATED_CANARY: 'synthetic' },
     })
     assert.equal(result.ok, true, result.errors?.join('\n'))
+    assert.deepEqual(result.usage, { input_tokens: 19 })
     assert.deepEqual(result.structured, { escaped: false })
     assert.equal(existsSync(join(root, 'outside')), false)
     assert.ok(existsSync(join(runDir, 'executor.result.json')))
@@ -109,12 +113,38 @@ test(
       executable,
       `#!${realpathSync(process.execPath)}
 const fs=require('fs'),cp=require('child_process');const executor=process.argv[process.argv.indexOf('--tools')+1].split(',').includes('Edit');
-if(executor){fs.writeFileSync('value.txt','good\\n');for(const args of [['add','value.txt'],['commit','-m','fix']]){const r=cp.spawnSync('/usr/bin/git',args,{encoding:'utf8'});if(r.status!==0)throw new Error(r.stderr)}}
+if(executor){
+fs.writeFileSync('value.txt','good\\n');
+const crypto=require('crypto'),hash=value=>crypto.createHash('sha256').update(value).digest('hex');
+const tool=process.argv.at(-1).match(/^Context tools: (.+)$/m)[1],revision=hash(fs.readFileSync('value.txt'));
+fs.writeFileSync('context-inspection.json',JSON.stringify({method:'verification',summary:'Synthetic value check and source inspection',sourceRevisions:{value:revision}}));
+fs.writeFileSync('context-update.json',JSON.stringify({expectedIndexRevision:hash(fs.readFileSync('docs/product/context.md')),validation:{id:'synthetic-inspection',actor:'synthetic-executor',evidence:'context-inspection.json'},sources:[{id:'value',revision}],facts:[]}));
+const refreshed=cp.spawnSync(process.execPath,[tool,'revalidate','--root',process.cwd(),'--policy',process.argv.at(-1).match(/^Context policy: (.+)$/m)[1],'--update','context-update.json'],{encoding:'utf8'});if(refreshed.status!==0)throw new Error(refreshed.stdout+refreshed.stderr);
+fs.unlinkSync('context-update.json');
+for(const args of [['add','value.txt','docs/product/context.md','context-inspection.json'],['commit','-m','fix']]){const r=cp.spawnSync('/usr/bin/git',args,{encoding:'utf8'});if(r.status!==0)throw new Error(r.stderr)}}
 const check=cp.spawnSync('/bin/sh',['-c','test "$(cat value.txt)" = good'],{encoding:'utf8'});
 const structured=executor?{status:'done',summary:'fixed',blocked_reason:'',tests_command:'test value',tests_ran:true,tests_passed:check.status===0}:{verdict:'approve',unmet_ac:[],notes:'committed source checked',tests_ran:true,tests_passed:check.status===0,test_command:'test value',test_output:'green'};
 console.log(JSON.stringify({is_error:false,structured_output:structured,session_id:executor?'synthetic-executor':'synthetic-reviewer',total_cost_usd:0}));`,
       { mode: 0o755 },
     )
+    writeCurrentContext(repoPath, ['test "$(cat value.txt)" = good'])
+    const contextFile = join(repoPath, 'docs/product/context.md')
+    const current = readFileSync(contextFile, 'utf8')
+    const index = JSON.parse(current.split('\n').slice(1, -2).join('\n'))
+    index.sources = [
+      {
+        id: 'value',
+        kind: 'code',
+        path: 'value.txt',
+        global: true,
+        revision: createHash('sha256')
+          .update(readFileSync(join(repoPath, 'value.txt')))
+          .digest('hex'),
+      },
+    ]
+    writeFileSync(contextFile, '```ateam-context\n' + JSON.stringify(index) + '\n```\n')
+    execFileSync('git', ['add', 'docs/product/context.md'], { cwd: repoPath })
+    execFileSync('git', ['commit', '-m', 'Record synthetic current authority'], { cwd: repoPath })
     const policy = await resolvePolicy({
       repoPath,
       cfg: {

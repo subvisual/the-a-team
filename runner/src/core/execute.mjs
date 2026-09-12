@@ -1,5 +1,12 @@
+import {
+  selectTaskContext,
+  assertCurrentContext,
+  contextPrompt,
+  recordContextSelection,
+  prepareContextTools,
+} from '../context.mjs'
 import { existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
 import { runClaude } from '../claude.mjs'
 import { normalizeExecutor } from './results.mjs'
 
@@ -57,11 +64,14 @@ export function executorPrompt({
   revision,
   policy,
   scratchDir,
+  context,
+  contextTools,
 }) {
   const criteria = issue.acceptanceCriteria.map((c, i) => `${i + 1}. ${c}`).join('\n')
   const pointers = productDocPointers(worktree, policy)
 
   const parts = [
+    context ? contextPrompt(context) : '',
     'You are implementing one issue in an isolated git worktree. You are running unattended: there is nobody to ask.',
     '',
     '## The issue',
@@ -107,6 +117,12 @@ export function executorPrompt({
     'The declared verification contract is fixed by the supervisor. Report the commands you ran without replacing that contract.',
     '',
     '## How to work',
+    contextTools ? `Context tools: ${contextTools}` : '',
+    contextTools ? `Context policy: ${join(dirname(contextTools), 'context-policy.json')}` : '',
+    '- If implementation edits a selected source, inspect the changed source and record exact new hashes and verification/source-inspection evidence. Before your final commit, run the context tool revalidate command with a revision-checked update, as documented in the current-context tool contract below. This records authored observations for independent review; it does not establish approval or integration. Never revalidate changed requirements/design/ADRs without a recorded authorized decision.',
+    contextTools
+      ? 'Revalidation CLI: node <context tools path> revalidate --root <worktree> --policy <context policy path> --update <update.json>. Update JSON: {expectedIndexRevision, validation:{id,actor,evidence}, sources:[{id,revision}], facts:[complete replacement observed facts]}. The target-relative evidence file is JSON {method:"source-inspection" or "verification",summary,sourceRevisions:{sourceId:sha256}}. Hash exact file bytes. Preserve intent facts and unresolved decisions. Re-run select afterward; stale observations must not govern review.'
+      : '',
     '',
     '- TDD in vertical slices: one failing test, the minimal code to pass it, then the next. Never write every test up front — bulk tests verify imagined behaviour.',
     '- Test observable behaviour through the public interface. Expected values are independent literals or worked examples, never recomputed the way the code computes them.',
@@ -158,6 +174,10 @@ export async function execute({
   scratchDir,
   deps = {},
 }) {
+  const context = assertCurrentContext(selectTaskContext({ root: worktree, policy, task: issue }))
+  const contextTools = prepareContextTools(scratchDir, policy)
+  const contextRole = revision ? `executor-cycle${revision.cycle}` : 'executor'
+  recordContextSelection({ runDir, role: contextRole, selection: context })
   const result = await (deps.runClaude || runClaude)({
     cwd: worktree,
     policy,
@@ -171,6 +191,8 @@ export async function execute({
       revision,
       policy,
       scratchDir,
+      context,
+      contextTools,
     }),
     tools: EXECUTOR_TOOLS,
     model,
@@ -181,6 +203,7 @@ export async function execute({
     runDir,
   })
 
+  recordContextSelection({ runDir, role: contextRole, selection: context, usage: result.usage })
   try {
     return normalizeExecutor(result)
   } catch (error) {

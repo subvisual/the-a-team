@@ -1,3 +1,4 @@
+import { currentContextFixture } from './helpers/current-context.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { execute } from '../src/core/execute.mjs'
@@ -31,10 +32,10 @@ for (const [name, fn, structured] of [
     },
   ],
 ]) {
-  test(`${name} forwards bounded timeout and retains failed-provider accounting`, async () => {
+  test(`${name} forwards bounded timeout and retains failed-provider accounting`, async (t) => {
     const options = {
       issue,
-      worktree: '.',
+      worktree: currentContextFixture(t),
       policy: { bindings: {} },
       timeoutMs: 321,
       budgetUsd: 0.25,

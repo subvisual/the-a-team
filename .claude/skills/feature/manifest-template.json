@@ -4,52 +4,12 @@
   "repo": "<target repo path>",
   "base_branch": "main",
   "branch": "feature/<slug>",
+  "schemaVersion": 2,
+  "revision": 0,
   "state": "discovery",
   "gate_policy": "block",
+  "gate_authorization": null,
   "execution_policy": null,
-  "run_brief": {
-    "purpose": null,
-    "fidelity": null,
-    "timebox": null,
-    "done_looks_like": null
-  },
-  "phases": {
-    "discovery": {
-      "status": "pending",
-      "artifact": "../../product/jtbd/",
-      "attempts": 0
-    },
-    "definition": {
-      "status": "pending",
-      "artifact": "prd.md",
-      "attempts": 0
-    },
-    "design": {
-      "status": "pending",
-      "artifact": "design.md",
-      "attempts": 0
-    },
-    "spec": {
-      "status": "pending",
-      "artifact": "spec.md",
-      "attempts": 0
-    },
-    "issues": {
-      "status": "pending",
-      "artifact": "issues.md",
-      "attempts": 0
-    },
-    "dev": {
-      "status": "pending",
-      "attempts": 0,
-      "issues": {}
-    },
-    "pr": {
-      "status": "pending",
-      "attempts": 0
-    }
-  },
-  "last_error": null,
   "execution_limits": {
     "runBudgetUsd": 45,
     "executorBudgetUsd": 10,
@@ -58,5 +18,130 @@
     "sessionTimeoutMs": 1200000,
     "maxCycles": 3
   },
-  "recovery_authorization": null
+  "recovery_authorization": null,
+  "run_brief": {
+    "purpose": null,
+    "fidelity": null,
+    "timebox": null,
+    "done_looks_like": null,
+    "outcome": null,
+    "assumptions": [],
+    "deliverables": [],
+    "required_verification": [],
+    "limits": {},
+    "mode": "implementation-pr",
+    "stopping_point": "pr"
+  },
+  "phases": {
+    "discovery": {
+      "status": "pending",
+      "attempts": 0,
+      "artifacts": [],
+      "bindings": {},
+      "decisions": [],
+      "blocking_flags": [],
+      "depends_on": []
+    },
+    "definition": {
+      "status": "pending",
+      "attempts": 0,
+      "artifacts": [],
+      "bindings": {},
+      "decisions": [],
+      "blocking_flags": [],
+      "depends_on": [
+        "discovery"
+      ]
+    },
+    "design": {
+      "status": "pending",
+      "attempts": 0,
+      "artifacts": [],
+      "bindings": {},
+      "decisions": [],
+      "blocking_flags": [],
+      "depends_on": [
+        "definition"
+      ]
+    },
+    "spec": {
+      "status": "pending",
+      "attempts": 0,
+      "artifacts": [],
+      "bindings": {},
+      "decisions": [],
+      "blocking_flags": [],
+      "depends_on": [
+        "design"
+      ]
+    },
+    "issues": {
+      "status": "pending",
+      "attempts": 0,
+      "artifacts": [],
+      "bindings": {},
+      "decisions": [],
+      "blocking_flags": [],
+      "depends_on": [
+        "spec"
+      ]
+    },
+    "dev": {
+      "status": "pending",
+      "attempts": 0,
+      "artifacts": [],
+      "bindings": {},
+      "decisions": [],
+      "blocking_flags": [],
+      "depends_on": [
+        "issues"
+      ],
+      "issues": {}
+    },
+    "pr": {
+      "status": "pending",
+      "attempts": 0,
+      "artifacts": [],
+      "bindings": {},
+      "decisions": [],
+      "blocking_flags": [],
+      "depends_on": [
+        "dev"
+      ]
+    }
+  },
+  "milestones": {
+    "implementation": {
+      "status": "pending",
+      "bindings": {},
+      "records": []
+    },
+    "verification": {
+      "status": "pending",
+      "bindings": {},
+      "records": []
+    },
+    "human_acceptance": {
+      "status": "pending",
+      "bindings": {},
+      "records": []
+    },
+    "integration": {
+      "status": "pending",
+      "bindings": {},
+      "records": []
+    },
+    "release": {
+      "status": "pending",
+      "bindings": {},
+      "records": []
+    },
+    "product_validation": {
+      "status": "pending",
+      "bindings": {},
+      "records": []
+    }
+  },
+  "event_history": [],
+  "last_error": null
 }

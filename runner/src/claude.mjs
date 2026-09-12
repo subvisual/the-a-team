@@ -154,6 +154,7 @@ export async function runClaude({
     structured: payload?.structured_output ?? null,
     text: payload?.result ?? '',
     costUsd: payload?.total_cost_usd,
+    usage: payload?.usage ?? null,
     timedOut: timedOut === true,
     terminalReason: payload?.terminal_reason ?? null,
     errors: payload?.errors ?? (stderr.trim() ? [stderr.trim().split('\n')[0]] : []),

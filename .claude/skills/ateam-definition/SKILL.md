@@ -41,7 +41,7 @@ reference re-reads.
     with confidence.
   - Together, `prd.md` (requirements + ACs) and the briefs ARE the ticket
     backlog input the issues phase decomposes later — no separate backlog file.
-- **Done-signal**: set `phases.definition.status = "complete"` — nothing else
+- **Done-signal**: successful transition CLI `complete` result — nothing else
   in the manifest. The orchestrator flips it to `approved` at the gate.
 - **Manifest-optional**: absent → prompt from invocation args, skip manifest
   writes, and the in-conversation review replaces the orchestrator gate.
@@ -119,7 +119,7 @@ Commit per craft with breadcrumb messages naming what changed and why
 `docs(<slug>): wireflow — 3 journeys, spine J1 …`, `docs(<slug>): page
 briefs — P1–P5 …`). Artifact commits stage both layers (`docs/features/<slug>`
 + `docs/product`); never sweep artifacts into a chore commit. Manifest
-present: set **only** `phases.definition.status = "complete"`.
+present: call the completion command below.
 
 ### 7. Gate report (what the tripwire reads)
 
@@ -164,5 +164,24 @@ first.
 - Cotton tests are marked human-run; the activity is in the research plan.
 - `[definition phase]` assumptions are appended to research-plan.md with
   confidence.
-- Manifest (if present): own status `complete`, nothing else touched.
+- Manifest (if present): completion command returned success; no direct manifest assignments.
 - The gate report's blocking-flags list is complete and honest.
+
+## Deterministic completion
+
+When a feature manifest exists, the orchestrator calls `feature-cli.mjs start`
+before invoking this skill. After writing the artifacts and collecting the
+report, read `node <harness>/runner/src/feature-cli.mjs show --feature <feature-dir>`
+and call the following with that manifest revision and one stable event ID for
+this completion attempt. Reuse the same ID only to replay the identical operation
+after interruption; changed inputs require a new ID.
+
+```sh
+node <harness>/runner/src/feature-cli.mjs complete --feature <feature-dir> --expected-revision <revision> --event-id <completion-id> --input '{"phase":"definition","artifacts":["prd.md","briefs"],"blocking_flags":[]}'
+```
+
+Replace `blocking_flags` with the actual concrete flags from the report. Success
+is the done signal; `blocked` retains the reason and requires its resolution.
+The command validates actual stage obligations and binds artifact revisions.
+Do not edit phase status, approval, attempts, milestones, or state by hand.
+Standalone artifact work without a manifest does not create one.

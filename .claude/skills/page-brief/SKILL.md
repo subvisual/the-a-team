@@ -64,6 +64,26 @@ Commit per run: `docs(<slug>): page briefs`.
     **"not yet run with a human"** (never self-certified); the gate reviews the full catalog with
     the flags headlined, and the revise loop fixes what's wrong.
 
+## Acceptance lineage in board metadata
+
+Read `acceptance.json` when the feature PRD exists. The canonical schema is in
+`../prd-writer/SKILL.md` under **Acceptance obligation ledger**. Preserve the
+stable requirement ID/version and obligation IDs behind every page criterion.
+In `board.json`, add a top-level `acceptanceObligations` array containing exact
+canonical definition snapshots for the page obligations; a Markdown page brief
+uses one `acceptance-obligations` JSON fence instead. This is board metadata,
+not an extra visible card field. Register every actual board/Markdown page brief
+and its applicable obligation IDs in the canonical artifact inventory through
+the PRD owner; do not independently rewrite that ledger.
+
+Qualitative criteria remain `human-study` obligations marked pending in the
+ledger until a person runs the study and records evidence. A rendering check
+supports a separate `rendered-review` obligation; it does not satisfy the cotton
+test or a comparative usability study. Preserve benchmark definitions and
+acceptance stages without weakening them. If briefs precede the PRD, hand all
+factual and qualitative criteria to prd-writer for canonical IDs and return to
+attach those IDs before the issues-phase coverage gate.
+
 ## The card (7 fields, 3 blocks)
 
 ```

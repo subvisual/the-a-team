@@ -75,6 +75,34 @@ actually do, the test suite if one exists. The report's shipped-claims are
 grounded here. An epic the artifacts call done but the code doesn't evidence
 is reported as **partial**, with the gap named — never smoothed over.
 
+## Report acceptance separately from implementation
+
+Read the run's `acceptance.json` and validation report alongside the code. The
+schema is in `../prd-writer/SKILL.md` under **Acceptance obligation ledger**.
+Report each requirement's stable ID/version and remaining pending, blocked,
+deferred, or unresolved-owner obligations. Name their validation method,
+accountable owner/role, and required stage. For deferrals, preserve the actor,
+authorized decision reference, rationale, consequence, and next decision stage.
+
+Code and automated tests support implementation and automated verification.
+Rendered review, human acceptance, integration, release, and product validation
+need their own recorded evidence when required; a completed ticket or open PR
+cannot substitute. A comparative usability study stays pending without recorded
+human-study evidence, even when its latency benchmark passes. Keep benchmark
+versions, workload, units, thresholds, method, scope, and evidence version clear.
+
+Use the file gate at the stage actually being claimed, for example:
+
+```sh
+node runner/src/obligations-cli.mjs issues --feature /absolute/target/docs/features/<slug> --stage product-validation
+```
+
+A requirement is accepted only when all obligations are satisfied with current,
+matching evidence and valid artifact coverage. An authorized deferral may permit
+a prior stage's advancement but remains outstanding and does not make a
+requirement accepted. The report never changes ledger status or self-certifies
+a human study; gaps remain explicit and link to their canonical obligations.
+
 ## Workflow
 
 1. **Read the durable layer first** (context → jobs → epics → ADRs → plans), then the
@@ -83,10 +111,11 @@ is reported as **partial**, with the gap named — never smoothed over.
 2. **Read the code.** Walk the integrated feature branch: what exists, what
    runs, which requirements have visible implementation. Map each epic's
    "Requirements realized" to concrete evidence (file, behavior, or test).
-3. **Reconcile.** Three verdicts per epic: **shipped** (code evidences it),
-   **partial** (some requirements real, gap named), **not shipped** (nothing
+3. **Reconcile.** Three implementation verdicts per epic: **implemented** (code evidences it),
+   **partial** (some requirements real, gap named), **not implemented** (nothing
    real yet). Where built reality contradicts an artifact, the report states
-   the reality and cites the artifact it contradicts.
+   the reality and cites the artifact it contradicts. Report requirement acceptance
+   separately using the ledger; shipped code does not imply product validation.
 4. **Compile the scope table** — every epic, cited `[[epic:NN]]`, with its
    MoSCoW class, the jobs it serves (`[[NN]]`), verdict, and evidence pointer.
    Epic detail stays in the epic files; the report indexes, never restates.
@@ -127,3 +156,15 @@ is reported as **partial**, with the gap named — never smoothed over.
 - Never rewrites `prd.md` or any other phase's artifact.
 - Never reports intentions as shipped. "The issue was marked complete" is not
   evidence; the code is.
+
+## Independent feature milestones
+
+Read `feature-cli.mjs show --feature <feature-dir>` and report all six milestone
+keys: implementation, verification, human_acceptance, integration, release,
+and product_validation. Distinguish pending, recorded, stale and unknown; link
+the current revision-bound receipts and retained decision history. A PR report
+can describe implemented code on the feature branch, but “released” requires
+a release receipt and “integrated” requires the intended target merge receipt.
+PR creation/review and locally assembling issue branches supply neither.
+A legacy `done` or provisional flag must remain unknown/stale until revalidated.
+This reporting skill observes milestones and never writes or certifies them.

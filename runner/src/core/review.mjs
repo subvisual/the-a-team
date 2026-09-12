@@ -1,6 +1,12 @@
+import {
+  selectTaskContext,
+  assertCurrentContext,
+  contextPrompt,
+  recordContextSelection,
+} from '../context.mjs'
 import { runClaude } from '../claude.mjs'
 import { normalizeReviewer } from './results.mjs'
-import { diffStat } from '../git.mjs'
+import { diffStat, git } from '../git.mjs'
 
 // No Edit, no Write, no push credential (RUNNER.md, "Reviewer").
 export const REVIEWER_TOOLS = ['Bash', 'Read', 'Glob', 'Grep']
@@ -48,9 +54,11 @@ export function reviewerPrompt({
   stat,
   policy,
   scratchDir,
+  context,
 }) {
   const criteria = issue.acceptanceCriteria.map((c, i) => `${i + 1}. ${c}`).join('\n')
   return [
+    context ? contextPrompt(context) : '',
     'You are an independent reviewer. You did not write this code and you have no access to the session that did.',
     'Your one question: does this diff satisfy the acceptance criteria of the issue?',
     '',
@@ -103,8 +111,18 @@ export function reviewerPrompt({
     .join('\n')
 }
 
-export function revisionPrompt({ head, stat, base, worktree, testCommand, scratchDir, policy }) {
+export function revisionPrompt({
+  head,
+  stat,
+  base,
+  worktree,
+  testCommand,
+  scratchDir,
+  policy,
+  context,
+}) {
   return [
+    context ? contextPrompt(context) : '',
     'The implementer has pushed a revision addressing your previous review.',
     '',
     `The new revision is \`${head}\`.`,
@@ -153,16 +171,39 @@ export async function review({
   deps = {},
 }) {
   let stat = ''
+  let paths = issue.paths || []
   try {
     stat = await diffStat(repoPath || worktree, base, head)
+    const changed = await git(repoPath || worktree, [
+      'diff',
+      '--name-only',
+      '-z',
+      `${base}...${head}`,
+    ])
+    paths = [...paths, ...changed.stdout.split('\0').filter(Boolean)]
   } catch {
     /* best effort */
   }
 
+  const context = assertCurrentContext(
+    selectTaskContext({ root: worktree, policy, task: { ...issue, paths } }),
+  )
   const prompt = resumeSessionId
-    ? revisionPrompt({ head, stat, base, worktree, testCommand, scratchDir, policy })
-    : reviewerPrompt({ issue, base, head, worktree, testCommand, stat, policy, scratchDir })
+    ? revisionPrompt({ head, stat, base, worktree, testCommand, scratchDir, policy, context })
+    : reviewerPrompt({
+        issue,
+        base,
+        head,
+        worktree,
+        testCommand,
+        stat,
+        policy,
+        scratchDir,
+        context,
+      })
 
+  const contextRole = `reviewer-cycle${cycle}`
+  recordContextSelection({ runDir, role: contextRole, selection: context })
   const result = await (deps.runClaude || runClaude)({
     cwd: worktree,
     policy,
@@ -178,6 +219,7 @@ export async function review({
     runDir,
   })
 
+  recordContextSelection({ runDir, role: contextRole, selection: context, usage: result.usage })
   try {
     return normalizeReviewer(result)
   } catch (error) {

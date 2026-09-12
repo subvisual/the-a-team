@@ -1,3 +1,4 @@
+import { currentContextFixture } from './helpers/current-context.mjs'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execute } from '../src/core/execute.mjs'
@@ -27,13 +28,14 @@ for (const role of ['executor', 'reviewer'])
     ['string boolean', { ...(role === 'executor' ? executor : reviewer), tests_passed: 'false' }],
     ['unknown', { ...(role === 'executor' ? executor : reviewer), approved: true }],
   ])
-    test(`${role} validates raw ${name} before normalization`, async () => {
+    test(`${role} validates raw ${name} before normalization`, async (t) => {
+      const worktree = currentContextFixture(t)
       const fn = role === 'executor' ? execute : review
       await assert.rejects(
         () =>
           fn({
             issue,
-            worktree: '/tmp',
+            worktree,
             base: 'a',
             head: 'b',
             branch: 'b',
@@ -55,12 +57,13 @@ for (const [role, fn] of [
   ['executor', execute],
   ['reviewer', review],
 ])
-  test(`${role} retains failed process reason when structured output is absent`, async () => {
+  test(`${role} retains failed process reason when structured output is absent`, async (t) => {
+    const worktree = currentContextFixture(t)
     await assert.rejects(
       () =>
         fn({
           issue,
-          worktree: '/tmp',
+          worktree,
           base: 'a',
           head: 'b',
           branch: 'b',

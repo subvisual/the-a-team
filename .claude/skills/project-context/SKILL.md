@@ -39,6 +39,28 @@ raw evidence under `<target>/docs/product/input/`. Git-commit the change only
 where a repo exists — one commit per run, message naming what changed and why
 (e.g. `docs(context): ingest 2026-07-24 client call; 3 glossary terms settled`).
 
+## Current authority index and selective reads
+
+Resolve the target's existing `current context` config binding before choosing a
+write path; it overrides the default path above. Maintain one fenced
+`ateam-context` JSON index in that document using `runner/CONTEXT.md`. Keep purpose,
+audience, observed state, authority order, global invariants, design/engineering
+bindings, commands, unresolved decisions and authoritative source links concise.
+Record exact source hashes; facts distinguish accepted intent from observation.
+
+For every non-bootstrap task run
+`node <harness>/runner/src/context-cli.mjs select --root <target> --task '<task JSON>'`.
+Pass paths, linked obligations and behavior/risk tags. Stop on stale/conflicting
+context or an exceeded configured budget. Revalidate relevant sources; do not
+import every archive or infer changed intent from built code. If no index exists,
+bootstrap it from reviewed existing authority and explicit unknowns, preserve the
+narrative/history, then rerun selection before starting downstream phases.
+
+After verified integration, use the `refresh` command documented in
+`runner/CONTEXT.md` with the integration receipt and affected observed facts.
+This preserves prior facts/provenance. Product intent changes use the existing
+human decision path; a completion refresh cannot authorize them.
+
 ## When to use
 
 - A project has no context layer yet (Stage-0 setup) — seed `context.md` from
