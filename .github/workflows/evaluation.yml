@@ -57,4 +57,5 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 # Success establishes only the declared deterministic checks. The summary retains
-# issue 37 as unsupported/release-ineligible; no provider or human trial runs here.
+# whole-tree containment as unsupported under #37's accepted native scope;
+# synthetic checks are not release approval. No provider or human trial runs here.

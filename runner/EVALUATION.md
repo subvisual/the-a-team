@@ -2,7 +2,7 @@
 
 Issue #52 adds 20 explicit scenarios in [`evaluation/catalog.json`](evaluation/catalog.json). They reuse earlier regression fixtures and include actual Node and Python target execution plus native browser interaction. The ordinary `npm test` suite remains required and independent. These checks measure declared deterministic behavior. They do not establish model capability, expert judgment, human usability, production readiness, or a productivity multiplier.
 
-**Release eligibility remains false.** Issue #37 is an unresolved, unsupported process-termination dependency. Passing existing macOS boundary controls cannot discharge it. Every corpus summary retains `releaseEvidence.eligible: false` and an `unresolvedDependencies` entry for #37. No agent trial or live-provider pilot becomes authorized by a passing corpus.
+**This synthetic corpus does not establish release eligibility.** The accepted native macOS scope of #37 includes process-group and observed-descendant cleanup; whole-process-tree containment remains unsupported. Every corpus summary retains `releaseEvidence.eligible: false` and an `unresolvedDependencies` entry for that unsupported capability. The field describes a technical limitation, not the GitHub issue state or a requirement to keep #37 open. Passing boundary checks cannot establish full containment. No agent trial or live-provider pilot becomes authorized by a passing corpus.
 
 ## Run and inspect
 

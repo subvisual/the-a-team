@@ -12,7 +12,7 @@
   "doesNotMeasure": [
     "Model capability",
     "Human usability",
-    "Process-tree containment for unresolved issue 37",
+    "Whole-process-tree containment beyond the accepted native scope of issue 37",
     "Production readiness"
   ],
   "releaseEligible": false

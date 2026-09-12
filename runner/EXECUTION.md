@@ -243,15 +243,23 @@ See [CLI.md](CLI.md) for pure dry-runs and the versioned stdout envelope.
 
 ## Retained allowances and process timeouts
 
-**Issue #37 remains partial.** Spend accounting, recovery windows and observed
-process cleanup are implemented. This macOS backend does not yet guarantee the
-issue's whole-process-tree termination criterion: a detached descendant can
-orphan itself between ancestry snapshots and survive a timeout. A synthetic
-three-generation process reproduced this limitation. Keep #37 open until a
-supported lifecycle containment mechanism passes that regression. Run the local diagnostic explicitly with `node runner/test/fixtures/orphan-timeout-probe.mjs` from the repository root; it cleans up its own synthetic descendant and is excluded from the passing acceptance suite. A single non-reproduction does not establish containment.
+**Accepted native macOS scope for [#37](https://github.com/subvisual/the-a-team/issues/37), 11 September 2026.**
+The maintainer accepted the existing process-based solution: aggregate spend and
+wall-time budgets, retained recovery accounting, and timeout cleanup of the
+original process group and observed descendants, with TERM followed by KILL after
+a one-second grace period. This requires no new user setup. Privileged helpers,
+dedicated execution accounts, containers and VMs are outside this scope.
 
-The maintainer selected native macOS on 10 September 2026 and explicitly left
-this criterion unresolved. A container/VM backend is outside the selected scope.
+Whole-process-tree containment is not guaranteed. A detached descendant can orphan
+itself between ancestry snapshots and survive a timeout; a synthetic
+three-generation process reproduced this limitation. The original absolute
+termination requirement is excluded from the accepted scope, and closing #37
+records that decision rather than proof that this escape is fixed. Run the local
+diagnostic explicitly with `node runner/test/fixtures/orphan-timeout-probe.mjs`
+from the repository root; it cleans up its own synthetic descendant and is
+excluded from the passing acceptance suite. A single non-reproduction does not
+establish containment.
+
 Bounded native research found no supported drop-in fix: `NOTE_TRACK` returned
 `ENOTSUP`, and denying direct `setsid`/`setpgid` still allowed new groups/sessions
 through `posix_spawn` flags. These results match the separate paths in
@@ -259,8 +267,8 @@ through `posix_spawn` flags. These results match the separate paths in
 and [XNU spawn handling](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_exec.c#L4189-L4210).
 All eight synthetic children in that probe were reaped and independently found
 absent afterward. No VM, container runtime or host service was started. Keep this
-known limitation visible in evaluation results and any release-scope decision;
-passing other boundary tests does not resolve #37.
+accepted limitation visible in evaluation results and any release-scope decision;
+passing other boundary tests does not establish whole-tree containment.
 
 Resolved policy includes `limits`: aggregate `runBudgetUsd` (45 by default),
 `executorBudgetUsd` (10), `reviewerBudgetUsd` (5), `runTimeoutMs` (7,200,000),

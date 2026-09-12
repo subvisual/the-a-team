@@ -149,9 +149,9 @@ may push a validated branch and open a PR according to the supervisor policy.
 
 ## Allowances and recovery
 
-Issue #37 is partial: the macOS ancestry tracker can stop observed descendants,
-but fast-orphaned detached descendants may survive. Whole-tree lifecycle
-containment remains an open prerequisite; see the reproduced limitation in
+Issue #37 accepts native macOS process-group and observed-descendant cleanup.
+Fast-orphaned detached descendants may survive; absolute whole-tree containment
+is outside the accepted scope. See the reproduced limitation in
 [EXECUTION.md](EXECUTION.md#retained-allowances-and-process-timeouts).
 
 `--run-budget USD`, `--budget USD` and `--reviewer-budget USD` select the aggregate

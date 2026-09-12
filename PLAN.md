@@ -573,5 +573,5 @@ The reproducibility corpus and `runner/PILOT-PROTOCOL.md` provide the prerequisi
 and checklist for separately authorized pilots. Measure human-accepted increments
 per attributable human hour across all attempts; report matched ordinary-assisted
 comparison limitations, separate delivery/validation milestones, and generalized
-append-only learning checkpoints. The shipped dataset is synthetic. Current #37
-remains unresolved; no live pilot or adoption claim follows from these templates.
+append-only learning checkpoints. The shipped dataset is synthetic. The accepted native containment limitation in
+#37 remains visible; no live pilot or adoption claim follows from these templates.

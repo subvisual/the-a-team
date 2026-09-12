@@ -1,4 +1,4 @@
-// Explicit diagnostic for the open #37 lifecycle gap, excluded from npm test.
+// Explicit diagnostic for the accepted #37 native containment limitation, excluded from npm test.
 // This uses only synthetic local processes and always cleans up its own leaf.
 import { mkdtempSync, readFileSync, existsSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'

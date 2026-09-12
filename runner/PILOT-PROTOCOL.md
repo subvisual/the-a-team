@@ -2,8 +2,8 @@
 
 This ships a protocol, templates and a worked synthetic calculation. It grants no
 authority to modify a client project, spend on models, recruit participants or
-run a live pilot. Current native macOS whole-process-tree containment is unresolved
-in #37; evaluation evidence must keep that dependency visible. A live handoff
+run a live pilot. Whole-process-tree containment is an accepted native macOS limitation in #37;
+evaluation evidence must keep that unsupported capability visible. A live handoff
 remains blocked while its dependable-release evidence is ineligible.
 
 Use two separately authorized targets with different stacks and design systems.

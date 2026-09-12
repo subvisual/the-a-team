@@ -51,7 +51,7 @@
     "eligible": false,
     "reference": null,
     "unresolvedDependencies": [
-      "#37"
+      "Whole-process-tree containment: review the accepted native limitation in #37 against this pilot scope"
     ]
   }
 }

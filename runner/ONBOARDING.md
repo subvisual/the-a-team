@@ -89,8 +89,8 @@ Prepare a complete supported target explicitly instead of changing its Git
 configuration merely to make the diagnostic pass.
 
 The native macOS backend is currently required. Whole-process-tree containment
-is unresolved in #37; a successful Seatbelt availability probe does not resolve
-it. Do not enable an unsandboxed fallback. Missing isolation, source credentials
+is an accepted limitation documented in #37; a successful Seatbelt availability
+probe does not establish that guarantee. Do not enable an unsandboxed fallback. Missing isolation, source credentials
 in Git history, mismatched origin and escaping bindings require repair before
 execution. No VM or container is started by this workflow.
 

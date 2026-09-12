@@ -641,7 +641,7 @@ observations, artifacts, branches, event IDs and decisions. Resume derives the
 current stage from verified evidence; it launches nothing and replays no external
 action. Revision seeds the named phase dependency graph even without live artifact
 bindings, invalidating affected downstream phases while preserving independent
-milestone receipts. Native macOS detached-child containment (#37) remains unresolved;
+milestone receipts. Native macOS detached-child containment is an accepted limitation in #37;
 these commands do not suspend or terminate a process tree.
 
 `feature-cli.mjs status --feature <feature-dir> --format text|json|html` projects
@@ -817,4 +817,4 @@ release evidence; protocol completeness grants no authority.
 
 ## Harness evaluation evidence
 
-Use the versioned synthetic corpus described in [runner/EVALUATION.md](runner/EVALUATION.md) alongside ordinary runner tests. Retain exact harness/skill/source/configuration/input/rubric identifiers, independent outcomes and traces, repeated agent trials where variance matters, and individual expert disagreements with calibration revisions. Deterministic checks are not human or model capability evidence. The unresolved #37 process-termination dependency remains unsupported and release ineligible; passing current native boundary controls cannot waive it.
+Use the versioned synthetic corpus described in [runner/EVALUATION.md](runner/EVALUATION.md) alongside ordinary runner tests. Retain exact harness/skill/source/configuration/input/rubric identifiers, independent outcomes and traces, repeated agent trials where variance matters, and individual expert disagreements with calibration revisions. Deterministic checks are not human or model capability evidence. Whole-process-tree containment remains unsupported under the accepted native scope of #37; passing current native boundary controls does not establish that guarantee or authorize a release.

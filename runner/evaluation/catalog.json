@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
   "id": "ateam-corpus-v1",
-  "version": 1,
+  "version": 2,
   "synthetic": true,
   "releaseEligible": false,
   "unresolvedDependencies": [
     {
       "issue": 37,
       "status": "unsupported",
-      "reason": "Detached process termination remains unresolved; release and live-provider eligibility are blocked."
+      "reason": "Whole-process-tree containment remains unsupported; the native cleanup scope and this known limitation were accepted in #37 on 2026-09-11. Synthetic checks do not establish release or live-provider eligibility."
     }
   ],
   "scenarios": [
