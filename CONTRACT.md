@@ -108,6 +108,60 @@ docs/features/<slug>/
   discovery's read-back. Citing a source that has no batch on disk is a failed
   self-check.
 
+### Citations and coverage
+
+These bind every skill that writes a domain claim into `docs/product/`. A
+**domain claim** is a statement about the client's world — its people, process,
+vocabulary, numbers, rules or constraints — as opposed to a statement about the
+run itself (a recommendation, a classification, a self-check).
+
+- **Every domain claim cites a line.** Syntax, beside the `[[…]]` id
+  convention above:
+  - text: `<batch>/<path>:L<start>-L<end>` — e.g.
+    `2026-08-20-outsource-design-package/deal-state-mechanics-guide.md:L88-L94`
+  - a section, when lines would be brittle to quote: `<batch>/<path> §4.6`
+  - PDFs: `<batch>/<file>.pdf:p<N>` · images: `<batch>/<file>` plus the region
+  - the grill: `<YYYY-MM-DD>-grill-digest/grill.md:L<start>-L<end>`
+
+  Lines are stable because `input/` batches are never edited. Where a domain
+  claim must cite: glossary rows (the Source column), `## Digest` claims,
+  ledger Knows, a job's `## Today` and `## Forces`, an ADR's `## Context`, a
+  decision record's `## Why`, `## Wrong if` and `## Existing state`.
+  `sources:` frontmatter stays batch-level — it is the audit index; the line
+  citation sits in the body where the claim is made. **A domain claim with no
+  citation is a failed self-check**; a citation that does not resolve on disk
+  is a bug, like a dead `## Sources` row.
+- **Every ingested file has a coverage row.** `context.md`'s `## Sources`
+  carries a **Coverage** column with a fixed vocabulary:
+  `full · <date> · conductor` (read end to end in the conversation) ·
+  `full · <date> · digest` (read end to end by a one-shot digest subagent
+  whose digest cites lines) · `partial <range> · <date> · <method>` (non-prose
+  inputs only — a JSON spec, an image set, a binary — with the method stated:
+  "diffed programmatically", "rendered and described"). *Prose* is a text file
+  meant to be read — markdown, plain text, an extraction; everything else is
+  non-prose. **Every file in every ingested batch has a row; prose files are
+  `full`.** A long document is read in full by a digest subagent, announced
+  before dispatch, so the conductor's load discipline holds without the
+  shortest input dominating. A staged batch the run did not ingest has no
+  rows, stays out of `ingested:`, and gets a ledger entry naming it and why. A
+  run that re-reads a file appends a new row with the new date and coverage;
+  the latest row governs, and no earlier row is edited. The coverage record is
+  presented at discovery's read-back as its own list; a prose file without a
+  `full` row is a failed self-check.
+- **Conflicts are items, never judgements.** When two inputs — or an input and
+  the existing North Star, an active ADR, or the shipped state — disagree on a
+  fact that reaches an artifact, the ledger carries a `[conflict]` entry naming
+  both sides with citations and what it blocks (or `[non-blocking]`). It routes
+  like any ledger entry: blocking + answerable by this human → asked in the
+  grill, recommendation first, the ruling recorded verbatim in the grill digest
+  and the entry closed `ruling: human, grill Q<n>`; blocking + not answerable
+  → a research activity; non-blocking → survives into `research-plan.md` as an
+  open question. A batch's own stated precedence (its `SOURCE.md` says which
+  document wins) is a ruling source and is not asked. An unruled conflict is
+  carried, never smoothed: every artifact touching it holds both readings
+  marked `TBD` with the conflict cited. **Silent resolution is a failed
+  self-check.**
+
 ## Environment given to every phase skill
 
 The orchestrator sets working context before invoking a phase skill:
