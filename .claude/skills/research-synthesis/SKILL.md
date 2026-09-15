@@ -92,7 +92,11 @@ Use `references/research-synthesis-framework.md` for the full method. The shape:
    supporting evidence visible instead of flattening it away.
 5. **Contradict.** Call out contradictions, segment differences, and outliers
    explicitly; never smooth them into false agreement — they become discovery
-   questions and ledger entries.
+   questions and ledger entries. Each contradiction between sources is also
+   entered in `context.md`'s ledger as a **`[conflict]`** item — both sides
+   cited to lines, what it blocks — so evidence-light runs and evidence-heavy
+   runs share one conflict class and one routing (CONTRACT, *Citations and
+   coverage*).
 6. **Label strength** qualitatively (`Strong` / `Moderate` / `Directional` /
    `Unknown`) and explain each label. No numeric scores; if numbers are absent,
    do not fabricate them.

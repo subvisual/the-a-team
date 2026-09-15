@@ -57,7 +57,9 @@ From `docs/product/` (durable): `context.md` (framing, glossary, source
 index), `jtbd/` (active + parked jobs — ids and verbatim headlines),
 `epics/NN-*.md` (every epic: MoSCoW class, jobs served, requirements
 realized), `adr/NN-*.md` (the decided shape — and any decision still `parked`,
-which is a live open item, not a footnote), `ateam-plan.md` (goals,
+which is a live open item, not a footnote), `decisions/NN-*.md` (the
+product-scope calls — every record still `provisional` at pr time is reported
+as such with its pending ASM, never as settled), `ateam-plan.md` (goals,
 deliverables, status),
 `research-plan.md` post-refresh (open questions, assumptions + confidence —
 including every phase-appended entry), and `project-plan.md` (written moments
