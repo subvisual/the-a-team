@@ -7,7 +7,11 @@ Design, Dev), gating at the phases where wrong direction is cheapest to catch an
 most expensive to let through.
 
 This repo is **harness-only**. It operates on a separate target repository passed
-in at invocation. Intended future home: `subvisual/harness`.
+in at invocation. The A-Team is **fully independent**: its own repo, with no
+dependency on `subvisual/harness` or the `building` plugin — skills that
+originated there are vendored in-repo (design skills already; dev skills landing
+with Davide's round). `subvisual/harness` appears below only as *provenance* for
+vendored skills, never as a runtime dependency or future home.
 
 The source of truth for team shape is the [Figma board][board] (17 Jul session).
 This document is that board made executable; where the two disagree, the board
@@ -34,7 +38,7 @@ wins.
 | Execution substrate | Claude Code subagents. *Future: explore Claude Agent SDK for durable autonomous runs.* |
 | Orchestrator shape | State machine on the main thread. No persistent role-agents (avoids subagent-nesting limits). |
 | Human gates | Gate definition, design, and pr — dispatched per human-chosen `gate_policy` (block default / notify-and-continue / run-to-pr). Discovery self-terminates via in-skill read-back + independence handoff; spec, issues, dev run automatically. |
-| Skill strategy | Reuse existing dev skills. PM/Design skills authored against a fixed contract. |
+| Skill strategy | Vendor dev skills in-repo (full independence from the `building` plugin — Davide's round). PM/Design skills authored against a fixed contract. |
 | Handoff contract | `feature.json` manifest for state + markdown files for deliverables. |
 | Target codebase | Harness-only; operates on a target repo passed as a parameter. |
 | PR strategy | One `feature/<slug>` branch, serialized integration, one PR. |
@@ -57,6 +61,9 @@ artifacts split by lifetime, not by producer:
     epics/NN-<slug>.md          #   one file per epic — durable delivery structures
     adr/NN-<slug>.md            #   one file per architecture decision — repo shape, stack,
                                 #   where v0 runs, v0 data strategy; cited as [[adr:NN]]
+    decisions/NN-<slug>.md      #   one file per product-scope decision — the calls that shape
+                                #   what is built; made | provisional | superseded | parked;
+                                #   cited as [[dec:NN]]
     ateam-plan.md               #   the plan built for the A-Team agents: goals + deliverables to v0
     research-plan.md            #   ships with v0: open questions, assumptions +
                                 #   confidence, technical research
@@ -160,6 +167,45 @@ ledger and asks only the Don't-Knows that *block* a JTBD or a scope call. It sto
 when the blocking set is empty. Surviving non-blocking unknowns are written into
 `research-plan.md` as open questions — so stopping loses nothing. A question is
 only asked if its answer changes an artifact.
+
+#### Iteration and evidence discipline (2026-09-10)
+
+The ARC v0.5 capability test (2026-09-02 board versus a human control) showed
+the A-Team's re-shape of an existing product was done with `building:grill-me`
+over the target's `docs/product/` because discovery had no entry for it — and
+that the durable rules did not bind that path: a client PDF cited seven times
+was never staged, the longest inputs were not exhausted, a documented conflict
+was resolved silently, and calls were committed past their own falsifiers.
+Two definitions came out of it. **"The A-Team" is however the agent works over
+a target's `docs/product/` layer**, not only a `/feature` run; and the boards
+were the test fixture, not the product.
+
+So discovery gains an **iteration entry** — when a North Star exists and a new
+input lands, it stages first, digests against the existing context, reads what
+shipped (ADRs, epics, the product report), classifies every active job
+kept / reshaped / superseded, drafts the **decision candidates** the input
+forces, and hands definition a classified job set plus decision records — and
+every discovery write gains an **evidence discipline** that CONTRACT.md states
+under *Citations and coverage*: nothing is cited that is not staged on disk
+(human-pointed sources included), every ingested file has a coverage row and
+prose is read in full (a digest subagent for long documents), every domain
+claim cites a line, conflicts between inputs are `[conflict]` ledger items
+that route like any entry, and product-scope calls are a new durable class —
+**decision records** at `docs/product/decisions/NN-<slug>.md`, `[[dec:NN]]` —
+with a **calibration rule**: each record names the `ASM-` records its
+falsifier rests on in the research plan's `ateam-assumptions` ledger; a
+falsifier checkable against staged inputs is checked as an evidence entry there
+before a call is stamped `made`; otherwise the human's yes yields
+`provisional`, the ledger's gates carrying the probe and its deadline — no
+parallel register. The read-back presents three lists — the
+coverage record, the conflicts, the decision records — and a coverage diff
+against any human artifact staged as input. ADRs stay architecture-only and
+Dev-owned; the `architecture` and `dev-research` skills receive the decision
+candidates as a declared slot, filled by the Dev role owner.
+
+Nothing changes in the orchestrator, the manifest or the gates. The
+acceptance test is the v0.5 re-scope re-run through the entry and compared to
+the control on the report's seven properties.
 
 ### Technical reality reaches the PM (2026-07-29 call)
 
