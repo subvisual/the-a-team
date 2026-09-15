@@ -84,6 +84,11 @@ every write:
 - **`sources:` traces every job to raw input** — `docs/product/input/` batch
   names, transcripts, sketches — so a reviewer can audit what you were told
   versus what you inferred.
+- **`## Today` and `## Forces` cite lines.** Every domain claim in them carries
+  `<batch>/<file>:L<start>-L<end>` (or `§<n>` / `:p<N>`), per CONTRACT's
+  *Citations and coverage*. `sources:` says which batches; the body says which
+  lines. A force with no line is a guess wearing evidence's clothes — a failed
+  self-check.
 - **Never write a durable file without human review in the same session.** The
   read-back (below) is mandatory before any write.
 - **`input/` is read-only.** Humans put evidence there; you ingest it.
@@ -178,8 +183,10 @@ grilling. The shape:
    - **Form** — well-formed progress statement, or a task / feature / persona /
      typed job? Judge from the text via `references/rubric.md`.
    - **Grounding** — is there evidence behind it? In a target repo, check
-     `sources:` against `docs/product/input/`; from bare text, flag
-     *"unverifiable — needs grounding"* rather than guessing.
+     `sources:` against `docs/product/input/` and that every line citation in
+     `## Today` / `## Forces` resolves and says what the job says it says;
+     from bare text, flag *"unverifiable — needs grounding"* rather than
+     guessing.
 2. **Rank.** Surface the worst offenders and the highest-value fixes.
 3. **Uplift.** Grill the chosen ones into shape using the CREATE workflow.
    Review exists to raise quality — default toward grilling, don't stop at the
@@ -189,6 +196,15 @@ grilling. The shape:
    the old file changes). A statement rejected as not-a-job flips to
    `superseded` or `parked` with the verdict noted in `## Don't know`. Read-back
    before writing, one commit per run — identical to CREATE.
+5. **Iteration runs (A-Team review-and-extend).** When a new input batch lands
+   on an existing job set, classify **every** active job, with the citation
+   that triggers the class: **kept** (the input leaves it standing — say which
+   lines confirm it, or "not touched by this input"), **reshaped** (a new file
+   supersedes it, citing the reshaping lines), **superseded** (no replacement;
+   the reason and citation in `## Don't know`). An unclassified job is a
+   failed self-check: a North Star that shrinks between input and read-back
+   without a stated trigger is exactly the drift the classification exists to
+   surface.
 
 ## No human present
 
