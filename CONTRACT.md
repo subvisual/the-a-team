@@ -50,11 +50,15 @@ docs/product/
   jtbd/NN-<slug>.md           # one file per job
   epics/NN-<slug>.md          # one file per epic — durable delivery structures, same lifecycle rules
                               # Citation syntax: bare [[NN]] / [[NN-slug]] ALWAYS cites a job;
-                              # epics cite as [[epic:NN]] (any future durable class gets a prefix)
+                              # epics cite as [[epic:NN]], ADRs as [[adr:NN]], decisions as
+                              # [[dec:NN]] (any future durable class gets a prefix)
   design-system/              # canonical design tokens — scale.ts, palette.ts, shadcn-theme.css
                               #   (design phase, create-once; the design gate is their review)
   adr/NN-<slug>.md            # one file per architecture decision — repo shape, stack, where the v0
                               #   runs, v0 data strategy; same lifecycle rules; cited as [[adr:NN]]
+  decisions/NN-<slug>.md      # one file per product-scope decision — the calls that shape what is
+                              #   built and that no later phase may make alone; same lifecycle rules;
+                              #   status made | provisional | superseded | parked; cited as [[dec:NN]]
   ateam-plan.md               # the plan built for the A-Team agents: goals + deliverables to reach v0
   research-plan.md            # ships with v0: open questions, assumptions + confidence,
                               #   technical research (services, stack, integration costs)
@@ -88,6 +92,21 @@ docs/features/<slug>/
   clearly-labeled batch — `input/<YYYY-MM-DD>-<source>-pulled/` — so the audit
   trail survives the source changing or vanishing. A skill never edits, deletes,
   or summarizes-in-place an existing batch; digests belong in `context.md`.
+- **Nothing is cited that is not on disk.** Anything the human points at that
+  lives outside the repo — a file in a parent folder, an attachment in the
+  conversation, a board, a shared page — is staged verbatim as
+  `input/<YYYY-MM-DD>-<label>/` with a `SOURCE.md` **before** it is cited. The
+  batch is labelled by its staging date. `SOURCE.md` records origin, the
+  authoring date if stated, what was copied and what was not (keeping the
+  original binary alongside is fine, never required), and any fidelity caveat —
+  an extraction is not the document. A document that names a companion not in
+  hand records the absence in `SOURCE.md` and as a ledger entry; its contents
+  are never inferred. Prior human work on the same question — a board, a
+  current-state map, a spreadsheet — is an input like any other: staged
+  through this rule (a FigJam board via `get_figjam`, verbatim, as
+  `input/<YYYY-MM-DD>-figjam-pulled/`), covered, cited, and diffed against at
+  discovery's read-back. Citing a source that has no batch on disk is a failed
+  self-check.
 
 ## Environment given to every phase skill
 
