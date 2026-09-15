@@ -42,14 +42,21 @@ raw mess — it never replaces the raw files and never embellishes them.>
 visited during agent research, human-provided files, connector pulls, the
 grill digest batch. Every row resolves — a live URL or a path on disk.
 Overview's Key links stay the 2–3 load-bearing product links; this table is
-the complete index.>
+the complete index. Coverage says how much of the file was read and by whom:
+`full · <date> · conductor` · `full · <date> · digest` (a one-shot digest
+subagent whose digest cites lines) · `partial <range> · <date> · <method>`
+(non-prose inputs only — a JSON spec, an image set, a binary — with the
+method stated). Every file in every ingested batch has a row; prose files are
+`full`. A re-read appends a new row with the new date; the latest row
+governs.>
 
-| Type | Source | Date | What it informed |
-| --- | --- | --- | --- |
-| link | <URL the agent consulted> | <YYYY-MM-DD> | <the fact or section it fed> |
-| file | <input/<batch>/<file> — human-provided> | <YYYY-MM-DD> | <...> |
-| pull | <input/<YYYY-MM-DD>-<source>-pulled/> | <YYYY-MM-DD> | <...> |
-| grill | <input/<YYYY-MM-DD>-grill-digest/> | <YYYY-MM-DD> | <...> |
+| Type | Source | Date | What it informed | Coverage |
+| --- | --- | --- | --- | --- |
+| link | <URL the agent consulted> | <YYYY-MM-DD> | <the fact or section it fed> | full · <YYYY-MM-DD> · conductor |
+| file | <input/<batch>/<file> — human-provided> | <YYYY-MM-DD> | <...> | full · <YYYY-MM-DD> · digest |
+| file | <input/<batch>/<spec>.json — human-provided> | <YYYY-MM-DD> | <...> | partial paths+schemas · <YYYY-MM-DD> · diffed programmatically |
+| pull | <input/<YYYY-MM-DD>-<source>-pulled/> | <YYYY-MM-DD> | <...> | full · <YYYY-MM-DD> · conductor |
+| grill | <input/<YYYY-MM-DD>-grill-digest/> | <YYYY-MM-DD> | <...> | full · <YYYY-MM-DD> · conductor |
 
 ## Glossary
 
@@ -57,10 +64,10 @@ Status: **settled** — team-wide agreement, safe to use in artifacts ·
 **forming** — best current definition, may still shift · **TBD** — in play,
 undefined.
 
-| Term | Working definition | Status | Source / notes |
+| Term | Working definition | Status | Source (cited to a line) / notes |
 | --- | --- | --- | --- |
-| <term> | <what the team means by it today> | settled | <where defined> |
-| <term> | <best current definition> | forming | <competing name: "<other>"> |
+| <term> | <what the team means by it today> | settled | `<batch>/<file>:L<start>-L<end>` |
+| <term> | <best current definition> | forming | `<batch>/<file> §<n>` · competing name: "<other>" |
 | <term> | <unknown — heard in kickoff> | TBD | <who to ask> |
 
 Never delete a renamed term — note the rename in Source / notes so old
@@ -115,10 +122,17 @@ two copies across files.
 ### Don't know
 - **[blocking → <the JTBD id or scope call it blocks>] [pm|design|dev]** <question>
 - **[non-blocking] [dev]** <question — survives into research-plan.md as an open question>
+- **[conflict → blocks [[03]] / dec:02] [pm]** <A says X> (`<batch>/<file> §2`) · <B says Y> (`<batch>/<file> §4.6`) · **ruling:** open
+- **[conflict] [non-blocking] [pm]** <A says X> (`…:L12-L14`) · <B says Y> (`…:L88-L90`) · **ruling:** SOURCE.md precedence — A wins
 
 The role tag is carried whenever an `intake/` bank seeded the entry — it is
 what the answerability routing keys off, and with three banks feeding one
-ledger an untagged entry loses its consumer.
+ledger an untagged entry loses its consumer. A `[conflict]` entry names both
+sides with citations and what it blocks; it routes like any entry and closes
+with its ruling source (`ruling: human, grill Q<n>` · `SOURCE.md precedence`);
+an unruled one is carried into research-plan.md as an open question and every
+artifact touching it holds both readings marked `TBD`. Knows cite lines too:
+`- <fact> — `<batch>/<file>:L<start>-L<end>``.
 
 ## Awaiting answers
 
@@ -137,6 +151,20 @@ Rules that bind every writer of this file:
 - **Sources is append-mostly and every row resolves.** A source that shaped a
   fact but never reaches the index is an audit hole; a row pointing at nothing
   (dead path, vanished URL with no staged pull) is a bug.
+- **Every ingested file has a coverage row; prose files are `full`.** A prose
+  file in an ingested batch without a `full` row is a failed self-check. A
+  staged batch not ingested this run has no rows, stays out of `ingested:`,
+  and gets a ledger entry naming it and why.
+- **Nothing is cited that is not on disk.** A source the human pointed at
+  outside the repo is staged as an `input/` batch with a `SOURCE.md` before
+  the digest cites it; a named-but-absent companion is a `SOURCE.md` note and
+  a ledger entry, never inferred.
+- **Domain claims cite lines.** Glossary rows, digest claims and Knows carry
+  `<batch>/<file>:L<start>-L<end>` (or `§<n>`, `:p<N>` for PDFs); a claim
+  without one is a failed self-check.
+- **Conflicts are items.** Two sources disagreeing on a fact that reaches this
+  file is a `[conflict]` ledger entry with both citations, never a smoothed
+  sentence.
 - **The ledger drives the grill.** Only blocking Don't-Knows justify questions;
   non-blocking ones flow into `research-plan.md` as open questions, so stopping
   loses nothing.
