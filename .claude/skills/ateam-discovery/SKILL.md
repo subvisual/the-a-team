@@ -112,7 +112,7 @@ grill digest at the write step (every run).
   a ruling only for a conflict between files of that same batch; every other
   conflict — across batches, with the North Star, an ADR or the shipped
   state — is `ruling: open` for the grill.
-- **Iteration runs read the implemented state here:** the `ateam-context`
+- **Iteration runs read the shipped state here:** the `ateam-context`
   index resolved by `context-cli.mjs select` (its `currentState`, `bindings`,
   `unresolvedDecisions` and observed facts), every active ADR, every epic and
   its status, `ateam-product-report.md` §"What actually shipped" (verdicts
@@ -169,8 +169,11 @@ is drafted in the decision record shape with a recommendation, its cost as a
 testable prediction, its falsifier, and its keeps / changes / removes against
 the shipped list. **Bind each falsifier to an `ASM-` record** in the
 `ateam-assumptions` block (its `disproof`, `cheapestProbe`, `requiredStage`,
-owner or unresolved owner). If `research-plan.md` has no block yet, add the
-template's empty revision-1 block first, preserve it as
+owner or unresolved owner). A candidate that will stay `provisional` names a
+`requiredStage` later than discovery — definition, usually — or an authorized
+deferral with its `nextDecisionStage`: a due, unevidenced load-bearing ASM
+blocks discovery's own completion. If `research-plan.md` has no block yet, add
+the template's empty revision-1 block first, preserve it as
 `assumptions-history/1.json`, and write the records as revision 2 —
 `runner/ASSUMPTIONS.md`'s history rule starts there. **Check each falsifier
 now** against what is staged and *draft* its `EVD-` entry (path, SHA-256,
@@ -325,8 +328,8 @@ is exactly what movement 5 exists to surface.
 
 Then three lists, each on its own, before anything is written:
 
-- **Coverage record** — every file in every ingested batch with its coverage
-  value; a prose file not `full` is named as a gap, not hidden.
+- **Coverage record** — every evidence file in every ingested batch with its
+  coverage value; a prose file not `full` is named as a gap, not hidden.
 - **Conflicts** — each `[conflict]` with both citations and its ruling
   (`human, grill Q<n>` · `SOURCE.md precedence`) or `open`.
 - **Decision records** — each with `status`, `decided_by`, `probe` where
@@ -339,7 +342,8 @@ a scope document — the **coverage diff**: every item on the artifact mapped
 to the job, decision record, glossary term or open question that covers it,
 or marked "deliberately not covered — <reason>"; and every item in the run's
 set (jobs, decisions, terms, open questions) the artifact does not cover,
-each a ledger entry.
+each a ledger entry — a gap that blocks a job or a decision
+reopens the grill for that one item; the rest survive as open questions.
 
 ### 9. Independence handoff (the human opens the valve)
 
@@ -369,8 +373,9 @@ cites for grill-derived facts, and later runs read it instead of re-asking
 (ask-once-then-deltas). In `context.md`, compile `## Sources` — the audit
 index of everything this run consumed: one line per source (link visited,
 provided file, connector pull, the grill digest batch) with type · pointer
-(URL or `input/` path) · date · what it informed · coverage. Every file in
-every ingested batch has a row; a re-read appends a new row.
+(URL or `input/` path) · date · what it informed · coverage. Every evidence
+file in every ingested batch has a row (the batch's own `SOURCE.md` none); a
+re-read appends a new row.
 
 Write the **decision records** as `decisions/NN-<slug>.md` per
 `references/decision-template.md` — ratified with every linked load-bearing
@@ -481,9 +486,11 @@ grants *you* nothing here. If you are the one without an answer, you escalate.
   (a batch's own `SOURCE.md` gets none); every prose file is `full` (conductor
   or digest); legacy rows the run touched were re-read and re-rowed, the rest
   are named in the coverage record.
-- Every domain claim in the glossary, the digest, the Knows, job bodies
-  (`## Today`, `## Forces`), ADR contexts and decision records carries a line
-  citation that resolves on disk.
+- Every domain claim this run wrote, moved or re-asserted in the glossary,
+  the digest, the Knows, job bodies (`## Today`, `## Forces`), ADR contexts
+  and decision records carries a line citation that resolves on disk;
+  inherited uncited claims are tagged `[legacy]` and named in the coverage
+  record, never back-filled.
 - No `[conflict]` entry is closed without a ruling source; every open one has
   a `research-plan.md` open question and `TBD` markers wherever it lands.
 - No decision record is `made` unless every linked load-bearing ASM is
@@ -526,6 +533,10 @@ after interruption; changed inputs require a new ID.
 ```sh
 node <harness>/runner/src/feature-cli.mjs complete --feature <feature-dir> --expected-revision <revision> --event-id <completion-id> --input '{"phase":"discovery","artifacts":["../../product/jtbd","../../product/decisions"],"blocking_flags":[]}'
 ```
+
+Bind `../../product/decisions` only when the run wrote at least one decision record —
+the command fails on a missing path, and a run that ratified no product-scope call has
+no `decisions/` directory to bind. The jobs path is always bound.
 
 Replace `blocking_flags` with the actual concrete flags from the report. Success
 is the done signal; `blocked` retains the reason and requires its resolution.

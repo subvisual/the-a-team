@@ -78,9 +78,11 @@ every write:
 - **Ids are forever.** Assign the next free `NN` by reading the existing set.
   Never renumber, never reuse.
 - **Never delete or silently replace.** A job that is wrong or reshaped gets
-  `status: superseded` plus a pointer; its replacement is a **new file** whose
-  `## Related` says `supersedes [[NN-...]]`. Feature artifacts cite ids, so ids
-  must resolve stably forever.
+  `status: superseded` plus a pointer; its replacement is a **new file**
+  whose `## Related` says `supersedes [[NN-...]]` — except on an iteration
+  run when a new input retires the struggle outright: then `## Related` says
+  `superseded by: none — <reason, cited>` and no replacement is minted.
+  Feature artifacts cite ids, so ids must resolve stably forever.
 - **`sources:` traces every job to raw input** — `docs/product/input/` batch
   names, transcripts, sketches — so a reviewer can audit what you were told
   versus what you inferred.
@@ -199,12 +201,14 @@ grilling. The shape:
 5. **Iteration runs (A-Team review-and-extend).** When a new input batch lands
    on an existing job set, classify **every** active job, with the citation
    that triggers the class: **kept** (the input leaves it standing — say which
-   lines confirm it, or "not touched by this input"), **reshaped** (a new file
-   supersedes it, citing the reshaping lines), **superseded** (no replacement;
-   the reason and citation in `## Don't know`). An unclassified job is a
-   failed self-check: a North Star that shrinks between input and read-back
-   without a stated trigger is exactly the drift the classification exists to
-   surface.
+   lines confirm it, or "not touched by this input"), **reshaped** (a new
+   file supersedes it, citing the reshaping lines), **superseded** (`status:
+   superseded` with no replacement — the one case the pointer rule below
+   allows: `## Related` says `superseded by: none — <reason, cited>` and the
+   same reason and citation land in `## Don't know`). An unclassified job is
+   a failed self-check: a North Star that shrinks between input and
+   read-back without a stated trigger is exactly the drift the
+   classification exists to surface.
 
 ## No human present
 

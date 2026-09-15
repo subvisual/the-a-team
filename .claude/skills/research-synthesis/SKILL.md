@@ -111,9 +111,10 @@ Use `references/research-synthesis-framework.md` for the full method. The shape:
 10. **Draft** the synthesis file in template order, ending with the discovery
     questions that follow from contradictions and gaps.
 11. **Read-back — mandatory before writing.** The research file, the
-    context.md digest note and its `[conflict]` ledger entries are durable: present both for correction in this
-    session, then write and commit (one commit, message naming what the run
-    found — e.g. `docs(research): onboarding synthesis — 03 challenged, 2 new
+    context.md digest note and its `[conflict]` ledger entries are
+    durable: present all three for correction in this session, then write
+    and commit (one commit, message naming what the run found — e.g.
+    `docs(research): onboarding synthesis — 03 challenged, 2 new
     signals`).
 12. **Route.** Challenged/refinement verdicts and new-job signals →
     `jobs-to-be-done`. All-supporting verdicts → `discovery-plan` (unknowns

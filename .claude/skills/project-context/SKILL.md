@@ -122,11 +122,12 @@ human decision path; a completion refresh cannot authorize them.
    the rename so old documents stay readable.
 4. **Digest.** Per new batch: compress what the evidence actually says, each
    claim cited to a line (`<batch>/<file>:L<start>-L<end>`, `§<n>`, or
-   `:p<N>` for a PDF). **Read every prose file in full.** A long one goes to
-   a one-shot digest subagent — announce it, pass the file path and the
-   current glossary, expect back a digest whose every claim cites lines plus
-   the terms and conflicts it found — so coverage is `full · <date> · digest` rather
-   than the conductor skimming. The digest is written knowing how Design and
+   `:p<N>` for a PDF). **Read every prose file in full.** A long one —
+   300 lines or more — goes to a one-shot digest subagent — announce it,
+   pass the file path and the current glossary, expect back a digest whose
+   every claim cites lines plus the terms and conflicts it found — so
+   coverage is `full · <date> · digest` rather than the conductor skimming.
+   The digest is written knowing how Design and
    Dev will later consume it — organised, not just summarized. **Conflicts
    are items:** where this batch disagrees with another batch, the glossary,
    a Know, an active job, an active ADR or the shipped state, write a
@@ -152,9 +153,10 @@ human decision path; a completion refresh cannot authorize them.
    a **`[conflict]`** entry — both sides cited, what it blocks, and its ruling
    if a batch's `SOURCE.md` precedence settles it — a conflict between files of
    that batch only — (`ruling: SOURCE.md precedence — <which>`); otherwise
-   `ruling: open`, for the grill. Knows cite
-   lines. Uncertainty stays visible as TBD — a confident-sounding guess is a
-   landmine for every skill that reads this file.
+   `ruling: open`, for the grill. Knows cite lines; an inherited Know
+   without one is tagged `[legacy]`, never back-filled. Uncertainty stays
+   visible as TBD — a confident-sounding guess is a landmine for every
+   skill that reads this file.
 8. **Design and technical context.** On a first run, synthesize the design
    briefing's answers (from the `intake/` design bank) into `## Design
    context` — users & emotional goals, brand personality, aesthetic direction

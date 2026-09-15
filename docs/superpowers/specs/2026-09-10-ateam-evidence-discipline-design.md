@@ -169,7 +169,8 @@ Coverage is recorded **at ingestion**. Later tasks select context through
 the `ateam-context` index (`runner/CONTEXT.md`) and do not re-read batches; a
 deliberate re-ingest appends a row.
 
-Rule: **every file in every ingested batch has a row; prose files are `full`.**
+Rule: **every evidence file in every ingested batch has a row — the batch's
+own `SOURCE.md` is provenance, not evidence — and prose files are `full`.**
 A long document is read in full by a digest subagent, announced before
 dispatch (the grill-mode promise), whose digest lands in `## Digest` with line
 citations — so the conductor's load discipline holds without the shortest
@@ -406,8 +407,9 @@ All PM-owned unless marked. Two Dev-owned skills, `architecture` and
 
 `ateam-discovery` self-check additions, verbatim intent:
 
-- Every file in every ingested batch has a `## Sources` coverage row; every
-  prose file is `full`.
+- Every evidence file in every ingested batch has a `## Sources` coverage
+  row (the batch's own `SOURCE.md` none); every prose file is `full`, or
+  `legacy` for a row the run did not re-read.
 - Every domain claim in the glossary, digest, Knows, job bodies, ADR contexts
   and decision records carries a citation that resolves on disk.
 - Every source the human pointed at is staged before it is cited; every named

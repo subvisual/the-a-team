@@ -134,9 +134,12 @@ run itself (a recommendation, a classification, a self-check).
   ledger Knows, a job's `## Today` and `## Forces`, an ADR's `## Context`, a
   decision record's `## Why`, `## Wrong if` and `## Existing state`.
   `sources:` frontmatter stays batch-level — it is the audit index; the line
-  citation sits in the body where the claim is made. **A domain claim with no
-  citation is a failed self-check**; a citation that does not resolve on disk
-  is a bug, like a dead `## Sources` row.
+  citation sits in the body where the claim is made. **A domain claim this run
+  writes, moves or re-asserts with no citation is a failed self-check**; a
+  citation that does not resolve on disk is a bug, like a dead `## Sources`
+  row. An inherited claim without a citation is left as it is, tagged
+  `[legacy]`, and named in the coverage record until a run re-derives it —
+  never back-filled with a line nobody read.
 - **Every ingested file has a coverage row.** `context.md`'s `## Sources`
   carries a **Coverage** column with a fixed vocabulary:
   `full · <date> · conductor` (read end to end in the conversation) ·
@@ -158,7 +161,8 @@ run itself (a recommendation, a classification, a self-check).
   run that re-reads a file appends a new row with the new date and coverage;
   the latest row governs, and no earlier row is edited. The coverage record is
   presented at discovery's read-back as its own list; a prose file without a
-  `full` row is a failed self-check.
+  `full` row — or, for a row the run did not re-read, a `legacy` one — is a
+  failed self-check.
 - **Conflicts are items, never judgements.** When two inputs — or an input and
   the existing North Star, an active ADR, or the shipped state — disagree on a
   fact that reaches an artifact, the ledger carries a `[conflict]` entry naming
@@ -297,9 +301,9 @@ Everything else — especially durable writes and their review step — behaves
     only**: the append-only synthesis run (themes, contradictions, verdicts
     against existing jobs, new-job signals). Declared here so it is a permitted
     output path rather than a stray write.
-  - `docs/product/decisions/NN-<slug>.md` — the product-scope decisions the
-    run ratified (template below), each bound to the `ASM-` records its
-    falsifier rests on.
+  - `docs/product/decisions/NN-<slug>.md` — the product-scope decisions
+    the run wrote — `made`, `provisional` or `parked` (template below),
+    each bound to the `ASM-` records its falsifier rests on.
   - `docs/product/input/<YYYY-MM-DD>-<label>/` — anything the human pointed
     at that was not on disk, staged before it is cited (the staging rule
     above); and `input/<YYYY-MM-DD>-figjam-<board>-pulled/` for a human board.
@@ -312,13 +316,13 @@ Everything else — especially durable writes and their review step — behaves
   **iteration** — it reviews and extends, never re-derives. This is the
   **reopen-discovery** route of the scope guardrail (a new job, audience or
   load-bearing assumption); a bounded change takes the refinement route
-  (`configure-refinement`) and never enters here. Research stages
-  first, digests the new input *against* the existing `context.md` (refresh,
-  never rebuild), builds the `[conflict]` list between the new input, the
-  existing inputs, the North Star, the active ADRs and the implemented state,
-  and reads that state (the `ateam-context` index via `context-cli.mjs select`,
-  every active ADR, every epic, the product report's `implemented` verdicts,
-  `project-plan.md`) before any drafting. The straw-man
+  (`configure-refinement`) and never enters here.
+  Research stages first, digests the new input *against* the existing
+  `context.md` (refresh, never rebuild), builds the `[conflict]` list between
+  the new input, the existing inputs, the North Star, the active ADRs and the
+  shipped state, and reads that state (the `ateam-context` index via
+  `context-cli.mjs select`, every active ADR, every epic, the product report's
+  `implemented` verdicts, `project-plan.md`) before any drafting. The straw-man
   classifies every active job **kept / reshaped / superseded** with the
   citation that triggers it and drafts the **decision candidates** the input
   forces. Candidates and conflicts are ledger entries and route by the same
@@ -422,8 +426,9 @@ Everything else — especially durable writes and their review step — behaves
   "assumptions made after you leave land in `research-plan.md` with confidence
   levels."
 - **Done-signal**: invoke `feature-cli.mjs complete` with `phase: "discovery"`
-  and the actual JTBD artifacts. The selected run brief determines whether to stop
-  or advance to definition.
+  and the actual JTBD artifacts — plus `decisions/` when the run wrote any
+  decision record; never bind a path that does not exist. The selected run
+  brief determines whether to stop or advance to definition.
 
 #### context.md template — the canonical shape
 
@@ -462,12 +467,12 @@ Full annotated template: the `project-context` skill's
 that drops content is a forbidden overwrite); TBD stays visible, never smoothed
 into prose; renamed glossary terms are never deleted; every `## Sources` row
 resolves — a live URL or a path on disk — and carries a coverage value (every
-file in an ingested batch has a row; prose files are `full` — see *Citations
-and coverage*); `## Overview` keeps only the 2–3 load-bearing product links
-(Sources is the complete index); glossary rows and ledger Knows cite lines;
-the ledger's **blocking** set is the grill's termination condition —
-non-blocking unknowns and unruled `[conflict]` entries flow to
-`research-plan.md` as open questions.
+evidence file in an ingested batch has a row, the batch's own `SOURCE.md` none;
+prose files are `full` — see *Citations and coverage*); `## Overview` keeps only
+the 2–3 load-bearing product links (Sources is the complete index); glossary rows
+and ledger Knows cite lines; the ledger's **blocking** set is the grill's
+termination condition — non-blocking unknowns and unruled `[conflict]` entries
+flow to `research-plan.md` as open questions.
 
 **One fact, one home.** `## Design context` and `## Technical context` hold only
 *settled* facts. Uncertainty belongs in `research-plan.md` with a confidence

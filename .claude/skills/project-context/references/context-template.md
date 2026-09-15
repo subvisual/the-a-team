@@ -50,9 +50,9 @@ the complete index. Coverage says how much of the file was read and by whom:
 subagent whose digest cites lines) · `partial <range> · <date> · <method>`
 (non-prose inputs only — a JSON spec, an image set, a binary — with the
 method stated). `legacy · <date>` marks a row written before this column
-existed — never for a new read. Every file in every ingested batch has a
-row; prose files are `full`. A re-read appends a new row with the new date; the latest row
-governs.>
+existed — never for a new read. Every evidence file in every ingested batch
+has a row (the batch's own `SOURCE.md` none); prose files are `full`. A
+re-read appends a new row with the new date; the latest row governs.>
 
 | Type | Source | Date | What it informed | Coverage |
 | --- | --- | --- | --- | --- |
@@ -167,9 +167,11 @@ Rules that bind every writer of this file:
   outside the repo is staged as an `input/` batch with a `SOURCE.md` before
   the digest cites it; a named-but-absent companion is a `SOURCE.md` note and
   a ledger entry, never inferred.
-- **Domain claims cite lines.** Glossary rows, digest claims and Knows carry
-  `<batch>/<file>:L<start>-L<end>` (or `§<n>`, `:p<N>` for PDFs); a claim
-  without one is a failed self-check.
+- **Domain claims cite lines.** Glossary rows, digest claims and Knows this
+  run writes, moves or re-asserts carry `<batch>/<file>:L<start>-L<end>` (or
+  `§<n>`, `:p<N>` for PDFs); a claim without one is a failed self-check. An
+  inherited claim without a citation is tagged `[legacy]` and named in the
+  coverage record — never back-filled.
 - **Conflicts are items.** Two sources disagreeing on a fact that reaches this
   file is a `[conflict]` ledger entry with both citations, never a smoothed
   sentence.

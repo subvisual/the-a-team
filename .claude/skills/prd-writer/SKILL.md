@@ -214,6 +214,9 @@ If the work is really one ticket, hand off instead of writing a thin PRD.
    ACs. Create or revise the canonical acceptance ledger and exact PRD snapshot
    using the schema above; retain every required validation method.
 8. **Decision log** — significant decisions only; append-only (breadcrumb).
+   A row that derives from a discovery decision record cites it as
+   `[[dec:NN]]`; a row that would reverse one is not a log entry but a flag
+   for the gate.
 9. **Rollout** ordered by what unlocks the jobs first; explain divergences.
 10. **Validate**: non-goals and Won't explicit, metrics measurable, every
     scoped item traced, open questions visible (mirrored to the ledger /

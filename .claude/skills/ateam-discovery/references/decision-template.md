@@ -86,7 +86,9 @@ question.
   load-bearing ASM `proceed` (or none load-bearing) → `made`; any `pending`/`defer` → `provisional`;
   `contradict` → reshape before asking, or supersede. The probe is the ASM's
   `cheapestProbe`; this file never carries a second one. A `made` record with
-  an unchecked falsifier is a failed self-check.
+  an unchecked falsifier is a failed self-check. A `provisional` record's
+  ASM falls due at definition or later, never at discovery — a due,
+  unevidenced ASM blocks the phase that just wrote it.
 - **Presented is not ratified.** Unanswered is `parked` with an open question
   in `research-plan.md`. `decided_by: agent` only through a Declared default
   or a project binding, recorded as an assumption; a scope call is demand-side
@@ -95,8 +97,8 @@ question.
   iteration run and cites the shipped list; on a first run it reads "nothing
   shipped yet".
 - **Superseding.** The old record flips `status: superseded` with `superseded
-  by [[dec:NN]]` in `## Status`; the new one says `supersedes [[dec:NN]]`.
-  Nothing else in the old file changes.
+  by [[dec:NN]]` in `## Status`; the new one says `supersedes [[dec:NN]]`
+  in its own `## Status`. Nothing else in the old file changes.
 - **Downstream.** The PRD's decision log cites `[[dec:NN]]`; `product-report`
   reports every `provisional` record still open at pr time with its pending
   ASM; the plan refresh mirrors `## Revisit when` as open questions.
