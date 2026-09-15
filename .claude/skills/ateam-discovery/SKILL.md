@@ -157,7 +157,7 @@ calls a definition phase must not make alone: grain, which gates block, pull
 versus push, out-of-focus lines, which side of a conflict wins. Each candidate
 is drafted in the decision record shape with a recommendation, its cost as a
 testable prediction, its falsifier, and its keeps / changes / removes against
-the implemented list. **Bind each falsifier to an `ASM-` record** in the
+the shipped list. **Bind each falsifier to an `ASM-` record** in the
 `ateam-assumptions` block (its `disproof`, `cheapestProbe`, `requiredStage`,
 owner or unresolved owner) and **check it now** against what is staged,
 recording an `EVD-` entry (path, SHA-256, reference, `origin: observed`,
@@ -339,7 +339,7 @@ Write the **decision records** as `decisions/NN-<slug>.md` per
 `references/decision-template.md` — ratified with every linked load-bearing
 ASM `proceed` → `made`; ratified with one `pending`/`defer` → `provisional`;
 unanswered → `parked` with an open question; each with `assumptions:` naming
-its ASM ids, `## Existing state` cited to the implemented list and any ADR
+its ASM ids, `## Existing state` cited to the shipped list and any ADR
 deviation in `deviates_from:`. Ids continue from the existing set; a reshaped
 call supersedes, never overwrites.
 
@@ -370,7 +370,8 @@ answered, continue from the movement you halted in.
 
 **The iteration entry.** This is the **reopen-discovery** route the scope
 guardrail names — the change introduces a new job, audience or load-bearing
-assumption; a bounded change is the `/feature` refinement route and never
+assumption; a bounded change is the `/feature` refinement route
+(`configure-refinement`) and never
 comes here. When `docs/product/` holds an active job set and either an
 un-ingested `input/` batch exists or the prompt points at a document, board or
 other artifact, say so — "this is an iteration over an existing North Star" —
@@ -448,7 +449,7 @@ grants *you* nothing here. If you are the one without an answer, you escalate.
   `provisional` with `decided_by: human` unless the human actually answered.
 - Iteration runs: every active job is classified kept / reshaped / superseded
   with its trigger cited; every decision record states keeps / changes /
-  removes against the implemented list; a staged human artifact has its
+  removes against the shipped list; a staged human artifact has its
   coverage diff in the read-back.
 - Manifest (if present): configure and completion commands returned success;
   the authorization reference records what the human actually requested.
