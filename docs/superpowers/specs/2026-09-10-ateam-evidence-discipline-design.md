@@ -391,7 +391,7 @@ All PM-owned unless marked. Two Dev-owned skills, `architecture` and
 | File | Change |
 | --- | --- |
 | `CONTRACT.md` | `decisions/` in the tree and citation convention; staging clause (§2.1); coverage rule (§2.2); citation syntax and where claims must cite (§2.3); `[conflict]` ledger class (§3); decision record template + calibration rule (§4); iteration entry in the `ateam-discovery` contract (§1); dev-review slot line (§5.2); human-artifact rule (§5.3); `product-report` read-list line (§4.4). |
-| `PLAN.md` | Mirror: artifact tree gains `decisions/`; a "Discovery iteration and evidence discipline (2026-09-10)" subsection under Discovery flow; the definition from decision 1 above. |
+| `PLAN.md` | Mirror: artifact tree gains `decisions/`; an "Iteration and evidence discipline (2026-09-10)" subsection under Discovery flow; the definition from decision 1 above. |
 | `.claude/skills/ateam-discovery/SKILL.md` | Iteration entry (replaces the re-invocation paragraph); Research "stage first", digest subagent, conflict list; Straw-man classification + decision candidates; dev-review pass-through; grill routing for conflicts/candidates; read-back's three lists + coverage diff; write step; self-check additions (below). |
 | `.claude/skills/project-context/SKILL.md` + `references/context-template.md` | Staging rule; Coverage column and vocabulary; citation syntax in glossary Source column; `[conflict]` ledger class; refresh rules for Sources. |
 | `.claude/skills/jobs-to-be-done/SKILL.md` | Line citations required in `## Today` / `## Forces`; kept/reshaped/superseded classification on review-and-extend; rubric Grounding check reads citations. |
@@ -414,7 +414,7 @@ All PM-owned unless marked. Two Dev-owned skills, `architecture` and
 - No `[conflict]` entry is closed without a ruling source; every open one has
   a research-plan open question and `TBD` markers where it lands.
 - No decision record is `made` with an unchecked falsifier; every
-  `provisional` record names a probe that resolves to a research activity;
+  `provisional` record names a pending ASM whose `cheapestProbe` is its probe;
   every `deviates_from` is surfaced at the read-back.
 - Iteration runs: every active job is classified kept / reshaped / superseded
   with its trigger cited; every decision record states keeps / changes /

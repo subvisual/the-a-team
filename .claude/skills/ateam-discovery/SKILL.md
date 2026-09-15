@@ -1,6 +1,6 @@
 ---
 name: ateam-discovery
-description: Use when the A-Team orchestrator invokes the discovery phase for a feature, or when a human runs discovery standalone to seed docs/product/ from raw input (a client transcript, a fuzzy prompt) before any feature exists. The 🔥 grill phase skill — conducts the ported PM skills (product-brainstorming, project-context, research-synthesis, jobs-to-be-done, discovery-plan) through challenge → run brief → research → straw-man → dev review → architecture → grill → read-back → independence handoff → write, producing context.md, the JTBD set, the ADRs, ateam-plan.md, and research-plan.md, and writing gate_policy + run_brief to the manifest. Cannot run without a human: escalates via ## Awaiting answers, never guesses. Implemented against CONTRACT.md.
+description: Use when the A-Team orchestrator invokes the discovery phase for a feature, or when a human runs discovery standalone to seed docs/product/ from raw input (a client transcript, a fuzzy prompt) before any feature exists. The 🔥 grill phase skill — conducts the ported PM skills (product-brainstorming, project-context, research-synthesis, jobs-to-be-done, discovery-plan) through challenge → run brief → research → straw-man → dev review → architecture → grill → read-back → independence handoff → write, producing context.md, the JTBD set, the ADRs, the decision records, ateam-plan.md, and research-plan.md, and writing gate_policy + run_brief to the manifest. Cannot run without a human: escalates via ## Awaiting answers, never guesses. Implemented against CONTRACT.md.
 metadata:
   version: 0.1.0
   owner: Alvaro Bezerra
@@ -222,7 +222,12 @@ questions yourself; you are declaring them unanswered.
 
 ### 6. Architecture (the v0's shape, drafted for ratification)
 
-Conduct **`architecture`** craft over what the dev review just returned.
+Conduct **`architecture`** craft over what the dev review just returned — and,
+on an iteration run, over the decision candidates too: CONTRACT declares them
+as an input to the beat so an ADR deviation is caught here rather than at the
+read-back. The skill's contents are the Dev role owner's; if it does not act
+on the candidates, you surface every `deviates_from:` at the read-back
+yourself.
 `ateam-plan.md` promises *"deliverables to reach v0"* — an empty promise until
 someone has said what the v0 *is*. It drafts up to four decisions: repo shape,
 tech stack per surface, where the v0 runs, and the v0 data strategy.
@@ -337,7 +342,7 @@ every ingested batch has a row; a re-read appends a new row.
 
 Write the **decision records** as `decisions/NN-<slug>.md` per
 `references/decision-template.md` — ratified with every linked load-bearing
-ASM `proceed` → `made`; ratified with one `pending`/`defer` → `provisional`;
+ASM `proceed` (or none load-bearing) → `made`; ratified with one `pending`/`defer` → `provisional`;
 unanswered → `parked` with an open question; each with `assumptions:` naming
 its ASM ids, `## Existing state` cited to the shipped list and any ADR
 deviation in `deviates_from:`. Ids continue from the existing set; a reshaped
@@ -443,14 +448,14 @@ grants *you* nothing here. If you are the one without an answer, you escalate.
 - No `[conflict]` entry is closed without a ruling source; every open one has
   a `research-plan.md` open question and `TBD` markers wherever it lands.
 - No decision record is `made` unless every linked load-bearing ASM is
-  `proceed`; every `provisional` one names a `pending`/`defer` ASM whose
+  `proceed` (or it has none); every `provisional` one names a `pending`/`defer` ASM whose
   `cheapestProbe` is its probe; no record carries a probe of its own; every
   `deviates_from:` was surfaced at the read-back; none is `made` or
-  `provisional` with `decided_by: human` unless the human actually answered.
+  `provisional` with `decided_by: human` unless the human actually answered, and none carries `decided_by: agent` except through a Declared default or a project binding, recorded as an assumption.
 - Iteration runs: every active job is classified kept / reshaped / superseded
   with its trigger cited; every decision record states keeps / changes /
   removes against the shipped list; a staged human artifact has its
-  coverage diff in the read-back.
+  coverage diff in the read-back; the dev review's candidate slot returned findings, or "candidates not reviewed against the code" is recorded in `research-plan.md`.
 - Manifest (if present): configure and completion commands returned success;
   the authorization reference records what the human actually requested.
 

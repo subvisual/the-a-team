@@ -122,7 +122,7 @@ human decision path; a completion refresh cannot authorize them.
    `:p<N>` for a PDF). **Read every prose file in full.** A long one goes to
    a one-shot digest subagent — announce it, pass the file path and the
    current glossary, expect back a digest whose every claim cites lines plus
-   the terms and conflicts it found — so coverage is `full · digest` rather
+   the terms and conflicts it found — so coverage is `full · <date> · digest` rather
    than the conductor skimming. The digest is written knowing how Design and
    Dev will later consume it — organised, not just summarized. **Conflicts
    are items:** where this batch disagrees with another batch, the glossary,

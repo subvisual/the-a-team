@@ -43,6 +43,7 @@ jobs — even when the evidence on the table screams for a rewrite.
 - **`docs/product/context.md` Digest** — a 2–4 line summary of the run plus a
   pointer to the research file, so the one file every agent reads stays current
   without bloating.
+- **`docs/product/context.md` ledger** — one `[conflict]` entry per contradiction between sources (workflow step 5), both sides cited to lines; presented at the read-back alongside the digest note.
 - Evidence not yet in `docs/product/input/` that you pulled from a connector
   (Notion, Granola, Slack, ops API) is **staged verbatim first** as
   `input/<YYYY-MM-DD>-<source>-pulled/`, then synthesized from there — per the
@@ -109,8 +110,8 @@ Use `references/research-synthesis-framework.md` for the full method. The shape:
 9. **Signal** (both modes): collect raw new-job signals.
 10. **Draft** the synthesis file in template order, ending with the discovery
     questions that follow from contradictions and gaps.
-11. **Read-back — mandatory before writing.** The research file and the
-    context.md digest note are durable: present both for correction in this
+11. **Read-back — mandatory before writing.** The research file, the
+    context.md digest note and its `[conflict]` ledger entries are durable: present both for correction in this
     session, then write and commit (one commit, message naming what the run
     found — e.g. `docs(research): onboarding synthesis — 03 challenged, 2 new
     signals`).

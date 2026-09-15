@@ -71,7 +71,5 @@ that parked decision is an open question and belongs above.
 
 Question → activity → owner (human or agent) → date. The work of closing the
 unknowns above; its outcomes land back in research/ runs and flip ledger
-entries to Know. A `provisional` decision record (`[[dec:NN]]`) has its probe
-on its pending ASM record's `cheapestProbe`; list that activity here by ASM
-id — never a second probe.
+entries to Know. A `provisional` decision record (`[[dec:NN]]`) has its probe, owner and due stage on its pending ASM record; nothing is listed here for it — the ledger's own gates carry it, and a second activity would be the parallel register `runner/ASSUMPTIONS.md` forbids.
 ````

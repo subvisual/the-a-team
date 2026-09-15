@@ -428,7 +428,7 @@ ingested: [2026-07-17-client-call, 2026-07-24-granola-pulled]  # digested input/
 ## Sources             # audit index of everything discovery consumed — one line per source
                        #   (link visited, provided file, connector pull, the grill digest):
                        #   type · pointer (URL or input/ path) · date · what it informed ·
-                       #   coverage (full · date · conductor|digest, or partial <range> · method)
+                       #   coverage (full · date · conductor|digest, or partial <range> · date · method)
 ## Glossary            # term | working definition | status (settled/forming/TBD) | source
 ## Design context      # from the design briefing: users & emotional goals, brand personality,
                        #   aesthetic direction (refs + anti-refs), accessibility, 3–5 design principles
@@ -634,6 +634,7 @@ What this gives up, stated as a testable prediction.
 The falsifier — the `disproof` of the linked ASM — then its ledger state:
 `checked — EVD-<id> on ASM-<id>, <citation>, result support` ·
 `checked — result contradict; superseded by [[dec:NN]]` ·
+`checked — result inconclusive; ASM-<id> stays pending` ·
 `unchecked — ASM-<id> pending, probe: <its cheapestProbe>`.
 
 ## Alternatives considered

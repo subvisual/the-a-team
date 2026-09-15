@@ -131,7 +131,7 @@ a human study; gaps remain explicit and link to their canonical obligations.
    append the run to `runs:` in the frontmatter (its artifact group joins
    `## Supporting documentation`). The decision log only ever grows.
 6. **Self-check before returning:**
-   - every `[[epic:NN]]` and `[[NN]]` citation resolves to a file on disk;
+   - every `[[epic:NN]]`, `[[dec:NN]]` and `[[NN]]` citation resolves to a file on disk;
    - every artifact link — per-section and in `## Supporting documentation` —
      resolves from `docs/product/`, and no final artifact is missing from the
      gathered index;

@@ -58,6 +58,7 @@ What this gives up, stated as a testable prediction — "the guardrail knows
 The falsifier — the `disproof` of the linked ASM — then its ledger state:
 `checked — EVD-<id> on ASM-<id>, <citation>, result support` ·
 `checked — result contradict; superseded by [[dec:NN]]` ·
+`checked — result inconclusive; ASM-<id> stays pending` ·
 `unchecked — ASM-<id> pending, probe: <its cheapestProbe>`.
 
 ## Alternatives considered
@@ -82,7 +83,7 @@ question.
   checked before the record is stamped `made`, and the check lives on the
   linked ASM record as an `EVD-` entry (source path, SHA-256, reference,
   `origin: observed`, result) — see `runner/ASSUMPTIONS.md`. Every linked
-  load-bearing ASM `proceed` → `made`; any `pending`/`defer` → `provisional`;
+  load-bearing ASM `proceed` (or none load-bearing) → `made`; any `pending`/`defer` → `provisional`;
   `contradict` → reshape before asking, or supersede. The probe is the ASM's
   `cheapestProbe`; this file never carries a second one. A `made` record with
   an unchecked falsifier is a failed self-check.
