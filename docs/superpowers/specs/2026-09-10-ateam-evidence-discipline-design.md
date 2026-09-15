@@ -158,6 +158,7 @@ fixed vocabulary:
 | `full · <date> · conductor` | read end to end in the conversation |
 | `full · <date> · digest` | read end to end by a one-shot digest subagent whose digest cites lines |
 | `partial <range> · <date> · <method>` | allowed only for non-prose inputs (a JSON spec, an image set, a binary) with the method stated — "diffed programmatically", "rendered and described" |
+| `legacy · <date>` | a row written before the column existed — the original read date; never used for a new read; a legacy file the run re-reads gets a fresh row |
 
 *Prose* means a text file meant to be read: markdown, plain text, an
 extraction. Everything else is non-prose. A staged batch the run did not

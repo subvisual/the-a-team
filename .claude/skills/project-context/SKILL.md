@@ -96,7 +96,10 @@ human decision path; a completion refresh cannot authorize them.
   A document that names a companion not in hand: record the absence in
   `SOURCE.md` and as a ledger entry; never infer its contents. Prior human
   work on the same question (a board, a current-state map) is staged the same
-  way — a FigJam board via `get_figjam` as `input/<YYYY-MM-DD>-figjam-pulled/`.
+  way — a FigJam board via `get_figjam` as
+  `input/<YYYY-MM-DD>-figjam-<board>-pulled/` — the returned JSON verbatim as
+  `board.json` plus a generated `board.md` node listing, named as a rendering
+  in `SOURCE.md`.
 - **Connectors (pull, then stage).** If Notion, Granola, Slack, or the ops API
   are available and hold relevant context, you may pull — but every pull is
   first saved **verbatim** as a new clearly-labeled batch,
@@ -128,21 +131,28 @@ human decision path; a completion refresh cannot authorize them.
    are items:** where this batch disagrees with another batch, the glossary,
    a Know, an active job, an active ADR or the shipped state, write a
    `[conflict]` ledger entry with both citations (step 7); never smooth it.
+   On an iteration run, end the batch's digest with the job classification —
+   kept / reshaped / superseded, trigger cited — that `jobs-to-be-done`'s
+   iteration step produced.
 5. **Sources.** Index everything this refresh consumed — links visited,
    human-provided files, connector pulls, the grill digest batch: type ·
    pointer (URL or `input/` path) · date · what it informed · **coverage**
    (`full · <date> · conductor` · `full · <date> · digest` · `partial
-   <range> · <date> · <method>`, the last for non-prose only). Every file in
-   every ingested batch gets a row; prose files are `full`. Every row
-   resolves; Overview's Key links stay the 2–3 load-bearing ones.
+   <range> · <date> · <method>`, the last for non-prose only).
+   Every evidence file in every ingested batch gets a row (the batch's own
+   `SOURCE.md` none); prose files are `full`; a row that predates the column
+   carries `legacy · <original date>`, and a legacy file you re-read gets a
+   fresh row. Every row resolves; Overview's Key links stay the 2–3
+   load-bearing ones.
 6. **Overview.** What/why in one paragraph, audience, stage, goals,
    constraints, key links. Jobs cited by id, headline quoted exactly.
 7. **Ledger.** Update Know / Don't-Know. Tag each Don't-Know **blocking**
    (naming the JTBD or scope call it blocks) or **non-blocking** (destined for
    `research-plan.md` as an open question). Enter each conflict from step 4 as
    a **`[conflict]`** entry — both sides cited, what it blocks, and its ruling
-   if a batch's `SOURCE.md` precedence settles it (`ruling: SOURCE.md
-   precedence — <which>`); otherwise `ruling: open`, for the grill. Knows cite
+   if a batch's `SOURCE.md` precedence settles it — a conflict between files of
+   that batch only — (`ruling: SOURCE.md precedence — <which>`); otherwise
+   `ruling: open`, for the grill. Knows cite
    lines. Uncertainty stays visible as TBD — a confident-sounding guess is a
    landmine for every skill that reads this file.
 8. **Design and technical context.** On a first run, synthesize the design

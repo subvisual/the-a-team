@@ -89,8 +89,10 @@ docs/features/<slug>/
   written unreviewed pollutes every future feature.
 - **`input/` is append-only evidence.** Humans drop evidence there. A skill may
   **stage** a verbatim connector pull (Notion, Granola, Slack, ops API) as a new
-  clearly-labeled batch — `input/<YYYY-MM-DD>-<source>-pulled/` — so the audit
-  trail survives the source changing or vanishing. A skill never edits, deletes,
+  clearly-labeled batch — `input/<YYYY-MM-DD>-<source>-pulled/`, where
+  `<source>` names the connector and, when one connector yields several
+  artifacts, the artifact too (`makor-swagger`, `figjam-<board>`) — so the
+  audit trail survives the source changing or vanishing. A skill never edits, deletes,
   or summarizes-in-place an existing batch; digests belong in `context.md`.
 - **Nothing is cited that is not on disk.** Anything the human points at that
   lives outside the repo — a file in a parent folder, an attachment in the
@@ -104,7 +106,7 @@ docs/features/<slug>/
   are never inferred. Prior human work on the same question — a board, a
   current-state map, a spreadsheet — is an input like any other: staged
   through this rule (a FigJam board via `get_figjam`, verbatim, as
-  `input/<YYYY-MM-DD>-figjam-pulled/`), covered, cited, and diffed against at
+  `input/<YYYY-MM-DD>-figjam-<board>-pulled/`), covered, cited, and diffed against at
   discovery's read-back. Citing a source that has no batch on disk is a failed
   self-check.
 
@@ -122,6 +124,10 @@ run itself (a recommendation, a classification, a self-check).
   - a section, when lines would be brittle to quote: `<batch>/<path> §4.6`
   - PDFs: `<batch>/<file>.pdf:p<N>` · images: `<batch>/<file>` plus the region
   - the grill: `<YYYY-MM-DD>-grill-digest/grill.md:L<start>-L<end>`
+  - repo artifacts outside `input/` (the product report, an ADR, an epic,
+    code): the target-relative path with `:L<start>-L<end>` or `§<heading>`
+    for prose, the bare path for code — a citation must resolve, it need not
+    quote
 
   Lines are stable because `input/` batches are never edited. Where a domain
   claim must cite: glossary rows (the Source column), `## Digest` claims,
@@ -137,10 +143,15 @@ run itself (a recommendation, a classification, a self-check).
   `full · <date> · digest` (read end to end by a one-shot digest subagent
   whose digest cites lines) · `partial <range> · <date> · <method>` (non-prose
   inputs only — a JSON spec, an image set, a binary — with the method stated:
-  "diffed programmatically", "rendered and described"). *Prose* is a text file
+  "diffed programmatically", "rendered and described"). A fourth value,
+  `legacy · <date>`, marks a row that predates the column — the original read
+  date, never written for a new read; a legacy file the run re-reads gets a
+  fresh row, the rest are named in the coverage record. *Prose* is a text file
   meant to be read — markdown, plain text, an extraction; everything else is
-  non-prose. **Every file in every ingested batch has a row; prose files are
-  `full`.** A long document is read in full by a digest subagent, announced
+  non-prose. **Every evidence file in every ingested batch has a row; prose
+  files are `full`** — a batch's own `SOURCE.md` is its provenance note, not
+  evidence, and gets no row; the grill digest's row points at `grill.md`. A
+  long document is read in full by a digest subagent, announced
   before dispatch, so the conductor's load discipline holds without the
   shortest input dominating. A staged batch the run did not ingest has no
   rows, stays out of `ingested:`, and gets a ledger entry naming it and why. A
@@ -157,7 +168,9 @@ run itself (a recommendation, a classification, a self-check).
   and the entry closed `ruling: human, grill Q<n>`; blocking + not answerable
   → a research activity; non-blocking → survives into `research-plan.md` as an
   open question. A batch's own stated precedence (its `SOURCE.md` says which
-  document wins) is a ruling source and is not asked. An unruled conflict is
+  document wins) is a ruling source for a conflict between files of that same
+  batch and is not asked; a conflict across batches, or with the North Star,
+  an active ADR or the shipped state, is always `ruling: open`. An unruled conflict is
   carried, never smoothed: every artifact touching it holds both readings
   marked `TBD` with the conflict cited. **Silent resolution is a failed
   self-check.**
@@ -289,7 +302,7 @@ Everything else — especially durable writes and their review step — behaves
     falsifier rests on.
   - `docs/product/input/<YYYY-MM-DD>-<label>/` — anything the human pointed
     at that was not on disk, staged before it is cited (the staging rule
-    above); and `input/<YYYY-MM-DD>-figjam-pulled/` for a human board.
+    above); and `input/<YYYY-MM-DD>-figjam-<board>-pulled/` for a human board.
 - **Process shape**: `challenge (+ run brief) → research → straw-man →
   dev review → architecture → grill → read-back → independence handoff →
   write`.
@@ -379,8 +392,9 @@ Everything else — especially durable writes and their review step — behaves
   alongside mode, outcome, assumptions, deliverables, required verification, limits
   and stopping point. The **questions and their answer options** live in
   `intake/pm-intake.md`; skills read them there rather than carrying copies. Runs alongside the challenge beat but is **not
-  skippable with it** — `run_brief` is a required manifest write. Durable
-  per-project defaults may live in `context.md` so repeat runs don't re-ask.
+  skippable with it** — `run_brief` is a required manifest write. Run-brief
+  answers are per run, never durable defaults: the staged grill digest is
+  what a repeat run reads, and it asks only deltas.
 - **Intake routing**: seed the ledger from all three `intake/` banks, each entry
   tagged with its consumer role (`[pm]` / `[design]` / `[dev]`), then route by
   **answerability**: blocking + answerable by this human → asked in the grill;
@@ -424,7 +438,9 @@ ingested: [2026-07-17-client-call, 2026-07-24-granola-pulled]  # digested input/
 
 ## Overview            # what/why, audience, stage, goals, constraints, key links;
                        # jobs cited by id, headline quoted exactly — never paraphrased
-## Digest              # per ingested batch: what the evidence says, pointers into input/
+## Digest              # per ingested batch: what the evidence says, pointers into input/;
+                       #   on an iteration run it ends with the job classification (kept / reshaped /
+                       #   superseded, trigger cited)
 ## Sources             # audit index of everything discovery consumed — one line per source
                        #   (link visited, provided file, connector pull, the grill digest):
                        #   type · pointer (URL or input/ path) · date · what it informed ·

@@ -45,7 +45,8 @@ the human's answers, not on eager loading.
   prose files are read in full; every domain claim cites a line; conflicts are
   ledger items, never judgements; product-scope calls are decision records
   bound to the `ASM-` records their falsifier rests on, stamped `made` only
-  when those are `proceed` with evidence (`runner/ASSUMPTIONS.md`).
+  when those are `proceed` with evidence, or none is load-bearing
+  (`runner/ASSUMPTIONS.md`).
 - **Done-signal**: successful transition CLI `complete` result. No orchestrator
   gate — your read-back is the gate.
 - **Manifest-optional**: absent → prompt from args, skip all manifest writes.
@@ -78,10 +79,10 @@ challenge means going straight to the run brief, never past it.
 
 **Same grill discipline as everything else: one question at a time, each with
 its recommendation — never batched into a single dialog** (batching proved
-confusing in the 2026-07 dry run). Check `context.md` for durable per-project
-defaults first; don't re-ask what's recorded. Hold the answers; they're written
-at the handoff (manifest runs) or into `context.md` as durable defaults
-(standalone — see movement 9).
+confusing in the 2026-07 dry run). Read the latest staged grill digest first
+and ask only deltas; run-brief answers are per run, never durable defaults.
+Hold the answers; they're written at the handoff (manifest runs) and into the
+grill digest at the write step (every run).
 
 ### 3. Research (ingest, never invent)
 
@@ -89,13 +90,17 @@ at the handoff (manifest runs) or into `context.md` as durable defaults
   in a parent folder, an attachment, a board, a shared page — becomes an
   `input/<YYYY-MM-DD>-<label>/` batch with a `SOURCE.md` before you read it
   for content (a FigJam board via `get_figjam` as
-  `input/<YYYY-MM-DD>-figjam-pulled/`). A named companion not in hand is a
+  `input/<YYYY-MM-DD>-figjam-<board>-pulled/`: the tool's returned JSON
+  verbatim as `board.json`, plus a generated `board.md` listing every node's
+  text, named as a rendering in `SOURCE.md` — `board.md` is prose and read
+  `full`; `board.json` is non-prose and gets `partial nodes+text · <date> ·
+  rendered to board.md`). A named companion not in hand is a
   `SOURCE.md` note and a ledger entry, never inferred.
 - Un-ingested `input/` batches: apply **`project-context`** craft to digest
   into a drafted `context.md` (glossary first, Know/Don't-Know ledger, TBD
   honesty) — on an iteration run, *against* the existing file: refresh, never
   rebuild. **Every prose file is read in full.** Announce and dispatch a
-  one-shot **digest subagent** per long document (pass the path and the
+  one-shot **digest subagent** per long document — 300 lines or more (pass the path and the
   current glossary; expect a digest whose every claim cites lines, plus terms
   and conflicts found), so its coverage row reads `full · <date> · digest`;
   read the rest yourself for `full · <date> · conductor`. Non-prose inputs get
@@ -104,7 +109,9 @@ at the handoff (manifest runs) or into `context.md` as durable defaults
   with another input, the glossary, a Know, an active job, an active ADR or —
   on an iteration run — the shipped state, enter a `[conflict]` ledger item
   with both citations and what it blocks; a batch's `SOURCE.md` precedence is
-  a ruling, everything else is `ruling: open` for the grill.
+  a ruling only for a conflict between files of that same batch; every other
+  conflict — across batches, with the North Star, an ADR or the shipped
+  state — is `ruling: open` for the grill.
 - **Iteration runs read the implemented state here:** the `ateam-context`
   index resolved by `context-cli.mjs select` (its `currentState`, `bindings`,
   `unresolvedDecisions` and observed facts), every active ADR, every epic and
@@ -146,12 +153,15 @@ at the handoff (manifest runs) or into `context.md` as durable defaults
 ### 4. Straw-man (committed first pass)
 
 Draft the JTBD set using **`jobs-to-be-done`** craft — house-format headlines,
-forces cited to lines, honest confidence, parked candidates as real files —
+forces cited to lines, honest confidence, parked jobs as real files —
 *before* asking the human anything about jobs. A straw-man the human corrects
 beats a questionnaire the human authors.
 
 **Iteration runs.** Classify every active job **kept / reshaped / superseded**
-with the citation that triggers the class (the craft's iteration step). Then
+with the citation that triggers the class (the craft's iteration step). The
+classification lives at the end of the new batch's `## Digest` entry in
+`context.md` — one line per active job, class and trigger citation — so it
+survives the conversation and the next run can read it. Then
 draft the **decision candidates** the new input forces — the product-scope
 calls a definition phase must not make alone: grain, which gates block, pull
 versus push, out-of-focus lines, which side of a conflict wins. Each candidate
@@ -159,11 +169,26 @@ is drafted in the decision record shape with a recommendation, its cost as a
 testable prediction, its falsifier, and its keeps / changes / removes against
 the shipped list. **Bind each falsifier to an `ASM-` record** in the
 `ateam-assumptions` block (its `disproof`, `cheapestProbe`, `requiredStage`,
-owner or unresolved owner) and **check it now** against what is staged,
-recording an `EVD-` entry (path, SHA-256, reference, `origin: observed`,
-result): `contradict` → reshape the candidate; `support` → the ASM can be
-`proceed`; not checkable → the ASM stays `pending`. Candidates enter the
-ledger as blocking entries.
+owner or unresolved owner). If `research-plan.md` has no block yet, add the
+template's empty revision-1 block first, preserve it as
+`assumptions-history/1.json`, and write the records as revision 2 —
+`runner/ASSUMPTIONS.md`'s history rule starts there. **Check each falsifier
+now** against what is staged and *draft* its `EVD-` entry (path, SHA-256,
+reference, `origin: observed`, result) — drafted, not written: nothing
+durable lands before the read-back; the entries are written with the ledger
+at movement 10, and the read-back shows each candidate's check state.
+Outcomes: `contradict` → reshape the candidate; `inconclusive` (checked
+against a staged source, not settled) → the ASM stays `pending` with the
+evidence attached; not checkable because the source is not staged →
+`unchecked`, no `EVD-` entry, the ASM stays `pending`; `support` → the ASM
+may become `proceed` only when the check *was* its `cheapestProbe.method` and
+the human ratifies it in the grill — that ratification is the disposition's
+`decision` (actor: the human; reference: the grill digest line;
+`contradictionIds` naming every contradicting source) — otherwise it stays
+`pending` with the evidence attached. **Compare each candidate against every active ADR**:
+a candidate that changes what an ADR decided names it in
+`deviates_from:` here, so movement 6 and the read-back have something to
+surface. Candidates enter the ledger as blocking entries.
 
 ### 5. Dev review (subagent, before the grill)
 
@@ -275,7 +300,7 @@ Intake-bank questions are never asked raw — they enter through the ledger and
 this routing. **`[conflict]` entries and decision candidates route the same
 way** — asked one at a time, recommendation first, the ruling or ratification
 recorded verbatim in the grill digest. A human "yes" on a candidate whose
-falsifier is unchecked yields `provisional` with a probe, never `made`; a
+falsifier is unchecked yields `provisional` with its ASM's probe, never `made`; a
 conflict the human cannot rule stays open and both readings are carried as
 `TBD`. **Termination is defined, not felt**: stop when the blocking set is
 empty or the human stops you.
@@ -286,10 +311,14 @@ Present, for correction before anything durable is written: the JTBD set in
 full (headlines + confidence — this is the North Star, read it carefully),
 plus tight summaries of `context.md` (glossary + ledger), the plans, and any
 synthesis run. One consolidated read-back covers every ported skill's
-read-back duty. The human corrects; you fix; re-present what changed.
+read-back duty. The human corrects; you fix; re-present only what changed. A
+point still contested after two passes is recorded as an open question, not
+re-argued.
 
 Present the **ADR set** too — one line per decision with its `decided_by`
-stamp. A decision the human is seeing for the first time here has not been
+stamp; on an iteration run, the ADRs minted or changed this run plus any ADR
+a decision record names in `deviates_from:`, not the unchanged rest. A
+decision the human is seeing for the first time here has not been
 ratified; say so plainly and let it park. Where a dev review finding moved a job
 out of v0, name it: a straw-man that quietly shrinks between draft and read-back
 is exactly what movement 5 exists to surface.
@@ -304,10 +333,13 @@ Then three lists, each on its own, before anything is written:
   provisional, `deviates_from` where it deviates, and its keeps / changes /
   removes line.
 
-And, when a human artifact of the same kind was staged (a board, a
-current-state map): the **coverage diff** — items on it the run's set does not
-cover, and items in the set it does not, each a ledger entry or an explicit
-"deliberately not covered — <reason>".
+And, when a human artifact of the same kind was staged — prior human work answering
+the question this run answers: a discovery or current-state board,
+a scope document — the **coverage diff**: every item on the artifact mapped
+to the job, decision record, glossary term or open question that covers it,
+or marked "deliberately not covered — <reason>"; and every item in the run's
+set (jobs, decisions, terms, open questions) the artifact does not cover,
+each a ledger entry.
 
 ### 9. Independence handoff (the human opens the valve)
 
@@ -322,8 +354,8 @@ Present how the run will proceed and have the **human** choose the
 Say explicitly: *"any assumption made after you leave lands in
 `research-plan.md` with a confidence level."* You never choose the policy; no
 answer → `block` stands. Standalone (no manifest): skip the policy — there is
-no run to govern — but record the run-brief answers in `context.md` as the
-durable per-project defaults movement 2 reads, so the next run doesn't re-ask.
+no run to govern; the run-brief answers land in the grill digest at the write
+step, which is what the next run reads before asking deltas.
 
 ### 10. Write & commit
 
@@ -385,9 +417,14 @@ and digest against the existing context (movement 3), read the shipped state
 (3), classify every active job and draft the decision candidates (4), pass the
 candidates to the dev review (5), route conflicts and candidates through the
 grill (7), present the three lists and the coverage diff (8), write the
-decision records (10). Nothing about the orchestrator changes; you detect the
-entry yourself, under `/feature` and standalone alike. A re-shape that reaches
-definition without decision records and a classified job set is the drift
+decision records (10). Movements 1, 2, 6 and 9 run too, as deltas: the
+challenge is the routing question itself — reopen or refine — capped as
+always; the run brief asks only what the last grill digest did not answer;
+the architecture beat runs over the candidates and drafts nothing when no
+active ADR is touched; the independence handoff re-asks the policy only
+under a manifest, as today. Nothing about the orchestrator changes; you
+detect the entry yourself, under `/feature` and standalone alike. A re-shape
+that reaches definition without decision records and a classified job set is the drift
 this entry exists to prevent.
 
 ## No human present
@@ -440,8 +477,10 @@ grants *you* nothing here. If you are the one without an answer, you escalate.
 - Every source the human pointed at is staged as an `input/` batch with a
   `SOURCE.md` before anything cites it; every named-but-absent companion is a
   `SOURCE.md` note and a ledger entry.
-- Every file in every ingested batch has a `## Sources` coverage row; every
-  prose file is `full` (conductor or digest).
+- Every evidence file in every ingested batch has a `## Sources` coverage row
+  (a batch's own `SOURCE.md` gets none); every prose file is `full` (conductor
+  or digest); legacy rows the run touched were re-read and re-rowed, the rest
+  are named in the coverage record.
 - Every domain claim in the glossary, the digest, the Knows, job bodies
   (`## Today`, `## Forces`), ADR contexts and decision records carries a line
   citation that resolves on disk.
@@ -453,7 +492,8 @@ grants *you* nothing here. If you are the one without an answer, you escalate.
   `deviates_from:` was surfaced at the read-back; none is `made` or
   `provisional` with `decided_by: human` unless the human actually answered, and none carries `decided_by: agent` except through a Declared default or a project binding, recorded as an assumption.
 - Iteration runs: every active job is classified kept / reshaped / superseded
-  with its trigger cited; every decision record states keeps / changes /
+  with its trigger cited in the batch's `## Digest` entry; every decision
+  record states keeps / changes /
   removes against the shipped list; a staged human artifact has its
   coverage diff in the read-back; the dev review's candidate slot returned findings, or "candidates not reviewed against the code" is recorded in `research-plan.md`.
 - Manifest (if present): configure and completion commands returned success;
@@ -463,7 +503,10 @@ grants *you* nothing here. If you are the one without an answer, you escalate.
 ## Current context before discovery
 
 Resolve the configured current-context entrypoint with
-`node <harness>/runner/src/context-cli.mjs select --root <target> --task '<task JSON>'`.
+`node <harness>/runner/src/context-cli.mjs select --root <target> --task '<task JSON>'`
+— for discovery the task JSON is `{"paths":["docs/product"],"tags":["discovery"]}`
+plus any linked obligation ids; `--task` is optional and defaults to `{}`
+(shape in `runner/CONTEXT.md`).
 For first bootstrap or legacy context, invoke project-context to add/revalidate
 its current index without dropping historical evidence. Surface stale discovery
 claims that conflict with current implementation or commands; code does not
@@ -504,7 +547,9 @@ JSON contains `run_brief`, `gate_policy`, and `authorization`: `{ "kind": "human
 reference>", "scope": ["definition", "design"] }`. Scope names only the gates
 the human authorized provisionally. Missing authorization keeps the block default.
 
-The discovery binding covers its durable JTBD output. List context, ADRs and
+The discovery binding covers its durable JTBD output and the decision records — both human-ratified,
+both staling downstream gates when they
+change. List context, ADRs and
 plans in the phase report, but do not bind evolving current-context summaries or
 appendable research plans as immutable discovery outputs. Later context refresh
 and assumption relay must not reopen unchanged jobs. Changed jobs still stale

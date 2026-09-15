@@ -31,7 +31,10 @@ paraphrase a job, never restate the jtbd/ files here. If none exist:
 
 <Per ingested batch, newest first: what the evidence actually says, compressed,
 with pointers back to the input/ files. The digest is the readable form of the
-raw mess — it never replaces the raw files and never embellishes them.>
+raw mess — it never replaces the raw files and never embellishes them. On an
+iteration run the batch's digest ends with the job classification: one line
+per active job — kept / reshaped / superseded — with the citation that
+triggers it.>
 
 ### 2026-07-17-client-call
 <...>
@@ -46,8 +49,9 @@ the complete index. Coverage says how much of the file was read and by whom:
 `full · <date> · conductor` · `full · <date> · digest` (a one-shot digest
 subagent whose digest cites lines) · `partial <range> · <date> · <method>`
 (non-prose inputs only — a JSON spec, an image set, a binary — with the
-method stated). Every file in every ingested batch has a row; prose files are
-`full`. A re-read appends a new row with the new date; the latest row
+method stated). `legacy · <date>` marks a row written before this column
+existed — never for a new read. Every file in every ingested batch has a
+row; prose files are `full`. A re-read appends a new row with the new date; the latest row
 governs.>
 
 | Type | Source | Date | What it informed | Coverage |
@@ -129,7 +133,8 @@ The role tag is carried whenever an `intake/` bank seeded the entry — it is
 what the answerability routing keys off, and with three banks feeding one
 ledger an untagged entry loses its consumer. A `[conflict]` entry names both
 sides with citations and what it blocks; it routes like any entry and closes
-with its ruling source (`ruling: human, grill Q<n>` · `SOURCE.md precedence`);
+with its ruling source (`ruling: human, grill Q<n>` · `SOURCE.md precedence`
+— the latter only for a conflict between files of one batch);
 an unruled one is carried into research-plan.md as an open question and every
 artifact touching it holds both readings marked `TBD`. Knows cite lines too:
 `- <fact> — `<batch>/<file>:L<start>-L<end>``.
@@ -151,8 +156,11 @@ Rules that bind every writer of this file:
 - **Sources is append-mostly and every row resolves.** A source that shaped a
   fact but never reaches the index is an audit hole; a row pointing at nothing
   (dead path, vanished URL with no staged pull) is a bug.
-- **Every ingested file has a coverage row; prose files are `full`.** A prose
-  file in an ingested batch without a `full` row is a failed self-check. A
+- **Every evidence file in an ingested batch has a coverage row; prose files
+  are `full`.** The batch's own `SOURCE.md` is provenance, not evidence, and
+  gets no row. A row that predates the column carries `legacy · <original
+  date>`; a legacy file the run re-reads gets a fresh row. A prose file in an
+  ingested batch without a `full` (or `legacy`) row is a failed self-check. A
   staged batch not ingested this run has no rows, stays out of `ingested:`,
   and gets a ledger entry naming it and why.
 - **Nothing is cited that is not on disk.** A source the human pointed at
