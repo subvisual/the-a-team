@@ -185,8 +185,8 @@ input lands, it stages first, digests against the existing context, reads what
 shipped (ADRs, epics, the product report), classifies every active job
 kept / reshaped / superseded, drafts the **decision candidates** the input
 forces, and hands definition a classified job set plus decision records — and
-every discovery write gains an **evidence discipline** that CONTRACT.md states
-under *Citations and coverage*: nothing is cited that is not staged on disk
+every discovery write gains an **evidence discipline** that CONTRACT.md states under its
+durable rules and *Citations and coverage*: nothing is cited that is not staged on disk
 (human-pointed sources included), every ingested file has a coverage row and
 prose is read in full (a digest subagent for long documents), every domain
 claim cites a line, conflicts between inputs are `[conflict]` ledger items
@@ -199,7 +199,10 @@ before a call is stamped `made`; otherwise the human's yes yields
 `provisional`, the ledger's gates carrying the probe and its deadline — no
 parallel register. The read-back presents three lists — the
 coverage record, the conflicts, the decision records — and a coverage diff
-against any human artifact staged as input. ADRs stay architecture-only and
+against any human artifact staged as input. Each of these rules names its
+failure mode in CONTRACT: an unstaged source, a prose file without a `full`
+coverage row, a domain claim without a citation, or a silently resolved conflict
+is a failed self-check, not a style note. ADRs stay architecture-only and
 Dev-owned; the `architecture` and `dev-research` skills receive the decision
 candidates as a declared slot, filled by the Dev role owner.
 
