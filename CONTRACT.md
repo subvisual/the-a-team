@@ -387,7 +387,8 @@ ingested: [2026-07-17-client-call, 2026-07-24-granola-pulled]  # digested input/
 ## Digest              # per ingested batch: what the evidence says, pointers into input/
 ## Sources             # audit index of everything discovery consumed — one line per source
                        #   (link visited, provided file, connector pull, the grill digest):
-                       #   type · pointer (URL or input/ path) · date · what it informed
+                       #   type · pointer (URL or input/ path) · date · what it informed ·
+                       #   coverage (full · date · conductor|digest, or partial <range> · method)
 ## Glossary            # term | working definition | status (settled/forming/TBD) | source
 ## Design context      # from the design briefing: users & emotional goals, brand personality,
                        #   aesthetic direction (refs + anti-refs), accessibility, 3–5 design principles
@@ -395,7 +396,8 @@ ingested: [2026-07-17-client-call, 2026-07-24-granola-pulled]  # digested input/
                        #   infra/deploy, data sensitivity,
                        #   non-functional constraints, v0 test bar
 ## Know / Don't know   # Don't-Knows tagged blocking (naming what they block) or non-blocking,
-                       #   plus a consumer tag ([pm] | [design] | [dev]) when a role's intake seeded it
+                       #   plus a consumer tag ([pm] | [design] | [dev]) when a role's intake seeded it;
+                       #   [conflict] entries name both sides with citations and their ruling or open status
 ## Awaiting answers    # present only while an escalation is open
 ```
 
@@ -403,10 +405,13 @@ Full annotated template: the `project-context` skill's
 `references/context-template.md`. Load-bearing: refresh-never-rebuild (a refresh
 that drops content is a forbidden overwrite); TBD stays visible, never smoothed
 into prose; renamed glossary terms are never deleted; every `## Sources` row
-resolves — a live URL or a path on disk — and `## Overview` keeps only the 2–3
-load-bearing product links (Sources is the complete index); the ledger's
-**blocking** set is the grill's termination condition — non-blocking unknowns
-flow to `research-plan.md` as open questions.
+resolves — a live URL or a path on disk — and carries a coverage value (every
+file in an ingested batch has a row; prose files are `full` — see *Citations
+and coverage*); `## Overview` keeps only the 2–3 load-bearing product links
+(Sources is the complete index); glossary rows and ledger Knows cite lines;
+the ledger's **blocking** set is the grill's termination condition —
+non-blocking unknowns and unruled `[conflict]` entries flow to
+`research-plan.md` as open questions.
 
 **One fact, one home.** `## Design context` and `## Technical context` hold only
 *settled* facts. Uncertainty belongs in `research-plan.md` with a confidence
@@ -431,10 +436,11 @@ sources: [granola-2026-07-17, sketch-03.png]
 Who, when, how often. What triggers it.
 
 ## Today
-How it's solved now, and what that costs.
+How it's solved now, and what that costs — each domain claim cited to a line.
 
 ## Forces
-Push / pull / anxiety / inertia — the demand evidence the statement rests on.
+Push / pull / anxiety / inertia — the demand evidence the statement rests on,
+each force cited to the line it rests on.
 
 ## Success
 Observable signal the job is done well.
@@ -490,9 +496,9 @@ sources: [2026-08-27-grill-digest, dev-review]
 active — ratified by the human at the 2026-08-27 grill.   # or: superseded by [[adr:07]]
 
 ## Context
-The forces. The project binding or Declared default that applied, cited not
-restated. Which dev review finding this rests on and how it was rated. The jobs
-that turn on it: [[03]], [[05]].
+The forces, each domain claim cited to a line. The project binding or Declared
+default that applied, cited not restated. Which dev review finding this rests
+on and how it was rated. The jobs that turn on it: [[03]], [[05]].
 
 ## Decision
 What we will do. Active voice, present tense.
@@ -527,6 +533,14 @@ Load-bearing:
 - **Only decisions that block planning belong here at discovery time.** Schema,
   component breakdown, and library picks inside a settled stack are dev-phase
   depth — minting them as durable ADRs from a grill fabricates authority.
+- **Product-scope calls are not ADRs.** They are decision records
+  (`[[dec:NN]]`, template below). A decision record that deviates from an
+  active ADR names it in `deviates_from:` and is surfaced at discovery's
+  read-back; only the `architecture` skill supersedes an ADR. On an iteration
+  run the beat also receives the run's **decision candidates** as an input, so
+  a deviation is caught here rather than at read-back — a declared slot whose
+  contents are the Dev role owner's; until the skill reads it, discovery
+  surfaces deviations itself.
 
 Full annotated template: the `architecture` skill's
 `references/adr-template.md`. The team defaults it falls back to live in
