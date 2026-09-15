@@ -50,11 +50,15 @@ docs/product/
   jtbd/NN-<slug>.md           # one file per job
   epics/NN-<slug>.md          # one file per epic — durable delivery structures, same lifecycle rules
                               # Citation syntax: bare [[NN]] / [[NN-slug]] ALWAYS cites a job;
-                              # epics cite as [[epic:NN]] (any future durable class gets a prefix)
+                              # epics cite as [[epic:NN]], ADRs as [[adr:NN]], decisions as
+                              # [[dec:NN]] (any future durable class gets a prefix)
   design-system/              # canonical design tokens — scale.ts, palette.ts, shadcn-theme.css
                               #   (design phase, create-once; the design gate is their review)
   adr/NN-<slug>.md            # one file per architecture decision — repo shape, stack, where the v0
                               #   runs, v0 data strategy; same lifecycle rules; cited as [[adr:NN]]
+  decisions/NN-<slug>.md      # one file per product-scope decision — the calls that shape what is
+                              #   built and that no later phase may make alone; same lifecycle rules;
+                              #   status made | provisional | superseded | parked; cited as [[dec:NN]]
   ateam-plan.md               # the plan built for the A-Team agents: goals + deliverables to reach v0
   research-plan.md            # ships with v0: open questions, assumptions + confidence,
                               #   technical research (services, stack, integration costs)
@@ -85,9 +89,95 @@ docs/features/<slug>/
   written unreviewed pollutes every future feature.
 - **`input/` is append-only evidence.** Humans drop evidence there. A skill may
   **stage** a verbatim connector pull (Notion, Granola, Slack, ops API) as a new
-  clearly-labeled batch — `input/<YYYY-MM-DD>-<source>-pulled/` — so the audit
-  trail survives the source changing or vanishing. A skill never edits, deletes,
+  clearly-labeled batch — `input/<YYYY-MM-DD>-<source>-pulled/`, where
+  `<source>` names the connector and, when one connector yields several
+  artifacts, the artifact too (`makor-swagger`, `figjam-<board>`) — so the
+  audit trail survives the source changing or vanishing. A skill never edits, deletes,
   or summarizes-in-place an existing batch; digests belong in `context.md`.
+- **Nothing is cited that is not on disk.** Anything the human points at that
+  lives outside the repo — a file in a parent folder, an attachment in the
+  conversation, a board, a shared page — is staged verbatim as
+  `input/<YYYY-MM-DD>-<label>/` with a `SOURCE.md` **before** it is cited. The
+  batch is labelled by its staging date. `SOURCE.md` records origin, the
+  authoring date if stated, what was copied and what was not (keeping the
+  original binary alongside is fine, never required), and any fidelity caveat —
+  an extraction is not the document. A document that names a companion not in
+  hand records the absence in `SOURCE.md` and as a ledger entry; its contents
+  are never inferred. Prior human work on the same question — a board, a
+  current-state map, a spreadsheet — is an input like any other: staged
+  through this rule (a FigJam board via `get_figjam`, verbatim, as
+  `input/<YYYY-MM-DD>-figjam-<board>-pulled/`), covered, cited, and diffed against at
+  discovery's read-back. Citing a source that has no batch on disk is a failed
+  self-check.
+
+### Citations and coverage
+
+These bind every skill that writes a domain claim into `docs/product/`. A
+**domain claim** is a statement about the client's world — its people, process,
+vocabulary, numbers, rules or constraints — as opposed to a statement about the
+run itself (a recommendation, a classification, a self-check).
+
+- **Every domain claim cites a line.** Syntax, beside the `[[…]]` id
+  convention above:
+  - text: `<batch>/<path>:L<start>-L<end>` — e.g.
+    `2026-08-20-outsource-design-package/deal-state-mechanics-guide.md:L88-L94`
+  - a section, when lines would be brittle to quote: `<batch>/<path> §4.6`
+  - PDFs: `<batch>/<file>.pdf:p<N>` · images: `<batch>/<file>` plus the region
+  - the grill: `<YYYY-MM-DD>-grill-digest/grill.md:L<start>-L<end>`
+  - repo artifacts outside `input/` (the product report, an ADR, an epic,
+    code): the target-relative path with `:L<start>-L<end>` or `§<heading>`
+    for prose, the bare path for code — a citation must resolve, it need not
+    quote
+
+  Lines are stable because `input/` batches are never edited. Where a domain
+  claim must cite: glossary rows (the Source column), `## Digest` claims,
+  ledger Knows, a job's `## Today` and `## Forces`, an ADR's `## Context`, a
+  decision record's `## Why`, `## Wrong if` and `## Existing state`.
+  `sources:` frontmatter stays batch-level — it is the audit index; the line
+  citation sits in the body where the claim is made. **A domain claim this run
+  writes, moves or re-asserts with no citation is a failed self-check**; a
+  citation that does not resolve on disk is a bug, like a dead `## Sources`
+  row. An inherited claim without a citation is left as it is, tagged
+  `[legacy]`, and named in the coverage record until a run re-derives it —
+  never back-filled with a line nobody read.
+- **Every ingested file has a coverage row.** `context.md`'s `## Sources`
+  carries a **Coverage** column with a fixed vocabulary:
+  `full · <date> · conductor` (read end to end in the conversation) ·
+  `full · <date> · digest` (read end to end by a one-shot digest subagent
+  whose digest cites lines) · `partial <range> · <date> · <method>` (non-prose
+  inputs only — a JSON spec, an image set, a binary — with the method stated:
+  "diffed programmatically", "rendered and described"). A fourth value,
+  `legacy · <date>`, marks a row that predates the column — the original read
+  date, never written for a new read; a legacy file the run re-reads gets a
+  fresh row, the rest are named in the coverage record. *Prose* is a text file
+  meant to be read — markdown, plain text, an extraction; everything else is
+  non-prose. **Every evidence file in every ingested batch has a row; prose
+  files are `full`** — a batch's own `SOURCE.md` is its provenance note, not
+  evidence, and gets no row; the grill digest's row points at `grill.md`. A
+  long document is read in full by a digest subagent, announced
+  before dispatch, so the conductor's load discipline holds without the
+  shortest input dominating. A staged batch the run did not ingest has no
+  rows, stays out of `ingested:`, and gets a ledger entry naming it and why. A
+  run that re-reads a file appends a new row with the new date and coverage;
+  the latest row governs, and no earlier row is edited. The coverage record is
+  presented at discovery's read-back as its own list; a prose file without a
+  `full` row — or, for a row the run did not re-read, a `legacy` one — is a
+  failed self-check.
+- **Conflicts are items, never judgements.** When two inputs — or an input and
+  the existing North Star, an active ADR, or the shipped state — disagree on a
+  fact that reaches an artifact, the ledger carries a `[conflict]` entry naming
+  both sides with citations and what it blocks (or `[non-blocking]`). It routes
+  like any ledger entry: blocking + answerable by this human → asked in the
+  grill, recommendation first, the ruling recorded verbatim in the grill digest
+  and the entry closed `ruling: human, grill Q<n>`; blocking + not answerable
+  → a research activity; non-blocking → survives into `research-plan.md` as an
+  open question. A batch's own stated precedence (its `SOURCE.md` says which
+  document wins) is a ruling source for a conflict between files of that same
+  batch and is not asked; a conflict across batches, or with the North Star,
+  an active ADR or the shipped state, is always `ruling: open`. An unruled conflict is
+  carried, never smoothed: every artifact touching it holds both readings
+  marked `TBD` with the conflict cited. **Silent resolution is a failed
+  self-check.**
 
 ## Environment given to every phase skill
 
@@ -211,9 +301,36 @@ Everything else — especially durable writes and their review step — behaves
     only**: the append-only synthesis run (themes, contradictions, verdicts
     against existing jobs, new-job signals). Declared here so it is a permitted
     output path rather than a stray write.
+  - `docs/product/decisions/NN-<slug>.md` — the product-scope decisions
+    the run wrote — `made`, `provisional` or `parked` (template below),
+    each bound to the `ASM-` records its falsifier rests on.
+  - `docs/product/input/<YYYY-MM-DD>-<label>/` — anything the human pointed
+    at that was not on disk, staged before it is cited (the staging rule
+    above); and `input/<YYYY-MM-DD>-figjam-<board>-pulled/` for a human board.
 - **Process shape**: `challenge (+ run brief) → research → straw-man →
   dev review → architecture → grill → read-back → independence handoff →
   write`.
+- **Iteration entry**: when `docs/product/` already holds an active job set
+  and either an un-ingested `input/` batch exists or the prompt points at a
+  document, board or other artifact, discovery runs the same movements as an
+  **iteration** — it reviews and extends, never re-derives. This is the
+  **reopen-discovery** route of the scope guardrail (a new job, audience or
+  load-bearing assumption); a bounded change takes the refinement route
+  (`configure-refinement`) and never enters here.
+  Research stages first, digests the new input *against* the existing
+  `context.md` (refresh, never rebuild), builds the `[conflict]` list between
+  the new input, the existing inputs, the North Star, the active ADRs and the
+  shipped state, and reads that state (the `ateam-context` index via
+  `context-cli.mjs select`, every active ADR, every epic, the product report's
+  `implemented` verdicts, `project-plan.md`) before any drafting. The straw-man
+  classifies every active job **kept / reshaped / superseded** with the
+  citation that triggers it and drafts the **decision candidates** the input
+  forces. Candidates and conflicts are ledger entries and route by the same
+  answerability rule. Every decision record states keeps / changes / removes
+  against the shipped list; a deviation from an active ADR is named in
+  `deviates_from:`, never a silent supersede. The orchestrator does not
+  change; discovery detects the entry itself, in `/feature` and standalone
+  alike.
 - **Dev review of the drafted jobs**: after the straw-man and **before** the
   grill, discovery dispatches a **one-shot subagent** running the Dev-owned dev
   research skill, over the drafted job set + the target repo. It is not a phase
@@ -243,6 +360,12 @@ Everything else — especially durable writes and their review step — behaves
     degraded run, and a *recorded* degradation is not a dishonest one.
   - **Substance lands in `research-plan.md`; jobs carry citations only** — see
     the JTBD template's technical rule below.
+  - **On an iteration run it also receives the decision candidates** and may
+    return, per candidate, what it would remove or coarsen in the shipped code,
+    cited to paths. A declared slot, optional by absence like the review
+    itself: if the skill does not act on the candidates, discovery records
+    "candidates not reviewed against the code" in `research-plan.md` and
+    continues.
 - **Architecture of the v0**: after the dev review and **before** the grill,
   discovery conducts the `architecture` skill (📝 draft + review) over the dev
   review's findings. It answers up to four questions — repo shape, tech stack
@@ -273,8 +396,9 @@ Everything else — especially durable writes and their review step — behaves
   alongside mode, outcome, assumptions, deliverables, required verification, limits
   and stopping point. The **questions and their answer options** live in
   `intake/pm-intake.md`; skills read them there rather than carrying copies. Runs alongside the challenge beat but is **not
-  skippable with it** — `run_brief` is a required manifest write. Durable
-  per-project defaults may live in `context.md` so repeat runs don't re-ask.
+  skippable with it** — `run_brief` is a required manifest write. Run-brief
+  answers are per run, never durable defaults: the staged grill digest is
+  what a repeat run reads, and it asks only deltas.
 - **Intake routing**: seed the ledger from all three `intake/` banks, each entry
   tagged with its consumer role (`[pm]` / `[design]` / `[dev]`), then route by
   **answerability**: blocking + answerable by this human → asked in the grill;
@@ -284,7 +408,14 @@ Everything else — especially durable writes and their review step — behaves
 - **Termination**: the blocking set of the `Know / Don't Know` ledger is empty, or
   the human stops it. A question is only asked if its answer changes an artifact.
 - **Read-back is mandatory**: present the drafted JTBD set for correction before
-  writing durable files. This is in-conversation, not an orchestrator gate.
+  writing durable files — plus three lists, each its own: the **coverage
+  record** (every ingested file with its coverage value), the **conflicts**
+  with their rulings or open status, and the **decision records** with status
+  and probe; and, when a human artifact of the same kind was staged, the
+  **coverage diff** against it — items on the artifact the run's set does not
+  cover and items in the set the artifact does not, each a ledger entry or an
+  explicit "deliberately not covered" with a reason. This is in-conversation,
+  not an orchestrator gate.
 - **Independence handoff**: after the read-back, present how the run will
   proceed and have the **human** choose the `gate_policy` — `block` (default;
   wait at every gate) / `notify-and-continue` (gates become logged provisional
@@ -295,8 +426,9 @@ Everything else — especially durable writes and their review step — behaves
   "assumptions made after you leave land in `research-plan.md` with confidence
   levels."
 - **Done-signal**: invoke `feature-cli.mjs complete` with `phase: "discovery"`
-  and the actual JTBD artifacts. The selected run brief determines whether to stop
-  or advance to definition.
+  and the actual JTBD artifacts — plus `decisions/` when the run wrote any
+  decision record; never bind a path that does not exist. The selected run
+  brief determines whether to stop or advance to definition.
 
 #### context.md template — the canonical shape
 
@@ -311,10 +443,13 @@ ingested: [2026-07-17-client-call, 2026-07-24-granola-pulled]  # digested input/
 
 ## Overview            # what/why, audience, stage, goals, constraints, key links;
                        # jobs cited by id, headline quoted exactly — never paraphrased
-## Digest              # per ingested batch: what the evidence says, pointers into input/
+## Digest              # per ingested batch: what the evidence says, pointers into input/;
+                       #   on an iteration run it ends with the job classification (kept / reshaped /
+                       #   superseded, trigger cited)
 ## Sources             # audit index of everything discovery consumed — one line per source
                        #   (link visited, provided file, connector pull, the grill digest):
-                       #   type · pointer (URL or input/ path) · date · what it informed
+                       #   type · pointer (URL or input/ path) · date · what it informed ·
+                       #   coverage (full · date · conductor|digest, or partial <range> · date · method)
 ## Glossary            # term | working definition | status (settled/forming/TBD) | source
 ## Design context      # from the design briefing: users & emotional goals, brand personality,
                        #   aesthetic direction (refs + anti-refs), accessibility, 3–5 design principles
@@ -322,7 +457,8 @@ ingested: [2026-07-17-client-call, 2026-07-24-granola-pulled]  # digested input/
                        #   infra/deploy, data sensitivity,
                        #   non-functional constraints, v0 test bar
 ## Know / Don't know   # Don't-Knows tagged blocking (naming what they block) or non-blocking,
-                       #   plus a consumer tag ([pm] | [design] | [dev]) when a role's intake seeded it
+                       #   plus a consumer tag ([pm] | [design] | [dev]) when a role's intake seeded it;
+                       #   [conflict] entries name both sides with citations and their ruling or open status
 ## Awaiting answers    # present only while an escalation is open
 ```
 
@@ -330,9 +466,12 @@ Full annotated template: the `project-context` skill's
 `references/context-template.md`. Load-bearing: refresh-never-rebuild (a refresh
 that drops content is a forbidden overwrite); TBD stays visible, never smoothed
 into prose; renamed glossary terms are never deleted; every `## Sources` row
-resolves — a live URL or a path on disk — and `## Overview` keeps only the 2–3
-load-bearing product links (Sources is the complete index); the ledger's
-**blocking** set is the grill's termination condition — non-blocking unknowns
+resolves — a live URL or a path on disk — and carries a coverage value (every
+evidence file in an ingested batch has a row, the batch's own `SOURCE.md` none;
+prose files are `full` — see *Citations and coverage*); `## Overview` keeps only
+the 2–3 load-bearing product links (Sources is the complete index); glossary rows
+and ledger Knows cite lines; the ledger's **blocking** set is the grill's
+termination condition — non-blocking unknowns and unruled `[conflict]` entries
 flow to `research-plan.md` as open questions.
 
 **One fact, one home.** `## Design context` and `## Technical context` hold only
@@ -358,10 +497,11 @@ sources: [granola-2026-07-17, sketch-03.png]
 Who, when, how often. What triggers it.
 
 ## Today
-How it's solved now, and what that costs.
+How it's solved now, and what that costs — each domain claim cited to a line.
 
 ## Forces
-Push / pull / anxiety / inertia — the demand evidence the statement rests on.
+Push / pull / anxiety / inertia — the demand evidence the statement rests on,
+each force cited to the line it rests on.
 
 ## Success
 Observable signal the job is done well.
@@ -417,9 +557,9 @@ sources: [2026-08-27-grill-digest, dev-review]
 active — ratified by the human at the 2026-08-27 grill.   # or: superseded by [[adr:07]]
 
 ## Context
-The forces. The project binding or Declared default that applied, cited not
-restated. Which dev review finding this rests on and how it was rated. The jobs
-that turn on it: [[03]], [[05]].
+The forces, each domain claim cited to a line. The project binding or Declared
+default that applied, cited not restated. Which dev review finding this rests
+on and how it was rated. The jobs that turn on it: [[03]], [[05]].
 
 ## Decision
 What we will do. Active voice, present tense.
@@ -454,14 +594,116 @@ Load-bearing:
 - **Only decisions that block planning belong here at discovery time.** Schema,
   component breakdown, and library picks inside a settled stack are dev-phase
   depth — minting them as durable ADRs from a grill fabricates authority.
+- **Product-scope calls are not ADRs.** They are decision records
+  (`[[dec:NN]]`, template below). A decision record that deviates from an
+  active ADR names it in `deviates_from:` and is surfaced at discovery's
+  read-back; only the `architecture` skill supersedes an ADR. On an iteration
+  run the beat also receives the run's **decision candidates** as an input, so
+  a deviation is caught here rather than at read-back — a declared slot whose
+  contents are the Dev role owner's; until the skill reads it, discovery
+  surfaces deviations itself.
 
 Full annotated template: the `architecture` skill's
 `references/adr-template.md`. The team defaults it falls back to live in
 `intake/dev-intake.md`'s `## Declared defaults`, owned by the Dev role owner.
 
+#### Decision record template — the shape a product-scope call is recorded in
+
+`docs/product/decisions/NN-<slug>.md` — one file per **product-scope
+decision**: the calls that shape what is built and that a definition phase must
+not make on its own (the grain of a deal, which gates block, what is pull
+versus push, what is out of focus this cycle). Cited as `[[dec:NN]]`. Same
+lifecycle as jobs, epics and ADRs: ids forever, supersede never delete, never
+written without human review in the same session. Written by discovery;
+PM-owned. ADRs stay architecture-only: a decision record that deviates from an
+active ADR names it in `deviates_from:` and never silently supersedes it.
+
+```markdown
+---
+id: 01
+slug: deal-grain-is-coarse-buckets
+status: provisional         # made | provisional | superseded | parked
+confidence: moderate        # strong | moderate | directional | hypothesis
+decided: 2026-09-02
+decided_by: human           # human | agent — agent only via a Declared default or a project binding
+sources: [2026-09-02-build-frame-dealflow, 2026-09-02-grill-digest]
+assumptions: [ASM-012]     # ledger records the falsifier rests on (runner/ASSUMPTIONS.md); required when load-bearing
+deviates_from: []           # e.g. [adr:03] — named, never silent
+---
+
+# 01. A deal is captured as coarse buckets, and the sheet is attached unopened
+
+## Status
+provisional — ratified at the 2026-09-02 grill (Q2); ASM-012 is `pending`.
+<!-- made — ratified at …; every linked load-bearing ASM is `proceed` -->
+<!-- superseded by [[dec:05]] · parked — presented at …, not answered -->
+
+## Context
+Jobs it serves: [[01]], [[05]]. The input that forces it, cited to a line.
+The conflict it rules, if any.
+
+## Decision
+What we will do. Active voice, present tense.
+
+## Why
+The reasoning, each load-bearing claim cited to a line.
+
+## Cost
+What this gives up, stated as a testable prediction.
+
+## Wrong if
+The falsifier — the `disproof` of the linked ASM — then its ledger state:
+`checked — EVD-<id> on ASM-<id>, <citation>, result support` ·
+`checked — result contradict; superseded by [[dec:NN]]` ·
+`checked — result inconclusive; ASM-<id> stays pending` ·
+`unchecked — ASM-<id> pending, probe: <its cheapestProbe>`.
+
+## Alternatives considered
+Option · the real reason it was dropped. At least one, always.
+
+## Existing state
+Keeps: … · Changes: … · Removes: … — each cited to the product report's
+shipped list and the code path. ADR deviations named here.
+
+## Revisit when
+The signal that reopens this — mirrored into research-plan.md.
+```
+
+Load-bearing:
+
+- **The calibration rule.** A decision whose falsifier is checkable against
+  staged inputs is checked **before** it is stamped `made` — and the check is
+  an evidence entry on the linked ASM record in `research-plan.md`'s
+  `ateam-assumptions` block (`runner/ASSUMPTIONS.md`), never a note in this
+  file. The ASM's `disproof` is the falsifier and its `cheapestProbe` the
+  probe; checking it against a staged input records an `EVD-` entry with the
+  input's target-relative path, SHA-256, original reference,
+  `origin: observed` and `result: support | contradict`. Every linked
+  load-bearing ASM `proceed` (or none load-bearing) → `made`; any `pending` or
+  `defer` → `provisional`, the ledger's own gates carrying the deadline;
+  `contradict` → reshape before asking, or supersede. No second probe field,
+  no second research activity. A record stamped `made` with an unchecked
+  falsifier is a failed self-check.
+- **Presented is not ratified**, as for ADRs: unanswered is `parked` with an
+  open question in `research-plan.md`. `decided_by: agent` is permitted only
+  through a Declared default or a project binding, recorded as an assumption —
+  a scope call is demand-side, and the no-autonomous-degrade rule applies to it
+  in full.
+- **Grounded in what shipped.** `## Existing state` states keeps / changes /
+  removes against `ateam-product-report.md`'s shipped list, cited; a
+  `deviates_from:` ADR is surfaced at the read-back.
+- **Downstream.** The PRD's `## Decision log` cites `[[dec:NN]]` when a row
+  derives from one; `product-report` reports every record still `provisional`
+  at pr time with its pending ASM; the `discovery-plan` refresh mirrors each
+  `## Revisit when` as an open question — probes already live on the ASM
+  records.
+
+Full annotated template: the `ateam-discovery` skill's
+`references/decision-template.md`.
+
 ### `ateam-definition` — 📝 draft + review
 
-- **May read**: `docs/product/**` (context, JTBDs, the ADRs, `ateam-plan.md`); the manifest; the target repo.
+- **May read**: `docs/product/**` (context, JTBDs, the ADRs, the decision records, `ateam-plan.md`); the manifest; the target repo. A scoped item a `[[dec:NN]]` governs traces to it.
 - **Must write**:
   - `prd.md` in the feature directory — problem, goals/non-goals, scope, user
     stories, acceptance criteria. Every scoped item traces to a JTBD id.

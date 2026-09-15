@@ -27,9 +27,11 @@ one-line verdict summary (which jobs stand on solid ground, which need work).
 ## Open questions
 
 What ships unresolved with the v0 — the ledger's surviving unknowns, including
-questions raised by challenges/refinement verdicts. Each tagged with what it
-would change if answered. A still-open **blocking** unknown is stated loudly at
-the top, never buried mid-list.
+questions raised by challenges/refinement verdicts, every **unruled
+`[conflict]`** (both sides cited, what it blocks), and every decision record's
+`## Revisit when` (cited `[[dec:NN]]`). Each tagged with what it would change
+if answered. A still-open **blocking** unknown is stated loudly at the top,
+never buried mid-list.
 
 ## Assumptions
 
@@ -69,5 +71,5 @@ that parked decision is an open question and belongs above.
 
 Question → activity → owner (human or agent) → date. The work of closing the
 unknowns above; its outcomes land back in research/ runs and flip ledger
-entries to Know.
+entries to Know. A `provisional` decision record (`[[dec:NN]]`) has its probe, owner and due stage on its pending ASM record; nothing is listed here for it — the ledger's own gates carry it, and a second activity would be the parallel register `runner/ASSUMPTIONS.md` forbids.
 ````

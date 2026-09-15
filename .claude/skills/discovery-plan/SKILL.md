@@ -108,7 +108,11 @@ it's done.
    jobs enter as `TBD` with resolving them listed as a research activity.
 4. **Split the ledger.** Surviving unknowns → research-plan **open questions**
    (each tagged with what changes if answered; a still-open blocking unknown
-   is stated loudly at the top). Ledger and brainstorm assumptions →
+   is stated loudly at the top). Unruled `[conflict]` entries → open questions
+   with both citations. Decision records (`docs/product/decisions/`): each
+   `## Revisit when` → an open question cited `[[dec:NN]]`; a `provisional`
+   record's probe already lives on its linked ASM — never restate a decision
+   or duplicate its probe, cite it. Ledger and brainstorm assumptions →
    research-plan **assumptions**, each with confidence, disproof, cheapest
    probe. Add their stable versioned records to the plan's single
    `ateam-assumptions` block, following `runner/ASSUMPTIONS.md` in the harness.
@@ -131,7 +135,9 @@ it's done.
    decision stage; missing evidence or authority remains a named blocker. Valid
    no-go/reshape is a supported decision, not failed delivery. Every research
    activity has a home in an initiative or is
-   explicitly deferred; every resolution deliverable points at its question.
+   explicitly deferred; every resolution deliverable points at its question;
+   every `provisional` decision record's linked ASM is `pending` or `defer`
+   in the block, and every `made` one's load-bearing ASMs are `proceed`.
    The files must read as one plan split by audience — and when the project
    plan is in play (step 8), its "What comes next" must not contradict
    `ateam-plan.md`'s remaining deliverables: anything still listed as work to
