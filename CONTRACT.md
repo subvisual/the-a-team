@@ -284,9 +284,36 @@ Everything else — especially durable writes and their review step — behaves
     only**: the append-only synthesis run (themes, contradictions, verdicts
     against existing jobs, new-job signals). Declared here so it is a permitted
     output path rather than a stray write.
+  - `docs/product/decisions/NN-<slug>.md` — the product-scope decisions the
+    run ratified (template below), each bound to the `ASM-` records its
+    falsifier rests on.
+  - `docs/product/input/<YYYY-MM-DD>-<label>/` — anything the human pointed
+    at that was not on disk, staged before it is cited (the staging rule
+    above); and `input/<YYYY-MM-DD>-figjam-pulled/` for a human board.
 - **Process shape**: `challenge (+ run brief) → research → straw-man →
   dev review → architecture → grill → read-back → independence handoff →
   write`.
+- **Iteration entry**: when `docs/product/` already holds an active job set
+  and either an un-ingested `input/` batch exists or the prompt points at a
+  document, board or other artifact, discovery runs the same movements as an
+  **iteration** — it reviews and extends, never re-derives. This is the
+  **reopen-discovery** route of the scope guardrail (a new job, audience or
+  load-bearing assumption); a bounded change takes the refinement route
+  (`configure-refinement`) and never enters here. Research stages
+  first, digests the new input *against* the existing `context.md` (refresh,
+  never rebuild), builds the `[conflict]` list between the new input, the
+  existing inputs, the North Star, the active ADRs and the implemented state,
+  and reads that state (the `ateam-context` index via `context-cli.mjs select`,
+  every active ADR, every epic, the product report's `implemented` verdicts,
+  `project-plan.md`) before any drafting. The straw-man
+  classifies every active job **kept / reshaped / superseded** with the
+  citation that triggers it and drafts the **decision candidates** the input
+  forces. Candidates and conflicts are ledger entries and route by the same
+  answerability rule. Every decision record states keeps / changes / removes
+  against the shipped list; a deviation from an active ADR is named in
+  `deviates_from:`, never a silent supersede. The orchestrator does not
+  change; discovery detects the entry itself, in `/feature` and standalone
+  alike.
 - **Dev review of the drafted jobs**: after the straw-man and **before** the
   grill, discovery dispatches a **one-shot subagent** running the Dev-owned dev
   research skill, over the drafted job set + the target repo. It is not a phase
@@ -316,6 +343,12 @@ Everything else — especially durable writes and their review step — behaves
     degraded run, and a *recorded* degradation is not a dishonest one.
   - **Substance lands in `research-plan.md`; jobs carry citations only** — see
     the JTBD template's technical rule below.
+  - **On an iteration run it also receives the decision candidates** and may
+    return, per candidate, what it would remove or coarsen in the shipped code,
+    cited to paths. A declared slot, optional by absence like the review
+    itself: if the skill does not act on the candidates, discovery records
+    "candidates not reviewed against the code" in `research-plan.md` and
+    continues.
 - **Architecture of the v0**: after the dev review and **before** the grill,
   discovery conducts the `architecture` skill (📝 draft + review) over the dev
   review's findings. It answers up to four questions — repo shape, tech stack
@@ -357,7 +390,14 @@ Everything else — especially durable writes and their review step — behaves
 - **Termination**: the blocking set of the `Know / Don't Know` ledger is empty, or
   the human stops it. A question is only asked if its answer changes an artifact.
 - **Read-back is mandatory**: present the drafted JTBD set for correction before
-  writing durable files. This is in-conversation, not an orchestrator gate.
+  writing durable files — plus three lists, each its own: the **coverage
+  record** (every ingested file with its coverage value), the **conflicts**
+  with their rulings or open status, and the **decision records** with status
+  and probe; and, when a human artifact of the same kind was staged, the
+  **coverage diff** against it — items on the artifact the run's set does not
+  cover and items in the set the artifact does not, each a ledger entry or an
+  explicit "deliberately not covered" with a reason. This is in-conversation,
+  not an orchestrator gate.
 - **Independence handoff**: after the read-back, present how the run will
   proceed and have the **human** choose the `gate_policy` — `block` (default;
   wait at every gate) / `notify-and-continue` (gates become logged provisional
@@ -546,9 +586,102 @@ Full annotated template: the `architecture` skill's
 `references/adr-template.md`. The team defaults it falls back to live in
 `intake/dev-intake.md`'s `## Declared defaults`, owned by the Dev role owner.
 
+#### Decision record template — the shape a product-scope call is recorded in
+
+`docs/product/decisions/NN-<slug>.md` — one file per **product-scope
+decision**: the calls that shape what is built and that a definition phase must
+not make on its own (the grain of a deal, which gates block, what is pull
+versus push, what is out of focus this cycle). Cited as `[[dec:NN]]`. Same
+lifecycle as jobs, epics and ADRs: ids forever, supersede never delete, never
+written without human review in the same session. Written by discovery;
+PM-owned. ADRs stay architecture-only: a decision record that deviates from an
+active ADR names it in `deviates_from:` and never silently supersedes it.
+
+```markdown
+---
+id: 01
+slug: deal-grain-is-coarse-buckets
+status: provisional         # made | provisional | superseded | parked
+confidence: moderate        # strong | moderate | directional | hypothesis
+decided: 2026-09-02
+decided_by: human           # human | agent — agent only via a Declared default or a project binding
+sources: [2026-09-02-build-frame-dealflow, 2026-09-02-grill-digest]
+assumptions: [ASM-012]     # ledger records the falsifier rests on (runner/ASSUMPTIONS.md); required when load-bearing
+deviates_from: []           # e.g. [adr:03] — named, never silent
+---
+
+# 01. A deal is captured as coarse buckets, and the sheet is attached unopened
+
+## Status
+provisional — ratified at the 2026-09-02 grill (Q2); ASM-012 is `pending`.
+<!-- made — ratified at …; every linked load-bearing ASM is `proceed` -->
+<!-- superseded by [[dec:05]] · parked — presented at …, not answered -->
+
+## Context
+Jobs it serves: [[01]], [[05]]. The input that forces it, cited to a line.
+The conflict it rules, if any.
+
+## Decision
+What we will do. Active voice, present tense.
+
+## Why
+The reasoning, each load-bearing claim cited to a line.
+
+## Cost
+What this gives up, stated as a testable prediction.
+
+## Wrong if
+The falsifier — the `disproof` of the linked ASM — then its ledger state:
+`checked — EVD-<id> on ASM-<id>, <citation>, result support` ·
+`checked — result contradict; superseded by [[dec:NN]]` ·
+`unchecked — ASM-<id> pending, probe: <its cheapestProbe>`.
+
+## Alternatives considered
+Option · the real reason it was dropped. At least one, always.
+
+## Existing state
+Keeps: … · Changes: … · Removes: … — each cited to the product report's
+shipped list and the code path. ADR deviations named here.
+
+## Revisit when
+The signal that reopens this — mirrored into research-plan.md.
+```
+
+Load-bearing:
+
+- **The calibration rule.** A decision whose falsifier is checkable against
+  staged inputs is checked **before** it is stamped `made` — and the check is
+  an evidence entry on the linked ASM record in `research-plan.md`'s
+  `ateam-assumptions` block (`runner/ASSUMPTIONS.md`), never a note in this
+  file. The ASM's `disproof` is the falsifier and its `cheapestProbe` the
+  probe; checking it against a staged input records an `EVD-` entry with the
+  input's target-relative path, SHA-256, original reference,
+  `origin: observed` and `result: support | contradict`. Every linked
+  load-bearing ASM `proceed` (or none load-bearing) → `made`; any `pending` or
+  `defer` → `provisional`, the ledger's own gates carrying the deadline;
+  `contradict` → reshape before asking, or supersede. No second probe field,
+  no second research activity. A record stamped `made` with an unchecked
+  falsifier is a failed self-check.
+- **Presented is not ratified**, as for ADRs: unanswered is `parked` with an
+  open question in `research-plan.md`. `decided_by: agent` is permitted only
+  through a Declared default or a project binding, recorded as an assumption —
+  a scope call is demand-side, and the no-autonomous-degrade rule applies to it
+  in full.
+- **Grounded in what shipped.** `## Existing state` states keeps / changes /
+  removes against `ateam-product-report.md`'s shipped list, cited; a
+  `deviates_from:` ADR is surfaced at the read-back.
+- **Downstream.** The PRD's `## Decision log` cites `[[dec:NN]]` when a row
+  derives from one; `product-report` reports every record still `provisional`
+  at pr time with its pending ASM; the `discovery-plan` refresh mirrors each
+  `## Revisit when` as an open question — probes already live on the ASM
+  records.
+
+Full annotated template: the `ateam-discovery` skill's
+`references/decision-template.md`.
+
 ### `ateam-definition` — 📝 draft + review
 
-- **May read**: `docs/product/**` (context, JTBDs, the ADRs, `ateam-plan.md`); the manifest; the target repo.
+- **May read**: `docs/product/**` (context, JTBDs, the ADRs, the decision records, `ateam-plan.md`); the manifest; the target repo. A scoped item a `[[dec:NN]]` governs traces to it.
 - **Must write**:
   - `prd.md` in the feature directory — problem, goals/non-goals, scope, user
     stories, acceptance criteria. Every scoped item traces to a JTBD id.
