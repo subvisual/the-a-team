@@ -18,7 +18,8 @@
 - **Citation syntax (verbatim from spec §2.3):** text `<batch>/<path>:L<start>-L<end>` · section `<batch>/<path> §4.6` · PDF `<batch>/<file>.pdf:p<N>` · image `<batch>/<file>` plus the region · grill `<YYYY-MM-DD>-grill-digest/grill.md:L<start>-L<end>`.
 - **Coverage vocabulary (verbatim from spec §2.2):** `full · <date> · conductor` · `full · <date> · digest` · `partial <range> · <date> · <method>`. No other values.
 - **Ledger classes:** `[blocking → …]` · `[non-blocking]` · `[conflict → …]` (plus `[non-blocking]` on a conflict that blocks nothing).
-- **Decision record status vocabulary:** `made | provisional | superseded | parked`. Cited as `[[dec:NN]]`. Path `docs/product/decisions/NN-<slug>.md`.
+- **Decision record status vocabulary:** `made | provisional | superseded | parked`. Cited as `[[dec:NN]]`. Path `docs/product/decisions/NN-<slug>.md`. A record carries no probe of its own: `assumptions: [ASM-…]` names the ledger records its falsifier rests on (`runner/ASSUMPTIONS.md`); `made` ⇔ every linked load-bearing ASM is `proceed`; `provisional` ⇔ one is `pending` or `defer`. Never create a parallel assumption register.
+- **Branch base:** `harness/evidence-discipline` is rebased on `origin/main` at `bfc847e` (PRs #55–#61 merged). Manifest state is only ever changed through `feature-cli.mjs`; no plan step writes `phases.*` by hand.
 - **Prose style of the harness docs:** rules are stated as bold-led bullets with the reason attached; templates are fenced `markdown` blocks; every new rule names its failure mode ("… is a failed self-check").
 - **Commit messages** end with `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 - **Edits are exact-string replacements.** Each step gives the current text and the replacement; if the current text is not found verbatim, stop and report — do not approximate.
@@ -393,15 +394,15 @@ confidence: moderate        # strong | moderate | directional | hypothesis
 decided: 2026-09-02
 decided_by: human           # human | agent — agent only via a Declared default or a project binding
 sources: [2026-09-02-build-frame-dealflow, 2026-09-02-grill-digest]
-probe: master-list Buying tab columns   # required when provisional; resolves to a research activity
+assumptions: [ASM-012]     # ledger records the falsifier rests on (runner/ASSUMPTIONS.md); required when load-bearing
 deviates_from: []           # e.g. [adr:03] — named, never silent
 ---
 
 # 01. A deal is captured as coarse buckets, and the sheet is attached unopened
 
 ## Status
-provisional — ratified at the 2026-09-02 grill (Q2), pending the probe.
-<!-- made — ratified at …, falsifier checked against <citation> -->
+provisional — ratified at the 2026-09-02 grill (Q2); ASM-012 is `pending`.
+<!-- made — ratified at …; every linked load-bearing ASM is `proceed` -->
 <!-- superseded by [[dec:05]] · parked — presented at …, not answered -->
 
 ## Context
@@ -418,8 +419,10 @@ The reasoning, each load-bearing claim cited to a line.
 What this gives up, stated as a testable prediction.
 
 ## Wrong if
-The falsifier, then one of: `checked — <citation> does not meet it` ·
-`checked — met; superseded by [[dec:NN]]` · `unchecked — <what would check it> → probe`.
+The falsifier — the `disproof` of the linked ASM — then its ledger state:
+`checked — EVD-<id> on ASM-<id>, <citation>, result support` ·
+`checked — result contradict; superseded by [[dec:NN]]` ·
+`unchecked — ASM-<id> pending, probe: <its cheapestProbe>`.
 
 ## Alternatives considered
 Option · the real reason it was dropped. At least one, always.
@@ -435,13 +438,18 @@ The signal that reopens this — mirrored into research-plan.md.
 Load-bearing:
 
 - **The calibration rule.** A decision whose falsifier is checkable against
-  staged inputs is checked **before** it is stamped `made`. Checked and not
-  met → `made`, with the citation in `## Wrong if`. Checked and met → the
-  candidate is reshaped before it is asked. Not checkable with what is in hand
-  → the human's yes still produces `provisional` with a named `probe:` that
-  resolves to a research activity in `research-plan.md`; when the probe lands,
-  the record flips to `made` or is superseded. A record stamped `made` with an
-  unchecked falsifier is a failed self-check.
+  staged inputs is checked **before** it is stamped `made` — and the check is
+  an evidence entry on the linked ASM record in `research-plan.md`'s
+  `ateam-assumptions` block (`runner/ASSUMPTIONS.md`), never a note in this
+  file. The ASM's `disproof` is the falsifier and its `cheapestProbe` the
+  probe; checking it against a staged input records an `EVD-` entry with the
+  input's target-relative path, SHA-256, original reference,
+  `origin: observed` and `result: support | contradict`. Every linked
+  load-bearing ASM `proceed` (or none load-bearing) → `made`; any `pending` or
+  `defer` → `provisional`, the ledger's own gates carrying the deadline;
+  `contradict` → reshape before asking, or supersede. No second probe field,
+  no second research activity. A record stamped `made` with an unchecked
+  falsifier is a failed self-check.
 - **Presented is not ratified**, as for ADRs: unanswered is `parked` with an
   open question in `research-plan.md`. `decided_by: agent` is permitted only
   through a Declared default or a project binding, recorded as an assumption —
@@ -452,8 +460,9 @@ Load-bearing:
   `deviates_from:` ADR is surfaced at the read-back.
 - **Downstream.** The PRD's `## Decision log` cites `[[dec:NN]]` when a row
   derives from one; `product-report` reports every record still `provisional`
-  at pr time; the `discovery-plan` refresh mirrors each probe as a research
-  activity and each `## Revisit when` as an open question.
+  at pr time with its pending ASM; the `discovery-plan` refresh mirrors each
+  `## Revisit when` as an open question — probes already live on the ASM
+  records.
 
 Full annotated template: the `ateam-discovery` skill's
 `references/decision-template.md`.
@@ -479,7 +488,8 @@ Replace with:
     against existing jobs, new-job signals). Declared here so it is a permitted
     output path rather than a stray write.
   - `docs/product/decisions/NN-<slug>.md` — the product-scope decisions the
-    run ratified (template below); `provisional` ones carry a `probe:`.
+    run ratified (template below), each bound to the `ASM-` records its
+    falsifier rests on.
   - `docs/product/input/<YYYY-MM-DD>-<label>/` — anything the human pointed
     at that was not on disk, staged before it is cited (the staging rule
     above); and `input/<YYYY-MM-DD>-figjam-pulled/` for a human board.
@@ -489,12 +499,16 @@ Replace with:
 - **Iteration entry**: when `docs/product/` already holds an active job set
   and either an un-ingested `input/` batch exists or the prompt points at a
   document, board or other artifact, discovery runs the same movements as an
-  **iteration** — it reviews and extends, never re-derives. Research stages
+  **iteration** — it reviews and extends, never re-derives. This is the
+  **reopen-discovery** route of the scope guardrail (a new job, audience or
+  load-bearing assumption); a bounded change takes the refinement route
+  (`configure-refinement`) and never enters here. Research stages
   first, digests the new input *against* the existing `context.md` (refresh,
   never rebuild), builds the `[conflict]` list between the new input, the
-  existing inputs, the North Star, the active ADRs and the shipped state, and
-  reads the shipped state (every active ADR, every epic, the product report's
-  shipped list, `project-plan.md`) before any drafting. The straw-man
+  existing inputs, the North Star, the active ADRs and the implemented state,
+  and reads that state (the `ateam-context` index via `context-cli.mjs select`,
+  every active ADR, every epic, the product report's `implemented` verdicts,
+  `project-plan.md`) before any drafting. The straw-man
   classifies every active job **kept / reshaped / superseded** with the
   citation that triggers it and drafts the **decision candidates** the input
   forces. Candidates and conflicts are ledger entries and route by the same
@@ -613,15 +627,15 @@ confidence: moderate        # strong | moderate | directional | hypothesis
 decided: 2026-09-02
 decided_by: human           # human | agent — agent only via a Declared default or a project binding
 sources: [2026-09-02-build-frame-dealflow, 2026-09-02-grill-digest]
-probe: master-list Buying tab columns   # required when provisional; resolves to a research activity
+assumptions: [ASM-012]     # ledger records the falsifier rests on (runner/ASSUMPTIONS.md); required when load-bearing
 deviates_from: []           # e.g. [adr:03] — named, never silent
 ---
 
 # 01. A deal is captured as coarse buckets, and the sheet is attached unopened
 
 ## Status
-provisional — ratified at the 2026-09-02 grill (Q2), pending the probe.
-<!-- made — ratified at …, falsifier checked against <citation> -->
+provisional — ratified at the 2026-09-02 grill (Q2); ASM-012 is `pending`.
+<!-- made — ratified at …; every linked load-bearing ASM is `proceed` -->
 <!-- superseded by [[dec:05]] · parked — presented at …, not answered -->
 
 ## Context
@@ -642,8 +656,10 @@ What this gives up, stated as a testable prediction — "the guardrail knows
 400 of 1,381 are committed, not which 400" is a cost; "less precision" is not.
 
 ## Wrong if
-The falsifier, then one of: `checked — <citation> does not meet it` ·
-`checked — met; superseded by [[dec:NN]]` · `unchecked — <what would check it> → probe`.
+The falsifier — the `disproof` of the linked ASM — then its ledger state:
+`checked — EVD-<id> on ASM-<id>, <citation>, result support` ·
+`checked — result contradict; superseded by [[dec:NN]]` ·
+`unchecked — ASM-<id> pending, probe: <its cheapestProbe>`.
 
 ## Alternatives considered
 Option · the real reason it was dropped. At least one, always.
@@ -664,12 +680,13 @@ question.
   auditable; "01. A deal is captured as coarse buckets, and the sheet is
   attached unopened" is.
 - **The calibration rule.** A falsifier checkable against staged inputs is
-  checked before the record is stamped `made`. Checked and not met → `made`,
-  citation in `## Wrong if`. Checked and met → reshape the candidate before
-  asking. Not checkable with what is in hand → the human's yes still yields
-  `provisional` with a `probe:` that resolves to a research activity in
-  `research-plan.md`. A `made` record with an unchecked falsifier is a failed
-  self-check.
+  checked before the record is stamped `made`, and the check lives on the
+  linked ASM record as an `EVD-` entry (source path, SHA-256, reference,
+  `origin: observed`, result) — see `runner/ASSUMPTIONS.md`. Every linked
+  load-bearing ASM `proceed` → `made`; any `pending`/`defer` → `provisional`;
+  `contradict` → reshape before asking, or supersede. The probe is the ASM's
+  `cheapestProbe`; this file never carries a second one. A `made` record with
+  an unchecked falsifier is a failed self-check.
 - **Presented is not ratified.** Unanswered is `parked` with an open question
   in `research-plan.md`. `decided_by: agent` only through a Declared default
   or a project binding, recorded as an assumption; a scope call is demand-side
@@ -681,16 +698,15 @@ question.
   by [[dec:NN]]` in `## Status`; the new one says `supersedes [[dec:NN]]`.
   Nothing else in the old file changes.
 - **Downstream.** The PRD's decision log cites `[[dec:NN]]`; `product-report`
-  reports every `provisional` record still open at pr time; the plan refresh
-  mirrors probes as research activities and `## Revisit when` as open
-  questions.
+  reports every `provisional` record still open at pr time with its pending
+  ASM; the plan refresh mirrors `## Revisit when` as open questions.
 ````
 
 - [ ] **Step 2: Verify the template mirrors CONTRACT**
 
 Run (extracts the fenced template from both files and diffs them):
 ```bash
-cd "/Users/alvarobezerra/Documents/Claude/Projects/The A Team/harness" && diff <(awk '/^#### Decision record template/{f=1} f&&/^```markdown/{g=1;next} g&&/^```$/{exit} g' CONTRACT.md | grep -E "^(id:|slug:|status:|confidence:|decided:|decided_by:|sources:|probe:|deviates_from:|## )") <(awk '/^```markdown/{g=1;next} g&&/^```$/{exit} g' .claude/skills/ateam-discovery/references/decision-template.md | grep -E "^(id:|slug:|status:|confidence:|decided:|decided_by:|sources:|probe:|deviates_from:|## )") && echo "keys and sections match"
+cd "/Users/alvarobezerra/Documents/Claude/Projects/The A Team/harness" && diff <(awk '/^#### Decision record template/{f=1} f&&/^```markdown/{g=1;next} g&&/^```$/{exit} g' CONTRACT.md | grep -E "^(id:|slug:|status:|confidence:|decided:|decided_by:|sources:|assumptions:|deviates_from:|## )") <(awk '/^```markdown/{g=1;next} g&&/^```$/{exit} g' .claude/skills/ateam-discovery/references/decision-template.md | grep -E "^(id:|slug:|status:|confidence:|decided:|decided_by:|sources:|assumptions:|deviates_from:|## )") && echo "keys and sections match"
 ```
 Expected: `keys and sections match` (no diff lines).
 
@@ -931,7 +947,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Modify: `.claude/skills/discovery-plan/SKILL.md:109-128`
 
 **Interfaces:**
-- Consumes: decision record keys `status: provisional`, `probe:`, `## Revisit when` (Task 4); `[conflict]` entries (Task 6).
+- Consumes: decision record keys `status: provisional`, `assumptions:`, `## Revisit when` (Task 4); `[conflict]` entries (Task 6); ASM `cheapestProbe` from `runner/ASSUMPTIONS.md`.
 
 - [ ] **Step 1: Template — Open questions**
 
@@ -964,58 +980,66 @@ Replace with:
 ```
 Question → activity → owner (human or agent) → date. The work of closing the
 unknowns above; its outcomes land back in research/ runs and flip ledger
-entries to Know. Every `provisional` decision record's `probe:` is an activity
-here, cited `[[dec:NN]]` — when it lands, the record flips to `made` or is
-superseded.
+entries to Know. A `provisional` decision record (`[[dec:NN]]`) has its probe
+on its pending ASM record's `cheapestProbe`; list that activity here by ASM
+id — never a second probe.
 ```
 
 - [ ] **Step 3: SKILL — step 4 and step 7**
 
-Current text:
+Current text (the opening of step 4 as PR #60 left it):
 ```
 4. **Split the ledger.** Surviving unknowns → research-plan **open questions**
    (each tagged with what changes if answered; a still-open blocking unknown
    is stated loudly at the top). Ledger and brainstorm assumptions →
    research-plan **assumptions**, each with confidence, disproof, cheapest
-   probe. Never let an assumption hide inside polished prose.
+   probe. Add their stable versioned records to the plan's single
+   `ateam-assumptions` block, following `runner/ASSUMPTIONS.md` in the harness.
 ```
 Replace with:
 ```
 4. **Split the ledger.** Surviving unknowns → research-plan **open questions**
    (each tagged with what changes if answered; a still-open blocking unknown
    is stated loudly at the top). Unruled `[conflict]` entries → open questions
-   with both citations. Ledger and brainstorm assumptions → research-plan
-   **assumptions**, each with confidence, disproof, cheapest probe. Decision
-   records (`docs/product/decisions/`): each `provisional` record's `probe:` →
-   a **research activity** cited `[[dec:NN]]`; each `## Revisit when` → an
-   open question. Never let an assumption hide inside polished prose, and
-   never restate a decision — cite it.
+   with both citations. Decision records (`docs/product/decisions/`): each
+   `## Revisit when` → an open question cited `[[dec:NN]]`; a `provisional`
+   record's probe already lives on its linked ASM — never restate a decision
+   or duplicate its probe, cite it. Ledger and brainstorm assumptions →
+   research-plan **assumptions**, each with confidence, disproof, cheapest
+   probe. Add their stable versioned records to the plan's single
+   `ateam-assumptions` block, following `runner/ASSUMPTIONS.md` in the harness.
 ```
 Current text:
 ```
-7. **Cross-check.** Every research activity has a home in an initiative or is
+7. **Cross-check.** Run the read-only `assumptions-cli.mjs` at the actual dependent
+   decision stage; missing evidence or authority remains a named blocker. Valid
+   no-go/reshape is a supported decision, not failed delivery. Every research
+   activity has a home in an initiative or is
    explicitly deferred; every resolution deliverable points at its question.
 ```
 Replace with:
 ```
-7. **Cross-check.** Every research activity has a home in an initiative or is
+7. **Cross-check.** Run the read-only `assumptions-cli.mjs` at the actual dependent
+   decision stage; missing evidence or authority remains a named blocker. Valid
+   no-go/reshape is a supported decision, not failed delivery. Every research
+   activity has a home in an initiative or is
    explicitly deferred; every resolution deliverable points at its question;
-   every `provisional` decision record has exactly one activity carrying its
-   probe.
+   every `provisional` decision record's linked ASM is `pending` or `defer`
+   in the block, and every `made` one's load-bearing ASMs are `proceed`.
 ```
 
 - [ ] **Step 4: Verify**
 
 Run:
 ```bash
-grep -c "unruled" .claude/skills/discovery-plan/references/research-plan-template.md && grep -c "\[\[dec:NN\]\]" .claude/skills/discovery-plan/references/research-plan-template.md && grep -c "\[\[dec:NN\]\]" .claude/skills/discovery-plan/SKILL.md && grep -c "exactly one activity carrying its" .claude/skills/discovery-plan/SKILL.md
+grep -c "unruled" .claude/skills/discovery-plan/references/research-plan-template.md && grep -c "\[\[dec:NN\]\]" .claude/skills/discovery-plan/references/research-plan-template.md && grep -c "\[\[dec:NN\]\]" .claude/skills/discovery-plan/SKILL.md && grep -c "linked ASM is" .claude/skills/discovery-plan/SKILL.md
 ```
 Expected: `1`, `2`, `1`, `1`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add .claude/skills/discovery-plan && git commit -m "docs(discovery-plan): provisional probes become research activities; conflicts and revisit-when become open questions
+git add .claude/skills/discovery-plan && git commit -m "docs(discovery-plan): decisions cite their ASM probes; conflicts and revisit-when become open questions
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
@@ -1149,7 +1173,7 @@ Replace with:
 realized), `adr/NN-*.md` (the decided shape — and any decision still `parked`,
 which is a live open item, not a footnote), `decisions/NN-*.md` (the
 product-scope calls — every record still `provisional` at pr time is reported
-as such with its probe, never as settled), `ateam-plan.md` (goals,
+as such with its pending ASM, never as settled), `ateam-plan.md` (goals,
 deliverables, status),
 ```
 
@@ -1205,8 +1229,9 @@ Replace with:
 - **Evidence discipline** (CONTRACT, *Citations and coverage*): nothing is
   cited that is not staged on disk; every ingested file has a coverage row and
   prose files are read in full; every domain claim cites a line; conflicts are
-  ledger items, never judgements; product-scope calls are decision records,
-  calibrated against their own falsifier before they are stamped `made`.
+  ledger items, never judgements; product-scope calls are decision records
+  bound to the `ASM-` records their falsifier rests on, stamped `made` only
+  when those are `proceed` with evidence (`runner/ASSUMPTIONS.md`).
 ```
 
 - [ ] **Step 2: Research movement — stage first, digest subagent, conflicts, shipped state**
@@ -1239,10 +1264,13 @@ Replace with:
   on an iteration run — the shipped state, enter a `[conflict]` ledger item
   with both citations and what it blocks; a batch's `SOURCE.md` precedence is
   a ruling, everything else is `ruling: open` for the grill.
-- **Iteration runs read the shipped state here:** every active ADR, every
-  epic and its status, `ateam-product-report.md` §"What actually shipped",
-  `project-plan.md`, and the surfaces the report names as shipped. This is
-  what `## Existing state` on every decision record cites.
+- **Iteration runs read the implemented state here:** the `ateam-context`
+  index resolved by `context-cli.mjs select` (its `currentState`, `bindings`,
+  `unresolvedDecisions` and observed facts), every active ADR, every epic and
+  its status, `ateam-product-report.md` §"What actually shipped" (verdicts
+  `implemented` / `partial` / `not implemented`), `project-plan.md`, and the
+  surfaces the report names as implemented. This is what `## Existing state`
+  on every decision record cites.
 ```
 
 - [ ] **Step 3: Straw-man — classification and decision candidates**
@@ -1268,9 +1296,13 @@ calls a definition phase must not make alone: grain, which gates block, pull
 versus push, out-of-focus lines, which side of a conflict wins. Each candidate
 is drafted in the decision record shape with a recommendation, its cost as a
 testable prediction, its falsifier, and its keeps / changes / removes against
-the shipped list. **Check each falsifier now** against what is staged: met →
-reshape the candidate; not met → note the citation; not checkable → name the
-probe. Candidates enter the ledger as blocking entries.
+the implemented list. **Bind each falsifier to an `ASM-` record** in the
+`ateam-assumptions` block (its `disproof`, `cheapestProbe`, `requiredStage`,
+owner or unresolved owner) and **check it now** against what is staged,
+recording an `EVD-` entry (path, SHA-256, reference, `origin: observed`,
+result): `contradict` → reshape the candidate; `support` → the ASM can be
+`proceed`; not checkable → the ASM stays `pending`. Candidates enter the
+ledger as blocking entries.
 ```
 
 - [ ] **Step 4: Dev review — pass the candidates**
@@ -1366,11 +1398,12 @@ provided file, connector pull, the grill digest batch) with type · pointer
 every ingested batch has a row; a re-read appends a new row.
 
 Write the **decision records** as `decisions/NN-<slug>.md` per
-`references/decision-template.md` — ratified with a checked falsifier `made`;
-ratified with an unchecked one `provisional` with its `probe:`; unanswered
-`parked` with an open question; each with `## Existing state` cited to the
-shipped list and any ADR deviation in `deviates_from:`. Ids continue from the
-existing set; a reshaped call supersedes, never overwrites.
+`references/decision-template.md` — ratified with every linked load-bearing
+ASM `proceed` → `made`; ratified with one `pending`/`defer` → `provisional`;
+unanswered → `parked` with an open question; each with `assumptions:` naming
+its ASM ids, `## Existing state` cited to the implemented list and any ADR
+deviation in `deviates_from:`. Ids continue from the existing set; a reshaped
+call supersedes, never overwrites.
 ```
 Current text:
 ```
@@ -1402,10 +1435,13 @@ never re-derive: existing ids stand, reshapes supersede. On resume after an
 escalation, read the answers under `## Awaiting answers`, clear what's
 answered, continue from the movement you halted in.
 
-**The iteration entry.** When `docs/product/` holds an active job set and
-either an un-ingested `input/` batch exists or the prompt points at a
-document, board or other artifact, say so — "this is an iteration over an
-existing North Star" — and run the ten movements as an iteration: stage first
+**The iteration entry.** This is the **reopen-discovery** route the scope
+guardrail names — the change introduces a new job, audience or load-bearing
+assumption; a bounded change is the `/feature` refinement route and never
+comes here. When `docs/product/` holds an active job set and either an
+un-ingested `input/` batch exists or the prompt points at a document, board or
+other artifact, say so — "this is an iteration over an existing North Star" —
+and run the ten movements as an iteration: stage first
 and digest against the existing context (movement 3), read the shipped state
 (3), classify every active job and draft the decision candidates (4), pass the
 candidates to the dev review (5), route conflicts and candidates through the
@@ -1420,8 +1456,8 @@ this entry exists to prevent.
 
 Current text:
 ```
-- Manifest (if present): `gate_policy` + `run_brief` written, own status
-  `complete`, nothing else touched.
+- Manifest (if present): configure and completion commands returned success;
+  the authorization reference records what the human actually requested.
 ```
 Replace with:
 ```
@@ -1435,25 +1471,38 @@ Replace with:
   citation that resolves on disk.
 - No `[conflict]` entry is closed without a ruling source; every open one has
   a `research-plan.md` open question and `TBD` markers wherever it lands.
-- No decision record is `made` with an unchecked falsifier; every
-  `provisional` one names a `probe:` that resolves to a research activity;
-  every `deviates_from:` was surfaced at the read-back; none is `made` or
+- No decision record is `made` unless every linked load-bearing ASM is
+  `proceed`; every `provisional` one names a `pending`/`defer` ASM whose
+  `cheapestProbe` is its probe; no record carries a probe of its own; every
+  `deviates_from:` was surfaced at the read-back; none is `made` or
   `provisional` with `decided_by: human` unless the human actually answered.
 - Iteration runs: every active job is classified kept / reshaped / superseded
   with its trigger cited; every decision record states keeps / changes /
-  removes against the shipped list; a staged human artifact has its coverage
-  diff in the read-back.
-- Manifest (if present): `gate_policy` + `run_brief` written, own status
-  `complete`, nothing else touched.
+  removes against the implemented list; a staged human artifact has its
+  coverage diff in the read-back.
+- Manifest (if present): configure and completion commands returned success;
+  the authorization reference records what the human actually requested.
 ```
+
+- [ ] **Step 9b: Bind the decision records in the completion command**
+
+Current text:
+```
+--input '{"phase":"discovery","artifacts":["../../product/jtbd"],"blocking_flags":[]}'
+```
+Replace with:
+```
+--input '{"phase":"discovery","artifacts":["../../product/jtbd","../../product/decisions"],"blocking_flags":[]}'
+```
+(Decision records are human-ratified durable outputs like the jobs; binding them makes a later change stale downstream gates, which is the point. Context, plans and the assumptions ledger stay unbound, as that section already says.)
 
 - [ ] **Step 10: Verify**
 
 Run:
 ```bash
-cd "/Users/alvarobezerra/Documents/Claude/Projects/The A Team/harness" && f=.claude/skills/ateam-discovery/SKILL.md && grep -c "Evidence discipline" $f && grep -c "^\- \*\*Stage first" $f && grep -c "digest subagent" $f && grep -c "Build the conflict list before drafting" $f && grep -c "decision candidates" $f && grep -c "Coverage record" $f && grep -c "coverage diff" $f && grep -c "The iteration entry" $f && grep -c "decisions/NN-<slug>.md" $f && grep -c "references/decision-template.md" $f
+cd "/Users/alvarobezerra/Documents/Claude/Projects/The A Team/harness" && f=.claude/skills/ateam-discovery/SKILL.md && grep -c "Evidence discipline" $f && grep -c "^\- \*\*Stage first" $f && grep -c "digest subagent" $f && grep -c "Build the conflict list before drafting" $f && grep -c "decision candidates" $f && grep -c "Coverage record" $f && grep -c "coverage diff" $f && grep -c "The iteration entry" $f && grep -c "decisions/NN-<slug>.md" $f && grep -c "references/decision-template.md" $f && grep -c '"../../product/decisions"' $f && grep -c "ASM-" $f
 ```
-Expected: `1`, `1`, `≥2`, `1`, `≥4`, `1`, `≥2`, `1`, `1`, `2`.
+Expected: `1`, `1`, `≥2`, `1`, `≥4`, `1`, `≥2`, `1`, `1`, `2`, `1`, `≥3`.
 
 - [ ] **Step 11: Commit**
 
@@ -1526,9 +1575,12 @@ prose is read in full (a digest subagent for long documents), every domain
 claim cites a line, conflicts between inputs are `[conflict]` ledger items
 that route like any entry, and product-scope calls are a new durable class —
 **decision records** at `docs/product/decisions/NN-<slug>.md`, `[[dec:NN]]` —
-with a **calibration rule**: a falsifier checkable against staged inputs is
-checked before a call is stamped `made`; otherwise the human's yes yields
-`provisional` with a named probe. The read-back presents three lists — the
+with a **calibration rule**: each record names the `ASM-` records its
+falsifier rests on in the research plan's `ateam-assumptions` ledger; a
+falsifier checkable against staged inputs is checked as an evidence entry there
+before a call is stamped `made`; otherwise the human's yes yields
+`provisional`, the ledger's gates carrying the probe and its deadline — no
+parallel register. The read-back presents three lists — the
 coverage record, the conflicts, the decision records — and a coverage diff
 against any human artifact staged as input. ADRs stay architecture-only and
 Dev-owned; the `architecture` and `dev-research` skills receive the decision
@@ -1640,7 +1692,11 @@ value, path, frontmatter key, section name or status word that differs between
 CONTRACT.md and a mirror; (2) any rule the spec states that no file implements;
 (3) any instruction a skill gives that its own self-check does not verify or
 that another skill contradicts; (4) any edit that touched a Dev-owned file
-(architecture/, dev-research/, intake/dev-intake.md) — there must be none.
+(architecture/, dev-research/, intake/dev-intake.md) — there must be none;
+(5) any place a decision record or skill text carries a probe, deadline or
+evidence field of its own instead of pointing at an ASM record — CONTRACT's
+"Stage-bound research decisions" section and runner/ASSUMPTIONS.md forbid a
+parallel assumption register.
 Quote the two disagreeing passages verbatim. Do not fix anything. Say
 "no findings" per category when that is true.
 ```
@@ -1663,7 +1719,7 @@ Repo "/Users/alvarobezerra/Documents/Claude/Projects/The A Team/harness",
 branch harness/evidence-discipline. Read .claude/skills/ateam-discovery/SKILL.md
 and its references/decision-template.md, then CONTRACT.md's "Citations and
 coverage", "Decision record template" and "ateam-discovery" sections. Simulate,
-on paper, an iteration run over the ARC repo at
+on paper, an iteration run (the reopen-discovery route) over the ARC repo at
 "/Users/alvarobezerra/Documents/Professional Projects/rarerecapture/v0" with
 the new input /Users/alvarobezerra/Documents/Professional Projects/rarerecapture/build-frame-dealflow-extracted.txt:
 walk every movement and, at each, state exactly which sentence of the skill
@@ -1671,7 +1727,7 @@ tells you what to do, what you would write, and where. Then instantiate by
 hand, in your report only (write no files): (a) one decision record for
 "the physical world is a link, not a mirror" whose falsifier is "wrong if the
 master list carries live inventory columns" — the master list is not staged,
-so show the provisional shape with its probe; (b) one [conflict] ledger entry
+so show the provisional shape with its ASM record (pending, cheapestProbe) and the decision's `assumptions:` link; (b) one [conflict] ledger entry
 for the award-order disagreement between the mechanics guide §2 and the
 slice-1 brief §4.6 in docs/product/input/. Report every place the skill text
 left you guessing, as file:line plus the question you could not answer from
@@ -1697,13 +1753,13 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 **Files:** none new.
 
-- [ ] **Step 1: Confirm no Dev-owned file changed and the runner PR does not collide**
+- [ ] **Step 1: Confirm no Dev-owned file changed and the branch is current**
 
 Run:
 ```bash
-cd "/Users/alvarobezerra/Documents/Claude/Projects/The A Team/harness" && git diff --name-only main...HEAD | grep -E "architecture/|dev-research/|intake/dev-intake" ; echo "exit=$? (1 means none touched)" && git fetch origin && git merge-tree $(git merge-base HEAD origin/codex/dependable-runner-first-tranche) HEAD origin/codex/dependable-runner-first-tranche | grep -c "^<<<<<<<" 
+cd "/Users/alvarobezerra/Documents/Claude/Projects/The A Team/harness" && git fetch origin && git diff --name-only origin/main...HEAD | grep -E "architecture/|dev-research/|intake/dev-intake" ; echo "exit=$? (1 means none touched)" && git log --oneline HEAD..origin/main | wc -l
 ```
-Expected: `exit=1`, and `0` conflict markers.
+Expected: `exit=1`, and `0` commits behind origin/main (rebase first if not).
 
 - [ ] **Step 2: Push and open the PR**
 
@@ -1713,7 +1769,7 @@ Implements docs/superpowers/specs/2026-09-10-ateam-evidence-discipline-design.md
 
 From the ARC v0.5 capability test: the re-shape ran through grill-me because discovery had no entry for it, and the durable rules did not bind that path. This PR gives discovery an **iteration entry** (existing North Star + new input → stage first, digest against context, read what shipped, classify every job, draft decision candidates) and an **evidence discipline** stated once in CONTRACT.md (*Citations and coverage*): nothing cited that is not staged, a coverage row per ingested file with prose read in full, line citations on every domain claim, `[conflict]` ledger items, and a new durable class — **decision records** at `docs/product/decisions/NN-<slug>.md`, `[[dec:NN]]`, with a calibration rule (`made` only when the falsifier was checked; else `provisional` with a probe).
 
-No orchestrator, manifest or gate changes. Dev-owned skills receive a declared slot (decision candidates) and no edit. PLAN.md also carries the 2026-08-27 independence wording.
+Decision records carry no probe of their own: they bind to `ASM-` records in the `ateam-assumptions` ledger, so the calibration check is an evidence entry the feature command layer already enforces. No orchestrator, manifest or gate changes. Dev-owned skills receive a declared slot (decision candidates) and no edit. PLAN.md also carries the 2026-08-27 independence wording.
 
 Verification: grep assertions per task; two adversarial consistency passes (mirror drift, executability with an on-paper ARC iteration). **Acceptance test still owed:** re-run the ARC v0.5 re-scope through the iteration entry and compare to the control board on the report's seven properties — see the plan's Task 14.
 
@@ -1738,13 +1794,13 @@ In a Claude Code session whose CWD is the ARC repo, with the harness checked out
 ```
 /ateam-discovery "Re-shape ARC against the Build Frame: Dealflow (PDF in the parent folder, extraction beside it). Treat the human Product Discovery board (Figma 5ZkItMEc6OE6RZRES21Ckq, node 0:1) as a human artifact of the same kind." --repo "/Users/alvarobezerra/Documents/Professional Projects/rarerecapture/v0" --intake "/Users/alvarobezerra/Documents/Claude/Projects/The A Team/harness/intake"
 ```
-Expected during the run: the skill announces the iteration entry; stages both inputs before citing them; announces digest subagents for the 1,376-line glossary and the 173-line guide (or reads them itself, recorded `full · conductor`); enters `[conflict]` items including the award-order one; drafts decision candidates with checked or probed falsifiers; the read-back shows the coverage record, conflicts, decision records and the coverage diff against the board.
+Answer the run brief with `mode: discovery-only` so the run stops after discovery. Expected during the run: the skill announces the iteration entry as the reopen-discovery route; stages both inputs before citing them; announces digest subagents for the 1,376-line glossary and the 173-line guide (or reads them itself, recorded `full · conductor`); enters `[conflict]` items including the award-order one; drafts decision candidates with checked or probed falsifiers; the read-back shows the coverage record, conflicts, decision records and the coverage diff against the board.
 
 - [ ] **Step 2: Score against the control**
 
 Use the report's seven properties (artifact `99dec1a6-58a0-48d4-b6df-eab49eb1661e`). Record, per property, the verdict and the file:line evidence, in a new artifact or a markdown note beside the report. Specifically check:
 - the seven original misses (four deal types; Finance as a base role; master-list contents; three-buyer cap; anonymisation; WeChat/QuickBooks; the award-order conflict) each appear in `context.md`, a job, a conflict or a decision record with a line citation;
-- the physical-world call ships `provisional` with a probe, not `made`;
+- the physical-world call ships `provisional`, its `assumptions:` naming a `pending` ASM whose `cheapestProbe` is the master-list pull, not `made`;
 - every source cited on the produced set is on disk under `input/`;
 - every file in every ingested batch has a coverage row.
 
@@ -1760,4 +1816,4 @@ Anything the re-run still gets wrong is a finding against the skill text, not th
 
 **Placeholder scan.** No "TBD/TODO/similar to Task N". Every edit carries current and replacement text. Task 12's subagent prompts are complete. Task 14 names the exact invocation, paths, node and file key.
 
-**Type consistency.** Frontmatter keys everywhere: `status`, `confidence`, `decided`, `decided_by`, `sources`, `probe`, `deviates_from`. Status words: `made | provisional | superseded | parked`. Coverage values: `full · <date> · conductor`, `full · <date> · digest`, `partial <range> · <date> · <method>`. Ledger classes: `[blocking → …]`, `[non-blocking]`, `[conflict → …]`. Citation prefix `[[dec:NN]]`. Ruling sources: `human, grill Q<n>`, `SOURCE.md precedence`. Template path `.claude/skills/ateam-discovery/references/decision-template.md` in Tasks 4, 5, 10. Task 5's verify diffs the CONTRACT and template keys/sections mechanically.
+**Type consistency.** Frontmatter keys everywhere: `status`, `confidence`, `decided`, `decided_by`, `sources`, `assumptions`, `deviates_from` (no `probe`). Status words: `made | provisional | superseded | parked`. Coverage values: `full · <date> · conductor`, `full · <date> · digest`, `partial <range> · <date> · <method>`. Ledger classes: `[blocking → …]`, `[non-blocking]`, `[conflict → …]`. Citation prefix `[[dec:NN]]`. Ruling sources: `human, grill Q<n>`, `SOURCE.md precedence`. Ledger ids: `ASM-…`, `EVD-…`; dispositions `pending | proceed | defer | no-go | reshape` are the ledger's, never redefined here. Template path `.claude/skills/ateam-discovery/references/decision-template.md` in Tasks 4, 5, 10. Task 5's verify diffs the CONTRACT and template keys/sections mechanically.
