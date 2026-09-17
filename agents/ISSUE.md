@@ -1,6 +1,21 @@
 # Architecture audit: move from phase-shaped execution to agent seats without replacing the harness
 
-[Decision](#executive-decision) · [Review packet](#review-packet) · [Evidence](#evidence-anchors) · [Findings](#findings) · [Disposition](#proposal-disposition) · [Adoption](#adoption-sequence) · [Requested review](#requested-review)
+[Provenance](#audit-provenance) · [Decision](#executive-decision) · [Review packet](#review-packet) · [Evidence](#evidence-anchors) · [Findings](#findings) · [Disposition](#proposal-disposition) · [Adoption](#adoption-sequence) · [Requested review](#requested-review)
+
+## Audit provenance
+
+This audit began with two council rounds over baseline `bfc847e`. The three independent counselors
+were **Claude Fable**, **GPT-6-Astra**, and **GPT-5.6-Luna** at maximum reasoning effort; **Claude
+Opus** moderated. Between rounds, the council interactively grilled Rui at three checkpoints through
+twelve moderator-consolidated questions. Rui's answers were returned verbatim, including answers
+that contradicted the council's drafts.
+
+The counselors had no repository tools. They reasoned from a packet containing file contents, PR
+bodies, and commit history. This published report is the subsequent independent audit: it checked
+the council proposal directly against the repository, advanced the baseline to `fa16af2` after
+merged #62, and corrected, rejected, or separated claims that the code and contracts did not
+support. The findings below are audit dispositions, not a model vote or an unedited council
+transcript.
 
 ## Status
 
