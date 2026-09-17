@@ -28,8 +28,11 @@ reference re-reads.
 
 ## Contract (CONTRACT.md is authoritative)
 
-- **Reads**: `docs/product/**` (context.md, `jtbd/`, ateam-plan.md,
-  research-plan.md); the manifest (`prompt`, `run_brief`); the target repo.
+- **Reads**: `docs/product/**` (context.md, `jtbd/`, `decisions/`,
+  ateam-plan.md, research-plan.md); the manifest (`prompt`, `run_brief`);
+  the target repo. A scoped item a decision record governs traces to it as
+  `[[dec:NN]]` — the PRD never re-makes a call discovery ratified, and never
+  quietly reverses one.
 - **Writes**:
   - `prd.md` in the feature directory — every scoped item traces to a JTBD id.
   - `briefs/wireflow/` + `briefs/pages/` in the feature directory — spec

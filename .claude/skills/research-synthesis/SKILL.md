@@ -43,6 +43,7 @@ jobs — even when the evidence on the table screams for a rewrite.
 - **`docs/product/context.md` Digest** — a 2–4 line summary of the run plus a
   pointer to the research file, so the one file every agent reads stays current
   without bloating.
+- **`docs/product/context.md` ledger** — one `[conflict]` entry per contradiction between sources (workflow step 5), both sides cited to lines; presented at the read-back alongside the digest note.
 - Evidence not yet in `docs/product/input/` that you pulled from a connector
   (Notion, Granola, Slack, ops API) is **staged verbatim first** as
   `input/<YYYY-MM-DD>-<source>-pulled/`, then synthesized from there — per the
@@ -92,7 +93,11 @@ Use `references/research-synthesis-framework.md` for the full method. The shape:
    supporting evidence visible instead of flattening it away.
 5. **Contradict.** Call out contradictions, segment differences, and outliers
    explicitly; never smooth them into false agreement — they become discovery
-   questions and ledger entries.
+   questions and ledger entries. Each contradiction between sources is also
+   entered in `context.md`'s ledger as a **`[conflict]`** item — both sides
+   cited to lines, what it blocks — so evidence-light runs and evidence-heavy
+   runs share one conflict class and one routing (CONTRACT, *Citations and
+   coverage*).
 6. **Label strength** qualitatively (`Strong` / `Moderate` / `Directional` /
    `Unknown`) and explain each label. No numeric scores; if numbers are absent,
    do not fabricate them.
@@ -105,10 +110,11 @@ Use `references/research-synthesis-framework.md` for the full method. The shape:
 9. **Signal** (both modes): collect raw new-job signals.
 10. **Draft** the synthesis file in template order, ending with the discovery
     questions that follow from contradictions and gaps.
-11. **Read-back — mandatory before writing.** The research file and the
-    context.md digest note are durable: present both for correction in this
-    session, then write and commit (one commit, message naming what the run
-    found — e.g. `docs(research): onboarding synthesis — 03 challenged, 2 new
+11. **Read-back — mandatory before writing.** The research file, the
+    context.md digest note and its `[conflict]` ledger entries are
+    durable: present all three for correction in this session, then write
+    and commit (one commit, message naming what the run found — e.g.
+    `docs(research): onboarding synthesis — 03 challenged, 2 new
     signals`).
 12. **Route.** Challenged/refinement verdicts and new-job signals →
     `jobs-to-be-done`. All-supporting verdicts → `discovery-plan` (unknowns
