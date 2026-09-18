@@ -123,7 +123,11 @@ Because Git objects contain complete source and history, this backend requires
 `read paths: ["."]`; narrower confidential subdirectory scopes are refused.
 Credential-named paths (`.env*`, `.npmrc`, `.netrc`, `id_rsa`, `id_ed25519`) in
 reachable Git history are also refused before launch, even if deleted at HEAD.
-Prepare a sanitized repository explicitly when that prerequisite applies.
+The exact `.env.example` basename is exempt from this history check, including
+nested or deleted templates. Operators must keep these templates free of live
+credentials; this exception does not inspect their contents or authorize agent
+writes to them. Other credential-named paths still require an explicitly
+sanitized repository.
 These name checks do not claim to detect arbitrary secrets embedded in source.
 
 Executor and reviewer processes, including their shell descendants, inherit the

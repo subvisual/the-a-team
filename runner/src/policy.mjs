@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, realpathSync, lstatSync } from 'node:fs'
-import { resolve, dirname, relative, isAbsolute, join } from 'node:path'
+import { resolve, dirname, basename, relative, isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
 import { git, revParse } from './git.mjs'
@@ -68,6 +68,9 @@ export async function assertReadableSource(root, readPaths = ['.']) {
   const sensitive = stdout
     .split('\0')
     .map((p) => p.replace(/^\n+/, ''))
+    // Placeholder templates may be versioned. This history-only exception does
+    // not relax credentialPath or grant agents permission to modify templates.
+    .filter((p) => basename(p) !== '.env.example')
     .find(credentialPath)
   if (sensitive)
     throw new Error(
