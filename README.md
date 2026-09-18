@@ -35,3 +35,7 @@ and authority rules, and [combined verification](runner/COMBINED-VERIFICATION.md
 for the evidence required before delivery. No command or skill grants client
 project authority, merges a PR by implication, or substitutes automated tests
 for a target-user study.
+
+For an opt-in comparison with role agents, see the [agent workflow trial](agents/TRIAL.md).
+`/feature` keeps the existing skill-based harness by default; select
+`--orchestration-mode agent` on a new feature to trial the complete agent workflow.

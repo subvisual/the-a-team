@@ -6,10 +6,12 @@ description: Use when driving a feature prompt to a production-ready PR through 
 # feature — A-Team orchestrator
 
 Drives the authorized outcome: discovery, a prototype, an implementation PR,
-or a bounded refinement of an existing product. You run the existing phase
-skills on the main thread through the deterministic transition CLI. You do not spawn persistent role-agents; you invoke
-role-specific phase skills in sequence, gating at definition, design, and pr
-(dispatched per `gate_policy`; the final pr review always blocks).
+or a bounded refinement of an existing product. The manifest selects one A/B
+arm for the whole run: `harness` runs phase skills on the interactive main
+thread; `agent` dispatches role agents across the workflow. Both use
+the same deterministic transition CLI, artifacts, gates, and acceptance checks.
+The opt-in agent procedure is `agents/TRIAL.md`; read it before any agent-mode
+dispatch. The existing instructions below remain the harness-mode procedure.
 
 `PLAN.md` and `CONTRACT.md` in the **harness repo** root hold the full design
 rationale. This skill is the executable procedure.
@@ -34,11 +36,14 @@ rationale. This skill is the executable procedure.
 
 ```
 /feature "<prompt>" --repo <target>     # start a new feature
+/feature "<prompt>" --repo <target> --orchestration-mode agent
 /feature resume <slug> --repo <target>  # resume an in-flight feature
 ```
 
 `--repo` defaults to the current directory if omitted. `<target>` is the git root
-you operate on.
+you operate on. `--orchestration-mode` accepts `harness` (default) or `agent`.
+Record it as `orchestration_mode` in the `init` input. It is immutable for that
+feature so an evaluation arm cannot change mid-run.
 
 `ateam-discovery` is also **usable standalone**, without you — a human can invoke
 it directly to seed `docs/product/` before any feature exists. When you later run
@@ -157,8 +162,8 @@ the user (resume it, or pick a different slug) — never silently overwrite.
      **before** writing artifacts, so they land on the feature branch).
    - Create `<target>/docs/features/<slug>/` and `<target>/docs/product/`.
      Call `feature-cli.mjs init` at expected revision `0` with a stable init event
-     and input containing `slug`, `prompt`, `repo`, `base_branch`, `branch`, and
-     the known `run_brief` fields. The template documents the versioned schema;
+     and input containing `slug`, `prompt`, `repo`, `base_branch`, `branch`,
+     `orchestration_mode`, and the known `run_brief` fields. The template documents the versioned schema;
      the CLI creates the manifest and refuses to replace an existing feature.
    - `git -C <target> add docs/features/<slug> && git -C <target> commit -m "chore(<slug>): init feature manifest"`.
      (`docs/product/` is empty at this point and git cannot stage an empty
@@ -167,6 +172,8 @@ the user (resume it, or pick a different slug) — never silently overwrite.
    **Resume:**
    - Call `feature-cli.mjs show --feature <feature-dir>`. Review stale/unknown
      evidence and outstanding provisional decisions; retain all historical records.
+   - Keep the saved `orchestration_mode`. Reject a conflicting explicit mode
+     argument; use a separate feature and target checkout for a different arm.
    - If the feature is paused and the human requested resumption, call `resume`
      with that request's concrete reason and a stable event ID, then reload.
      This only clears the scheduling hold. It executes no phase and does not
@@ -219,13 +226,21 @@ the human has just read. Do not add one.
    commit the resulting manifest. The command selects actual current context
    before dispatch; bootstrap/revalidate a missing or stale index through
    project-context first. A start does not increment retries.
-3. **Invoke the reserved skill via the Skill tool by name** (`ateam-discovery` /
-   `ateam-definition` / `ateam-design` / `ateam-spec`). Pass, in the invocation
-   args, **three** absolute paths — the feature directory, the product
-   directory, and the harness `intake/` directory (this skill lives in the
-   harness repo; `intake/` sits at its root). The skill reads prior artifacts +
-   the manifest and writes its output per `CONTRACT.md`.
-4. On return, call `show`. The skill should have called its `complete` command
+3. Dispatch according to `manifest.orchestration_mode`:
+   - **`harness`** — invoke the reserved skill via the Skill tool by name
+     (`ateam-discovery` / `ateam-definition` / `ateam-design` / `ateam-spec`).
+   - **`agent`** — dispatch `ateam-pm` for discovery/definition and
+     `ateam-designer` for design/spec using `agents/TRIAL.md`. Use fresh sessions.
+
+   In every path pass **three** absolute paths — the feature directory, the
+   product directory, and the harness `intake/` directory. The worker reads prior
+   artifacts plus the manifest and writes only its contract scope. In agent mode,
+   specialist work is returned as `requestedDispatches`; this supervisor runs at
+   most the declared budget and returns the bounded result to a fresh PM dispatch.
+4. In agent mode, process the typed handoff through `agents/TRIAL.md` first.
+   Escalation or a specialist request stops this completion path; successful
+   output is validated and completed by the supervisor. Then call `show`.
+   In harness mode the skill should have called its `complete` command
    successfully, recording its artifacts, stage obligations and blocking flags.
    - Artifact missing OR status not `complete` → treat as **failure** (see below).
    - **Exception — escalation (any phase).** If the skill halted for want of a
@@ -243,6 +258,9 @@ the human has just read. Do not add one.
    only fall back to `docs(<slug>): discovery` if it left the work uncommitted.
 
 ### Gates (`definition`, `design`, `pr`)
+
+At definition/design, agent mode first runs the cold reviewer in `agents/TRIAL.md`.
+Surface its findings with the existing gate report; it cannot grant approval.
 
 Gate behavior is governed by `manifest.gate_policy` — chosen by the **human**
 during discovery's independence handoff (never by an agent), default `"block"`:
@@ -311,6 +329,9 @@ Gates block within the session. Because the manifest persists (and status is
 checked on resume), a killed session resumes at the same gate.
 
 ### `issues` phase
+
+Agent mode delegates step 1 to `ateam-pm` with `phase: issues` under
+`agents/TRIAL.md`. The supervisor retains projection, state writes, and commits.
 
 Two steps, one phase:
 
@@ -410,6 +431,10 @@ and its reason in the phase report and in the PR body, then continue.
 
 ### `dev` phase
 
+Both arms use the existing isolated Builder/Verifier sessions described below.
+Agent mode must also use this runner: invoking a project Builder agent directly
+would bypass the runner's evidence and independent approval boundary.
+
 Invoke the **runner** over `issues.md` — one issue at a time, each in its own
 worktree, each gated by an *independent* reviewer session before it counts as
 done:
@@ -505,6 +530,10 @@ its actual code/receipt artifact paths, then record `implementation` separately
 with its revision-bound evidence. Completion never infers any other milestone.
 
 ### `pr` phase — serialized branch assembly
+
+Agent mode delegates the plan refresh and product report craft to
+`ateam-delivery` after branch assembly, under `agents/TRIAL.md`. The supervisor
+retains Git operations, verification, PR publication, and the final human gate.
 
 Call `start` for pr. This assembles local feature work and does not authorize
 merging into the intended target or deploying.

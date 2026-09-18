@@ -23,7 +23,7 @@ import { credentialPath, readProjectConfig } from './policy.mjs'
 
 // Deterministic feature state. This module records authorized work and evidence;
 // it never invokes an agent, creates a PR, merges, deploys, or grants permission.
-export const FEATURE_SCHEMA_VERSION = 2
+export const FEATURE_SCHEMA_VERSION = 3
 export const FEATURE_PHASES = [
   'discovery',
   'definition',
@@ -42,6 +42,7 @@ export const FEATURE_MILESTONES = [
   'product_validation',
 ]
 const GATES = new Set(['definition', 'design', 'pr'])
+const ORCHESTRATION_MODES = new Set(['harness', 'agent'])
 const MODES = {
   'discovery-only': 'discovery',
   prototype: 'dev',
@@ -100,6 +101,11 @@ function brief(input = {}) {
 
 export function createFeature(input = {}) {
   if (!text(input.slug) || !text(input.repo)) fail('Feature slug and repo are required')
+  const orchestrationMode = input.orchestration_mode === undefined
+    ? 'harness'
+    : input.orchestration_mode
+  if (!ORCHESTRATION_MODES.has(orchestrationMode))
+    fail('orchestration_mode must be harness or agent')
   const phases = Object.fromEntries(
     FEATURE_PHASES.map((name, index) => [
       name,
@@ -125,6 +131,7 @@ export function createFeature(input = {}) {
     revision: 0,
     state: 'discovery',
     gate_policy: 'block',
+    orchestration_mode: orchestrationMode,
     gate_authorization: null,
     execution_policy: null,
     execution_limits: copy(input.execution_limits || null),
@@ -150,6 +157,8 @@ function validateFeature(manifest) {
     manifest.revision < 0
   )
     fail('Unsupported feature schemaVersion or revision')
+  if (!ORCHESTRATION_MODES.has(manifest.orchestration_mode))
+    fail('orchestration_mode must be harness or agent')
   if (!manifest.run_brief || !Object.hasOwn(MODES, manifest.run_brief.mode))
     fail('Versioned run_brief required')
   brief(manifest.run_brief)
@@ -257,6 +266,12 @@ function validateFeature(manifest) {
 
 export function normalizeFeature(input) {
   if (input?.schemaVersion === FEATURE_SCHEMA_VERSION) return validateFeature(copy(input))
+  if (input?.schemaVersion === 2)
+    return validateFeature({
+      ...copy(input),
+      schemaVersion: FEATURE_SCHEMA_VERSION,
+      orchestration_mode: 'harness',
+    })
   if (input?.schemaVersion !== undefined && input.schemaVersion !== 1)
     fail('Unsupported legacy feature schemaVersion')
   const result = createFeature({
@@ -763,6 +778,8 @@ export function transitionFeature(
       break
     }
     case 'configure': {
+      if (Object.hasOwn(command, 'orchestration_mode'))
+        fail('orchestration_mode is immutable; initialize a separate feature for another arm')
       const authorization = humanDecision(command.authorization)
       if (command.run_brief)
         result.run_brief = brief({ ...result.run_brief, ...command.run_brief })

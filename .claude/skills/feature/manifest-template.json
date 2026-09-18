@@ -4,10 +4,11 @@
   "repo": "<target repo path>",
   "base_branch": "main",
   "branch": "feature/<slug>",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "revision": 0,
   "state": "discovery",
   "gate_policy": "block",
+  "orchestration_mode": "harness",
   "gate_authorization": null,
   "execution_policy": null,
   "execution_limits": {
