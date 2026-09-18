@@ -1,5 +1,11 @@
 # Architecture audit: move from phase-shaped execution to agent seats without replacing the harness
 
+Historical audit and original adoption proposal. The current opt-in, full-workflow
+A/B trial is specified in [TRIAL.md](TRIAL.md); it preserves the existing harness
+arm and addresses [Álvaro's review](https://github.com/subvisual/the-a-team/issues/63#issuecomment-5717273840)
+through an agent-only interaction adapter. The PM-first sequence below records
+the audit's recommendation, not the current trial's dispatch map.
+
 [Provenance](#audit-provenance) · [Decision](#executive-decision) · [Review packet](#review-packet) · [Evidence](#evidence-anchors) · [Findings](#findings) · [Disposition](#proposal-disposition) · [Adoption](#adoption-sequence) · [Requested review](#requested-review)
 
 ## Audit provenance

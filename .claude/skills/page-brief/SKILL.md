@@ -45,11 +45,6 @@ cold reader should be able to pick up one card and understand the page.
 
 ## Place in the A-Team pipeline
 
-Invocation path must be declared. **Standalone/harness** may run the per-page
-grill. **Agent mode** derives cards and visible flags from revision-bound
-artifacts; a missing job or blocking human choice returns typed `escalated`.
-Reference files cannot re-enable prompts in agent mode. This skill never spawns.
-
 Definition-phase skill. Output home: **`<target>/docs/features/<slug>/briefs/pages/`** —
 `board.json` (spec — breadcrumbed source of truth), combined HTML + SVG (deliverable), PNG
 (verification copy for gate reviewers). Per-feature artifact: overwrite cleanly on revision.

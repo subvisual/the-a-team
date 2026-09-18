@@ -149,6 +149,14 @@ test('feature run records a stable harness or agent A/B arm', (t) => {
   })
   assert.equal(initialized.status, 'success')
   assert.equal(initialized.manifest.orchestration_mode, 'agent')
+  assert.equal(JSON.parse(readFileSync(join(agent.dir, 'feature.json'))).orchestration_mode, 'agent')
+  const switched = agent.run('configure', {
+    orchestration_mode: 'harness',
+    authorization: { kind: 'human', authorized: true, actor: 'Owner', reference: 'trial' },
+  })
+  assert.equal(switched.status, 'error')
+  assert.match(switched.error.message, /immutable/)
+  assert.equal(JSON.parse(readFileSync(join(agent.dir, 'feature.json'))).orchestration_mode, 'agent')
 
   const invalidFixture = fixture(t)
   const invalid = invalidFixture.run('init', {

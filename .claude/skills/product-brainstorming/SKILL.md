@@ -17,11 +17,6 @@ angles. Help them arrive at ideas they would not have reached alone.
 
 ## Place in the A-Team pipeline
 
-Invocation path must be declared. **Standalone/harness** may converse.
-**Agent mode** explores only the bounded dispatch and staged evidence; a
-blocking human choice returns as typed `escalated` through the conductor. It
-never pauses for an undeclared question and never spawns another agent.
-
 Within discovery, this skill is the **challenge / context-exploration beat** —
 the "Grey Matter" moment where the PM agent works the human's fuzzy prompt:
 *does this request even make sense? what problem space is it really in? what is

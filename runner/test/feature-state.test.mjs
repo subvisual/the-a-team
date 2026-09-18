@@ -77,6 +77,22 @@ test('new manifest has versioned independent milestones and rejects illegal phas
   )
 })
 
+test('v2 migration preserves evidence and history and always selects the existing harness', () => {
+  const current = throughDesign()
+  const legacy = { ...structuredClone(current), schemaVersion: 2 }
+  delete legacy.orchestration_mode
+  const migrated = feature.normalizeFeature(legacy)
+  assert.deepEqual(migrated, current)
+  // v2 had no arm selector; unrelated legacy metadata cannot opt an old run in.
+  legacy.orchestration_mode = 'agent'
+  assert.equal(feature.normalizeFeature(legacy).orchestration_mode, 'harness')
+})
+
+test('only an omitted orchestration mode defaults; malformed explicit choices fail', () => {
+  for (const orchestration_mode of ['', null, false, 0, 'hybrid'])
+    assert.throws(() => feature.createFeature({ slug: 'save', repo: '/target', orchestration_mode }), /orchestration_mode/)
+})
+
 test('prototype definition approves the plan while a future study remains pending', () => {
   const m = throughDesign('prototype')
   assert.equal(m.state, 'stopped')

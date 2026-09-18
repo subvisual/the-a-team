@@ -101,7 +101,10 @@ function brief(input = {}) {
 
 export function createFeature(input = {}) {
   if (!text(input.slug) || !text(input.repo)) fail('Feature slug and repo are required')
-  if (!ORCHESTRATION_MODES.has(input.orchestration_mode || 'harness'))
+  const orchestrationMode = input.orchestration_mode === undefined
+    ? 'harness'
+    : input.orchestration_mode
+  if (!ORCHESTRATION_MODES.has(orchestrationMode))
     fail('orchestration_mode must be harness or agent')
   const phases = Object.fromEntries(
     FEATURE_PHASES.map((name, index) => [
@@ -128,7 +131,7 @@ export function createFeature(input = {}) {
     revision: 0,
     state: 'discovery',
     gate_policy: 'block',
-    orchestration_mode: input.orchestration_mode || 'harness',
+    orchestration_mode: orchestrationMode,
     gate_authorization: null,
     execution_policy: null,
     execution_limits: copy(input.execution_limits || null),
@@ -267,7 +270,7 @@ export function normalizeFeature(input) {
     return validateFeature({
       ...copy(input),
       schemaVersion: FEATURE_SCHEMA_VERSION,
-      orchestration_mode: input.orchestration_mode || 'harness',
+      orchestration_mode: 'harness',
     })
   if (input?.schemaVersion !== undefined && input.schemaVersion !== 1)
     fail('Unsupported legacy feature schemaVersion')
@@ -775,6 +778,8 @@ export function transitionFeature(
       break
     }
     case 'configure': {
+      if (Object.hasOwn(command, 'orchestration_mode'))
+        fail('orchestration_mode is immutable; initialize a separate feature for another arm')
       const authorization = humanDecision(command.authorization)
       if (command.run_brief)
         result.run_brief = brief({ ...result.run_brief, ...command.run_brief })

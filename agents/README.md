@@ -2,9 +2,13 @@
 
 [Audit](ISSUE.md) · [External review](REVIEW-BRIEF.md) · [Authority map](AUTHORITY-MAP.md) · [Runtime contract](RUNTIME-CONTRACT.md) · [Skill integration](SKILL-REVISIONS.md) · [Open questions](OPEN-QUESTIONS.md) · [Posting](POSTING.md)
 
-**Proposal plus executable candidates.** This directory is the review packet for an agents-first
-evolution of the A-Team harness. The linked `.claude/agents/` files are concrete, manually
-invocable candidates; they are not wired into the runner or current pipeline.
+**Audit plus opt-in trial.** The existing skill-based harness remains the default.
+[TRIAL.md](TRIAL.md) defines the complete agent arm: PM, Designer, cold gate
+reviewers, existing runner Builder/Verifier sessions, and delivery craft. Select
+it explicitly with `/feature "<prompt>" --repo <target> --orchestration-mode agent`.
+The main thread dispatches host agents; the deterministic CLI does not launch them.
+The audit below records the original proposal, including its earlier PM-first
+adoption sequence. TRIAL.md defines the current experiment scope.
 
 ## Reading order
 

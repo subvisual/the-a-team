@@ -110,12 +110,6 @@ human decision path; a completion refresh cannot authorize them.
 
 ## Workflow
 
-Invocation path must be declared. **Standalone/harness** may interact with the
-human. **Agent mode** never prompts or spawns: unresolved human questions become
-`## Awaiting answers` entries plus a typed `escalated` return; long-document
-work becomes a revision-bound, budgeted `requestedDispatches` item for the
-supervisor.
-
 1. **Resolve the target** (repo-first, above). Read the current `context.md`
    and its `ingested:` list; read `docs/product/jtbd/` ids if present.
 2. **Gather.** Collect un-ingested `input/` batches, user input, and staged
@@ -129,8 +123,7 @@ supervisor.
 4. **Digest.** Per new batch: compress what the evidence actually says, each
    claim cited to a line (`<batch>/<file>:L<start>-L<end>`, `§<n>`, or
    `:p<N>` for a PDF). **Read every prose file in full.** A long one —
-   300 lines or more — goes to a one-shot digest specialist — in agent mode
-   request it from the supervisor; in harness mode announce and dispatch it,
+   300 lines or more — goes to a one-shot digest subagent — announce it,
    pass the file path and the current glossary, expect back a digest whose
    every claim cites lines plus the terms and conflicts it found — so
    coverage is `full · <date> · digest` rather than the conductor skimming.

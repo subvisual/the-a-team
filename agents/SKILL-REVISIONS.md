@@ -42,7 +42,13 @@ paths in the agent mandate and enforce automated dispatch in the supervisor.
 
 ## Required skill changes for a seat pilot
 
-Most skills should require no semantic rewrite. Before a seat composes one, verify:
+Álvaro's [review of #63](https://github.com/subvisual/the-a-team/issues/63#issuecomment-5717273840)
+established that the PM composition set does not already satisfy this checklist.
+The opt-in [trial adapter](TRIAL.md) supplies interaction, escalation and sibling
+dispatch rules across all composed skills and references. Shared skills retain
+their harness behavior. This adapter requires supervised trial validation; it is
+not evidence that every skill independently passes the checklist. Before a seat
+composes one, verify:
 
 1. pipeline and standalone paths are visibly separated;
 2. pipeline mode cannot stop for an undeclared interactive question;

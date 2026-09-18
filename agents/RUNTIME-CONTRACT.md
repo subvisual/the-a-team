@@ -2,9 +2,11 @@
 
 [← Packet index](README.md) · [Audit](ISSUE.md) · [Authority map](AUTHORITY-MAP.md) · [Skill integration](SKILL-REVISIONS.md) · [Open questions](OPEN-QUESTIONS.md)
 
-The prepared [Claude Code agent definitions](../.claude/agents/) make each mandate manually
-inspectable and invocable. They are host manifests, not a substitute for the supervisor manifest
-below. No new seat should enter the automated pipeline until the supervisor enforces every field.
+The prepared [Claude Code agent definitions](../.claude/agents/) make each mandate
+inspectable and invocable. The opt-in [trial](TRIAL.md) is a host-supervised
+procedure using these definitions. The manifest below describes requirements for
+future automated dispatch; it is not implemented by the orchestration-mode field.
+No unattended automated seat pipeline is claimed by this trial.
 
 ## Seat manifest
 

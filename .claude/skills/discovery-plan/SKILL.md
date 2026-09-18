@@ -96,11 +96,6 @@ it's done.
 
 ## Workflow
 
-Invocation path must be declared. **Standalone/harness** may ask the human to
-resolve plan choices. **Agent mode** compiles evidence-backed entries only;
-missing authority is routed to `context.md` / `research-plan.md` and returned
-as typed `escalated`, never an interactive pause. This skill never spawns.
-
 1. **Load the ledger and the evidence.** Read `context.md` (ledger first),
    the `research/` runs, and the active jobs. If raw evidence is still
    unsynthesized, stop and route to `research-synthesis` — a plan built on
