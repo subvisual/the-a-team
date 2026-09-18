@@ -192,6 +192,11 @@ If the work is really one ticket, hand off instead of writing a thin PRD.
 
 ## Workflow
 
+Invocation path must be declared. **Standalone/harness** may use its documented
+clarifying exchange. **Agent mode** drafts from revision-bound inputs; missing
+authority becomes a typed `escalated` return and existing ledger entry, never a
+prompt or wait. This skill never spawns.
+
 1. **Confirm the trigger** (feature-level, not a ticket).
 2. **Load the context layer** (above). Note which research-plan.md
    assumptions the PRD builds on — cite them, don't restate them as facts —

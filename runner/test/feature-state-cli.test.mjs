@@ -135,6 +135,32 @@ test('actual phase CLI validates files, persists event identity, and resumes wit
   assert.equal(f.run('start', { phase: 'design' }, { revision: 0 }).status, 'error')
 })
 
+test('feature run records a stable harness or agent A/B arm', (t) => {
+  const harness = fixture(t)
+  const harnessInit = harness.init()
+  assert.equal(harnessInit.manifest.orchestration_mode, 'harness')
+
+  const agent = fixture(t)
+  const initialized = agent.run('init', {
+    slug: 'save',
+    repo: agent.root,
+    orchestration_mode: 'agent',
+    run_brief: { mode: 'prototype' },
+  })
+  assert.equal(initialized.status, 'success')
+  assert.equal(initialized.manifest.orchestration_mode, 'agent')
+
+  const invalidFixture = fixture(t)
+  const invalid = invalidFixture.run('init', {
+    slug: 'save',
+    repo: invalidFixture.root,
+    orchestration_mode: 'hybrid',
+    run_brief: { mode: 'prototype' },
+  })
+  assert.equal(invalid.status, 'error')
+  assert.match(invalid.error.message, /orchestration_mode/)
+})
+
 test('actual artifact edit invalidates approval on reload with old decision preserved', async (t) => {
   const f = fixture(t)
   f.init()

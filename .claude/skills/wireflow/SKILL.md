@@ -35,6 +35,12 @@ context layer (pipeline).
 
 ## Place in the A-Team pipeline
 
+Invocation path must be declared. **Standalone/harness** may run the grill.
+**Agent mode** uses pipeline derivation only; blocking ambiguity is a typed
+`escalated` conductor result. Any reference instruction to ask or wait applies
+only to standalone/harness and cannot re-enable interaction in agent mode.
+This skill never spawns.
+
 Definition-phase skill. Output home: **`<target>/docs/features/<slug>/briefs/wireflow/`** —
 `board.json` (the spec — source of truth and breadcrumb; the render is regenerable from it),
 `wireflow.html` + SVG(s) (the deliverable), PNGs (verification copies, kept so gate reviewers

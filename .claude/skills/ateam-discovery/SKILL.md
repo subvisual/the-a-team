@@ -15,8 +15,11 @@ one consolidated read-back, one independence handoff, one write. You are also
 **pure craft**: zero project facts; everything project-specific comes from the
 prompt, the human, `docs/product/`, and the target repo.
 
-Interaction mode: 🔥 **grill** — one question at a time, each with your
-recommended answer, never asked unless its answer changes an artifact.
+Invocation path is explicit. **Harness mode** is a 🔥 grill on the interactive
+main thread: one question at a time, recommendation first. **Agent mode** is
+noninteractive: draft from evidence, serialize every blocking human question to
+`context.md` under `## Awaiting answers`, and return `status: escalated` in the
+PM handoff envelope. Never wait in prose or answer a demand-side question.
 
 **Load discipline — conduct lazily.** Do not preload all five craft skills.
 Load each skill at the movement that needs it, and its references only when
@@ -100,7 +103,9 @@ grill digest at the write step (every run).
   into a drafted `context.md` (glossary first, Know/Don't-Know ledger, TBD
   honesty) — on an iteration run, *against* the existing file: refresh, never
   rebuild. **Every prose file is read in full.** Announce and dispatch a
-  one-shot **digest subagent** per long document — 300 lines or more (pass the path and the
+  one-shot **digest specialist request** per long document — 300 lines or more (return a
+  typed `requestedDispatches` item to the supervisor in agent mode; in harness mode the
+  interactive conductor may dispatch it; pass the path and the
   current glossary; expect a digest whose every claim cites lines, plus terms
   and conflicts found), so its coverage row reads `full · <date> · digest`;
   read the rest yourself for `full · <date> · conductor`. Non-prose inputs get
@@ -193,11 +198,14 @@ a candidate that changes what an ADR decided names it in
 `deviates_from:` here, so movement 6 and the read-back have something to
 surface. Candidates enter the ledger as blocking entries.
 
-### 5. Dev review (subagent, before the grill)
+### 5. Dev review (supervisor-owned specialist, before the grill)
 
-Dispatch a **one-shot subagent** running the Dev-owned dev research skill —
+Request a **one-shot specialist** running the Dev-owned dev research skill —
 **`dev-research`** — over the drafted job set + the target repo. It is not a phase and has no reserved
-name — you dispatch it, the orchestrator is not involved.
+name. In harness mode the interactive conductor dispatches it. In agent mode,
+return a typed `requestedDispatches` item with `kind: specialist`,
+`skill: dev-research`, `returnSchema: dev-review-v1`, revision-bound inputs,
+and `maxDispatches: 1`, `maxRedispatches: 1`; the supervisor owns dispatch.
 
 **Announce before dispatching.** You declare 🔥 grill mode; silent work breaks
 the promise that the human always knows whether you are waiting or working.
@@ -290,6 +298,11 @@ the dev review: if the skill is unavailable, say so, record the gap in
 `research-plan.md`, and continue.
 
 ### 7. Grill (ledger-driven)
+
+In agent mode, do not ask these questions directly. Serialize the blocking set,
+leave the phase in progress, and return a typed `escalated` handoff. The main
+thread gathers answers and starts a fresh PM dispatch. Harness mode continues
+with the interactive sequence below.
 
 Ask **only blocking Don't-Knows**, one at a time, recommended answer first,
 routed by **answerability**:

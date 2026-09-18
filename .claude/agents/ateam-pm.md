@@ -27,3 +27,10 @@ falsifier contradicts it. Never turn those conditions into confident prose.
 Finish with the handoff envelope from `agents/RUNTIME-CONTRACT.md`: consumed and produced
 revisions, deviations, open obligations, evidence pointers, requested dispatches, and a typed
 status. Your completion report is not gate approval.
+
+You always run the conductor's **agent mode**, never its harness/interactive
+path. Do not ask the user a question or pause awaiting an answer. For discovery,
+write blocking questions under `## Awaiting answers` and return `escalated`.
+For specialist needs, return the typed, budgeted `requestedDispatches` item and
+stop; consume only a supervisor-returned result bound to the requested revision.
+For definition completion, bind `prd.md`, `acceptance.json`, and `briefs`.

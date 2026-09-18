@@ -72,6 +72,7 @@ docs/product/
 docs/features/<slug>/
   feature.json                # orchestrator state
   prd.md
+  acceptance.json             # definition-owned requirement/obligation ledger
   briefs/                     # wireflow + per-screen page briefs
   design.md
   spec.md
@@ -332,9 +333,10 @@ Everything else — especially durable writes and their review step — behaves
   change; discovery detects the entry itself, in `/feature` and standalone
   alike.
 - **Dev review of the drafted jobs**: after the straw-man and **before** the
-  grill, discovery dispatches a **one-shot subagent** running the Dev-owned dev
+  grill, discovery requests a **one-shot specialist** running the Dev-owned dev
   research skill, over the drafted job set + the target repo. It is not a phase
-  and has no reserved name; the orchestrator is not involved. Rules:
+  and has no reserved name. Harness mode dispatches from the interactive
+  conductor; agent mode returns a typed, budgeted request to the supervisor. Rules:
   - **Announce before dispatching.** The skill declares 🔥 grill mode, so
     silent work would break the mode's promise that the human always knows
     whether the agent is waiting or working.
@@ -707,6 +709,9 @@ Full annotated template: the `ateam-discovery` skill's
 - **Must write**:
   - `prd.md` in the feature directory — problem, goals/non-goals, scope, user
     stories, acceptance criteria. Every scoped item traces to a JTBD id.
+  - `acceptance.json` in the feature directory — the canonical machine-readable
+    requirement and obligation ledger generated with `prd.md`; definition owns
+    it and downstream gates consume it.
   - `briefs/` in the feature directory — wireflow + per-screen requirements.
   - the ticket backlog input the issues phase decomposes later.
   - `docs/product/epics/NN-<slug>.md` — the Epics: durable delivery structures
@@ -796,6 +801,10 @@ Full annotated template: the `ateam-discovery` skill's
   a confidence level. This is the mechanism behind the independence promise:
   assumptions made while no human is present must land there, not in a report
   that scrolls away.
+  **Discovery ledger exception:** discovery craft may also update
+  `docs/product/context.md`'s existing Know / Don't Know ledger and
+  `## Awaiting answers` section. It may not use this exception for unrelated
+  context prose.
   (For the harness's own exception to this rule, see **The milestone
   back-reference** below — it binds a phase this section does not govern.)
 - **Report blocking flags loudly.** Your return report must surface, as a

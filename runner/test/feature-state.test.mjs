@@ -59,7 +59,7 @@ function throughDesign(mode = 'implementation-pr') {
 
 test('new manifest has versioned independent milestones and rejects illegal phase jumps', () => {
   const m = fresh()
-  assert.equal(m.schemaVersion, 2)
+  assert.equal(m.schemaVersion, 3)
   assert.deepEqual(Object.keys(m.milestones), [
     'implementation',
     'verification',
@@ -198,7 +198,7 @@ test('legacy done or provisional state migrates to unknown or stale without manu
     phases: { definition: { status: 'approved', provisional: true }, dev: { status: 'complete' } },
   }
   const m = feature.normalizeFeature(old)
-  assert.equal(m.schemaVersion, 2)
+  assert.equal(m.schemaVersion, 3)
   assert.equal(m.phases.definition.status, 'stale')
   assert.equal(m.phases.dev.status, 'stale')
   assert.ok(Object.values(m.milestones).every((x) => x.status === 'unknown'))

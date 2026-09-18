@@ -145,6 +145,12 @@ customers who switched from [the replaced solution]"*).
 
 ## CREATE workflow (grill mode)
 
+Invocation path must be declared by the caller. **Standalone/harness** uses the
+interactive grill below. **Agent mode** drafts from staged evidence only; any
+answer needed from a human becomes a typed `escalated` result and an
+`## Awaiting answers` entry. It does not load an interactive guide and wait,
+pick a struggle for the human, or write an invented answer.
+
 Run the interview one question at a time, each with your recommended answer,
 mining provided evidence (including `docs/product/input/`) before asking. The
 full question tree is in `references/interview-guide.md` — read it before

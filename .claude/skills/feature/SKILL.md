@@ -6,10 +6,11 @@ description: Use when driving a feature prompt to a production-ready PR through 
 # feature — A-Team orchestrator
 
 Drives the authorized outcome: discovery, a prototype, an implementation PR,
-or a bounded refinement of an existing product. You run the existing phase
-skills on the main thread through the deterministic transition CLI. You do not spawn persistent role-agents; you invoke
-role-specific phase skills in sequence, gating at definition, design, and pr
-(dispatched per `gate_policy`; the final pr review always blocks).
+or a bounded refinement of an existing product. The manifest selects one A/B
+arm for the whole run: `harness` runs phase skills on the interactive main
+thread; `agent` dispatches the PM seat for discovery and definition. Both use
+the same deterministic transition CLI, artifacts, gates, and acceptance checks.
+Later phases remain harness-dispatched until their seats earn a separate pilot.
 
 `PLAN.md` and `CONTRACT.md` in the **harness repo** root hold the full design
 rationale. This skill is the executable procedure.
@@ -34,11 +35,14 @@ rationale. This skill is the executable procedure.
 
 ```
 /feature "<prompt>" --repo <target>     # start a new feature
+/feature "<prompt>" --repo <target> --orchestration-mode agent
 /feature resume <slug> --repo <target>  # resume an in-flight feature
 ```
 
 `--repo` defaults to the current directory if omitted. `<target>` is the git root
-you operate on.
+you operate on. `--orchestration-mode` accepts `harness` (default) or `agent`.
+Record it as `orchestration_mode` in the `init` input. It is immutable for that
+feature so an evaluation arm cannot change mid-run.
 
 `ateam-discovery` is also **usable standalone**, without you — a human can invoke
 it directly to seed `docs/product/` before any feature exists. When you later run
@@ -157,8 +161,8 @@ the user (resume it, or pick a different slug) — never silently overwrite.
      **before** writing artifacts, so they land on the feature branch).
    - Create `<target>/docs/features/<slug>/` and `<target>/docs/product/`.
      Call `feature-cli.mjs init` at expected revision `0` with a stable init event
-     and input containing `slug`, `prompt`, `repo`, `base_branch`, `branch`, and
-     the known `run_brief` fields. The template documents the versioned schema;
+     and input containing `slug`, `prompt`, `repo`, `base_branch`, `branch`,
+     `orchestration_mode`, and the known `run_brief` fields. The template documents the versioned schema;
      the CLI creates the manifest and refuses to replace an existing feature.
    - `git -C <target> add docs/features/<slug> && git -C <target> commit -m "chore(<slug>): init feature manifest"`.
      (`docs/product/` is empty at this point and git cannot stage an empty
@@ -219,12 +223,21 @@ the human has just read. Do not add one.
    commit the resulting manifest. The command selects actual current context
    before dispatch; bootstrap/revalidate a missing or stale index through
    project-context first. A start does not increment retries.
-3. **Invoke the reserved skill via the Skill tool by name** (`ateam-discovery` /
-   `ateam-definition` / `ateam-design` / `ateam-spec`). Pass, in the invocation
-   args, **three** absolute paths — the feature directory, the product
-   directory, and the harness `intake/` directory (this skill lives in the
-   harness repo; `intake/` sits at its root). The skill reads prior artifacts +
-   the manifest and writes its output per `CONTRACT.md`.
+3. Dispatch according to `manifest.orchestration_mode`:
+   - **`harness`** — invoke the reserved skill via the Skill tool by name
+     (`ateam-discovery` / `ateam-definition` / `ateam-design` / `ateam-spec`).
+   - **`agent` for discovery or definition** — invoke the project agent
+     `ateam-pm` for exactly that phase. Pass the phase, prompt, target, feature,
+     product, harness intake paths, manifest revision, and current consumed
+     artifact digests. Do not resume it across phases in this first pilot.
+   - **`agent` for later phases** — use the harness path above. The recorded arm
+     still identifies the PM-seat experiment; no unpiloted seat is implied.
+
+   In every path pass **three** absolute paths — the feature directory, the
+   product directory, and the harness `intake/` directory. The worker reads prior
+   artifacts plus the manifest and writes only its contract scope. In agent mode,
+   specialist work is returned as `requestedDispatches`; this supervisor runs at
+   most the declared budget and returns the bounded result to a fresh PM dispatch.
 4. On return, call `show`. The skill should have called its `complete` command
    successfully, recording its artifacts, stage obligations and blocking flags.
    - Artifact missing OR status not `complete` → treat as **failure** (see below).

@@ -1,6 +1,6 @@
 ---
 name: dev-research
-description: Use when a drafted job set needs an implementation-reality check before scope is committed — dispatched as a one-shot subagent by ateam-discovery's dev review movement, or run standalone against a target repo plus an existing job set. The 🚀 autonomous dev-role research beat: sweeps the target codebase and the external services the jobs imply, keeps only findings that change a product decision (scope call, job feasibility, sequencing, buy-vs-build), rates each cheap/moderate/expensive/unknown with a confidence level and an evidence pointer, and returns them through the ledger under CONTRACT.md's three-way answer rule — verifiable from the repo, covered by a Declared default, or a question. Substance lands in research-plan.md; jobs carry citations only. Never answers a demand-side question. Do NOT use for architecture decisions or stack picks (the architecture skill owns those), schema or API design, time estimates, deep code review, or any implementation work — ateam-spec and the dev phase own depth.
+description: Use when a drafted job set needs an implementation-reality check before scope is committed — dispatched as a one-shot specialist by the supervisor or interactive discovery conductor, or run standalone against a target repo plus an existing job set. The 🚀 autonomous dev-role research beat: sweeps the target codebase and the external services the jobs imply, keeps only findings that change a product decision (scope call, job feasibility, sequencing, buy-vs-build), rates each cheap/moderate/expensive/unknown with a confidence level and an evidence pointer, and returns them through the ledger under CONTRACT.md's three-way answer rule — verifiable from the repo, covered by a Declared default, or a question. Substance lands in research-plan.md; jobs carry citations only. Never answers a demand-side question. Do NOT use for architecture decisions or stack picks (the architecture skill owns those), schema or API design, time estimates, deep code review, or any implementation work — ateam-spec and the dev phase own depth.
 metadata:
   version: 0.1.0
   owner: Davide Silva
@@ -15,7 +15,7 @@ insights"* — because a job set minted with no implementation contact produces 
 North Star nobody can build, and nothing finds out until the dev phase is
 already running.
 
-You are dispatched as a **one-shot subagent** by `ateam-discovery`'s dev review
+You are dispatched as a **one-shot specialist** by the supervisor or interactive conductor for `ateam-discovery`'s dev review
 movement, over the drafted job set and the target repo. You are not a phase, you
 have no reserved name, and the orchestrator is not involved. You are also not
 the dev phase: you produce no design, no schema, no library pick, no estimate.
@@ -25,6 +25,12 @@ interview the human; you never wait. Questions you cannot resolve become
 *someone else's* question, correctly addressed. That routing is your output.
 
 ## Contract (CONTRACT.md is authoritative)
+
+This is a bounded specialist, not a nested-agent owner. In agent mode it runs
+only from a supervisor dispatch containing revision-bound inputs and returns
+`dev-review-v1`; it never prompts, waits, or spawns. Missing optional evidence
+is an explicit degraded result. A blocking unavailable authority is typed
+`escalated`.
 
 - **Given to you**: the drafted jobs, the target repo path, `context.md`
   (including `## Technical context`), and the dev bank's `## Declared

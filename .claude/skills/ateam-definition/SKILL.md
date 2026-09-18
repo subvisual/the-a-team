@@ -190,7 +190,7 @@ this completion attempt. Reuse the same ID only to replay the identical operatio
 after interruption; changed inputs require a new ID.
 
 ```sh
-node <harness>/runner/src/feature-cli.mjs complete --feature <feature-dir> --expected-revision <revision> --event-id <completion-id> --input '{"phase":"definition","artifacts":["prd.md","briefs"],"blocking_flags":[]}'
+node <harness>/runner/src/feature-cli.mjs complete --feature <feature-dir> --expected-revision <revision> --event-id <completion-id> --input '{"phase":"definition","artifacts":["prd.md","acceptance.json","briefs"],"blocking_flags":[]}'
 ```
 
 Replace `blocking_flags` with the actual concrete flags from the report. Success

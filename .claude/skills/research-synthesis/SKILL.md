@@ -81,6 +81,11 @@ questions · handoff. Plus, A-Team-specific:
 
 ## Workflow
 
+Invocation path must be declared. **Standalone/harness** may confirm the
+research question interactively. **Agent mode** derives it from the dispatch
+and staged sources; if that is impossible, it writes the question to the
+context ledger and returns typed `escalated` instead of prompting or waiting.
+
 Use `references/research-synthesis-framework.md` for the full method. The shape:
 
 1. **Frame.** Confirm the research question. Load active jobs (or declare

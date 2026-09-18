@@ -50,6 +50,11 @@ Repo-first-and-always; a Cowork folder is a valid target, never a blocker.
 
 ## Modes
 
+Invocation path is orthogonal to create/revise. **Standalone/harness** may
+interact. **Agent mode** consumes only revision-bound jobs and PRD; unresolved
+scope returns typed `escalated` through the conductor. It never prompts, waits,
+or spawns.
+
 - **DEFINE** — create epic(s): from a PRD's requirements (definition phase),
   or standalone from an objective + jobs.
 - **REVISE** — refine, split, merge, park, complete, or supersede existing

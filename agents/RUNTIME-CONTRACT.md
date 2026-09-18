@@ -75,13 +75,26 @@ Every successful seat result should contain:
   "deviations": [],
   "openObligations": [],
   "evidence": [],
-  "requestedDispatches": [],
+  "requestedDispatches": [{
+    "id": "dev-review-1",
+    "kind": "specialist",
+    "skill": "dev-research",
+    "input": {"paths": [], "revision": "<digest>"},
+    "returnSchema": "dev-review-v1",
+    "budget": {"maxDispatches": 1, "maxRedispatches": 1}
+  }],
   "status": "complete"
 }
 ```
 
 Typed alternatives to `complete`: `escalated`, `blocked`, `interrupted`. The supervisor validates
 actual files and evidence; the envelope cannot self-certify them.
+
+`requestedDispatches` may name bounded one-shot specialists; it may not name a
+reserved phase or seat. The supervisor validates the typed input, result schema,
+and per-kind budget. Discovery's dev review and long-document digest are the
+first declared kinds. A missing optional specialist returns a recorded degraded
+result; an agent never silently spawns or waits for it.
 
 ## Security and independence
 
